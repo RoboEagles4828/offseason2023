@@ -346,7 +346,7 @@ class DriveTrain():
         self.rear_left.stop()
         self.rear_right.stop()
 
-    def arcadeDrive(self, joystick: Joystick):
+    def swerveDrive(self, joystick: Joystick):
         linearX = joystick.getData()["axes"][1] * 500.0
         linearY = -joystick.getData()["axes"][0] * 500.0
         angularZ = joystick.getData()["axes"][3] * 500.0
