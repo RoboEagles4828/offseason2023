@@ -24,8 +24,8 @@ MODULE_CONFIG = {
         "axle_joint_name": "front_left_axle_joint",
         "axle_motor_port": 1, #7
         "axle_encoder_port": 2, #8
-        "encoder_offset": 18.984, # 248.203,
-        "location" : Translation2d(0.52085486, 0.52085486)
+        "encoder_offset": 18.721, # 248.203,
+        "location" : Translation2d(-0.52085486, 0.52085486) # Translation2d(0.52085486, 0.52085486)
     },
     "front_right": {
         "wheel_joint_name": "front_right_wheel_joint",
@@ -33,8 +33,8 @@ MODULE_CONFIG = {
         "axle_joint_name": "front_right_axle_joint",
         "axle_motor_port": 4, #10
         "axle_encoder_port": 5, #11
-        "encoder_offset": 145.723, #15.908,
-        "location" : Translation2d(-0.52085486, 0.52085486)
+        "encoder_offset": 45.439 + 180.0, #15.908,
+        "location" : Translation2d(-0.52085486, -0.52085486)# Translation2d(-0.52085486, 0.52085486)
     },
     "rear_left": {
         "wheel_joint_name": "rear_left_wheel_joint",
@@ -42,8 +42,8 @@ MODULE_CONFIG = {
         "axle_joint_name": "rear_left_axle_joint",
         "axle_motor_port": 10, #4
         "axle_encoder_port": 11, #5
-        "encoder_offset": 194.678, #327.393,
-        "location" : Translation2d(0.52085486, -0.52085486)
+        "encoder_offset": 16.084 + 180.0, #327.393,
+        "location" : Translation2d(-0.52085486, -0.52085486) #Translation2d(0.52085486, -0.52085486)
     },
     "rear_right": {
         "wheel_joint_name": "rear_right_wheel_joint",
@@ -51,8 +51,8 @@ MODULE_CONFIG = {
         "axle_joint_name": "rear_right_axle_joint",
         "axle_motor_port": 7, #1
         "axle_encoder_port": 8, #2
-        "encoder_offset": 69.785, #201.094,
-        "location" : Translation2d(-0.52085486, -0.52085486)
+        "encoder_offset": -9.141, #201.094,
+        "location" : Translation2d(0.52085486, -0.52085486) # Translation2d(-0.52085486, -0.52085486)
     }
 }
 
@@ -177,13 +177,14 @@ class SwerveModule():
         self.encoderconfig = ctre.sensors.CANCoderConfiguration()
         self.encoderconfig.absoluteSensorRange = ctre.sensors.AbsoluteSensorRange.Unsigned_0_to_360
         self.encoderconfig.initializationStrategy = ctre.sensors.SensorInitializationStrategy.BootToAbsolutePosition
+        self.encoderconfig.magnetOffsetDegrees = self.encoder_offset
         self.encoderconfig.sensorDirection = ENCODER_DIRECTION
         self.encoder.configAllSettings(self.encoderconfig)
         self.encoder.setPositionToAbsolute(timeout_ms)
         self.encoder.setStatusFramePeriod(ctre.sensors.CANCoderStatusFrame.SensorData, 10, timeout_ms)
     
     def getEncoderPosition(self):
-        return math.radians(self.encoder.getAbsolutePosition() - self.encoder_offset)
+        return math.radians(self.encoder.getAbsolutePosition())
     
     def getEncoderVelocity(self):
         return math.radians(self.encoder.getVelocity())
@@ -219,7 +220,6 @@ class SwerveModule():
 
         # Velocity Ramp
         # TODO: Tweak this value
-        self.slew = SlewRateLimiter(0.5)
 
         # Current Limit
         current_limit = 20
@@ -271,7 +271,7 @@ class SwerveModule():
     def set(self, state: SwerveModuleState):
         wheel_radius = 0.0508
         set_wheel_motor_vel = state.speed / (wheel_radius) / math.pi * 2
-        self.wheel_motor.set(ctre.TalonFXControlMode.Velocity, self.slew.calculate(set_wheel_motor_vel))
+        self.wheel_motor.set(ctre.TalonFXControlMode.Velocity, set_wheel_motor_vel)
         self.axle_motor.set(ctre.TalonFXControlMode.MotionMagic, getShaftTicks(state.angle.radians(), "position"))
 
     def getEncoderData(self):
@@ -308,6 +308,9 @@ class DriveTrain():
         self.navx = navx.AHRS.create_spi()
         self.speed = ChassisSpeeds(0, 0, 0)
         self.wheel_radius = 0.0508
+        self.slew_X = SlewRateLimiter(0.5)
+        self.slew_Y = SlewRateLimiter(0.5)
+        self.slew_Z = SlewRateLimiter(0.5)
         
         self.ROBOT_MAX_TRANSLATIONAL = 31.4 * self.wheel_radius # m/s
         self.ROBOT_MAX_ROTATIONAL = 15.7
@@ -346,19 +349,24 @@ class DriveTrain():
         self.rear_left.stop()
         self.rear_right.stop()
 
-    def swerveDrive(self, joystick: Joystick):
-        linearX = joystick.getData()["axes"][1] * 500.0
-        linearY = -joystick.getData()["axes"][0] * 500.0
-        angularZ = joystick.getData()["axes"][3] * 500.0
+    def testModule(self):
+        self.rear_right.encoderOffsetTest()
 
+    def swerveDrive(self, joystick: Joystick):
+        linearX = self.slew_X.calculate(joystick.getData()["axes"][1]) * 500.0
+        linearY = self.slew_Y.calculate(-joystick.getData()["axes"][0]) * 500.0
+        angularZ = self.slew_Z.calculate(joystick.getData()["axes"][3]) * 500.0
+
+        print(self.toggleButton(7, joystick))
         if self.toggleButton(7, joystick):
+            print(Rotation2d.fromDegrees(self.navx.getYaw()))
             # field  oriented
             self.speeds = ChassisSpeeds.fromFieldRelativeSpeeds(linearY, linearX, angularZ, Rotation2d.fromDegrees(self.navx.getYaw()))
         else:
             self.speeds = ChassisSpeeds(linearX, linearY, angularZ)
 
         self.module_state = self.kinematics.toSwerveModuleStates(self.speeds)
-        self.module_state = self.kinematics.desaturateWheelSpeeds(self.module_state, self.speeds, self.MODULE_MAX_SPEED, self.ROBOT_MAX_TRANSLATIONAL, self.ROBOT_MAX_ROTATIONAL)
+        self.kinematics.desaturateWheelSpeeds(self.module_state, self.speeds, self.MODULE_MAX_SPEED, self.ROBOT_MAX_TRANSLATIONAL, self.ROBOT_MAX_ROTATIONAL)
 
         self.front_left_state: SwerveModuleState = self.module_state[0]
         self.front_right_state: SwerveModuleState = self.module_state[1]
@@ -366,24 +374,17 @@ class DriveTrain():
         self.rear_right_state: SwerveModuleState = self.module_state[3]
 
         # optimize states
-        self.front_left_state = SwerveModuleState.optimize(self.front_left_state, self.front_left.getEncoderPosition())
-        self.front_right_state = SwerveModuleState.optimize(self.front_right_state, self.front_right.getEncoderPosition())
-        self.rear_left_state = SwerveModuleState.optimize(self.rear_left_state, self.rear_left.getEncoderPosition())
-        self.rear_right_state = SwerveModuleState.optimize(self.rear_right_state, self.rear_right.getEncoderPosition())
+        self.front_left_state = SwerveModuleState.optimize(self.front_left_state, Rotation2d(self.front_left.getEncoderPosition()))
+        self.front_right_state = SwerveModuleState.optimize(self.front_right_state, Rotation2d(self.front_right.getEncoderPosition()))
+        self.rear_left_state = SwerveModuleState.optimize(self.rear_left_state, Rotation2d(self.rear_left.getEncoderPosition()))
+        self.rear_right_state = SwerveModuleState.optimize(self.rear_right_state, Rotation2d(self.rear_right.getEncoderPosition()))
+
+        print(f"{self.front_left_state.speed} {self.front_right_state.speed} {self.rear_left_state.speed} {self.rear_right_state.speed}")
 
         self.front_left.set(self.front_left_state)
         self.front_right.set(self.front_right_state)
         self.rear_left.set(self.rear_left_state)
         self.rear_right.set(self.rear_right_state)
-
-
-    def toggleButton(self, button, joystick):
-        if joystick.getData().get("buttons")[button] == 1:
-            if self.toggle == False:
-                self.toggle = True
-            else:
-                self.toggle = False
-        return self.toggle
 
 
 

@@ -5,7 +5,8 @@ import ctre.sensors
 import time
 import logging
 import math
-from joystick import Joystick
+from hardware_interface.joystick import Joystick
+from hardware_interface.toggle import ToggleButton
 
 NAMESPACE = 'real'
 CMD_TIMEOUT_SECONDS = 1
@@ -50,7 +51,7 @@ def getJointList():
     return JOINT_LIST
 
 class ArmController():
-    def __init__(self):
+    def __init__(self, joystick: Joystick):
         self.last_cmds_time = time.time()
         self.warn_timeout = True
         
@@ -96,9 +97,15 @@ class ArmController():
                 "command": self.top_slider_control
             }
         }
-        
-        self.functions = [self.elevator_loading_station, self.skis_up, self.elevator_mid_level, self.elevator_high_level, self.top_gripper_control, self.elevator_pivot_control, self.top_slider_control]
 
+        self.functions = [self.elevator_loading_station, self.elevator_mid_level, self.elevator_high_level, self.top_gripper_control, self.elevator_pivot_control, self.top_slider_control]
+
+        self.toggle = False
+        self.toggle_buttons = {}
+        for function in self.functions:
+            button = self.PRESET_MAP[function.__name__]["button"][1]
+            self.toggle_buttons[function.__name__] = ToggleButton(button, False)
+        
     def getEncoderData(self):
         names = [""]*4
         positions = [0]*4
@@ -133,10 +140,9 @@ class ArmController():
 
     def setArm(self, joystick: Joystick):
         for function in self.functions:
-            button = int(self.toggleButton(self.PRESET_MAP[function.__name__]["button"][1], joystick))
+            button = self.toggle_buttons[function.__name__].toggle(joystick.getData()["buttons"])
             function(button)
-
-
+        
     def elevator_loading_station(self, button_val):
         if button_val == 1:
             self.elevator.setPosition(0.056)
@@ -170,17 +176,7 @@ class ArmController():
     def top_slider_control(self, button_val):
         if button_val == 1:
             self.top_gripper_slider.setPosition(self.top_gripper_slider.max)
-
-
-
-    def toggleButton(self, button, joystick):
-        if joystick.getData().get("buttons")[button] == 1:
-            if self.toggle == False:
-                self.toggle = True
-            else:
-                self.toggle = False
-        return self.toggle
-
+            
 class Piston():
     def __init__(self, hub : wpilib.PneumaticHub, ports : list[int], min : float = 0.0, max : float = 1.0, reverse : bool = False, name : str = "Piston"):
         self.solenoid = hub.makeDoubleSolenoid(ports[0], ports[1])
