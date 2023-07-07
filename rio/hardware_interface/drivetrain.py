@@ -308,9 +308,9 @@ class DriveTrain():
         self.navx = navx.AHRS.create_spi()
         self.speed = ChassisSpeeds(0, 0, 0)
         self.wheel_radius = 0.0508
-        self.slew_X = SlewRateLimiter(0.5)
-        self.slew_Y = SlewRateLimiter(0.5)
-        self.slew_Z = SlewRateLimiter(0.5)
+        self.slew_X = SlewRateLimiter(1)
+        self.slew_Y = SlewRateLimiter(1)
+        self.slew_Z = SlewRateLimiter(1)
         
         self.ROBOT_MAX_TRANSLATIONAL = 31.4 * self.wheel_radius # m/s
         self.ROBOT_MAX_ROTATIONAL = 15.7
@@ -353,15 +353,15 @@ class DriveTrain():
         self.rear_right.encoderOffsetTest()
 
     def swerveDrive(self, joystick: Joystick):
-        linearX = self.slew_X.calculate(joystick.getData()["axes"][1]) * 500.0
-        linearY = self.slew_Y.calculate(-joystick.getData()["axes"][0]) * 500.0
-        angularZ = self.slew_Z.calculate(joystick.getData()["axes"][3]) * 500.0
+        linearX = self.slew_X.calculate(joystick.getData()["axes"][1]) * self.ROBOT_MAX_TRANSLATIONAL
+        linearY = self.slew_Y.calculate(-joystick.getData()["axes"][0]) * self.ROBOT_MAX_TRANSLATIONAL
+        angularZ = self.slew_Z.calculate(joystick.getData()["axes"][3]) * self.ROBOT_MAX_ROTATIONAL
 
         print(self.toggleButton(7, joystick))
         if self.toggleButton(7, joystick):
-            print(Rotation2d.fromDegrees(self.navx.getYaw()))
+            print(Rotation2d.fromDegrees(self.navx.getRotation2d()))
             # field  oriented
-            self.speeds = ChassisSpeeds.fromFieldRelativeSpeeds(linearY, linearX, angularZ, Rotation2d.fromDegrees(self.navx.getYaw()))
+            self.speeds = ChassisSpeeds.fromFieldRelativeSpeeds(linearY, linearX, angularZ, self.navx.getRotation2d())
         else:
             self.speeds = ChassisSpeeds(linearX, linearY, angularZ)
 
