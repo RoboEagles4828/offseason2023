@@ -51,7 +51,7 @@ def getJointList():
     return JOINT_LIST
 
 class ArmController():
-    def __init__(self, joystick: Joystick):
+    def __init__(self):
         self.last_cmds_time = time.time()
         self.warn_timeout = True
         

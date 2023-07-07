@@ -9,6 +9,7 @@ import logging
 from wpimath.filter import SlewRateLimiter
 from hardware_interface.joystick import Joystick
 import navx
+from hardware_interface.toggle import ToggleButton
 
 
 NAMESPACE = 'real'
@@ -308,14 +309,18 @@ class DriveTrain():
         self.navx = navx.AHRS.create_spi()
         self.speed = ChassisSpeeds(0, 0, 0)
         self.wheel_radius = 0.0508
-        self.slew_X = SlewRateLimiter(1)
-        self.slew_Y = SlewRateLimiter(1)
-        self.slew_Z = SlewRateLimiter(1)
-        
-        self.ROBOT_MAX_TRANSLATIONAL = 31.4 * self.wheel_radius # m/s
-        self.ROBOT_MAX_ROTATIONAL = 15.7
 
-        self.MODULE_MAX_SPEED = 4 # ft/S
+        self.ROBOT_MAX_TRANSLATIONAL = 5.0 #31.4 * self.wheel_radius # m/s
+        self.ROBOT_MAX_ROTATIONAL = 15.7 #rad/s
+
+        self.MODULE_MAX_SPEED = 5.0 # ft/S
+
+        self.slew_X = SlewRateLimiter(self.ROBOT_MAX_TRANSLATIONAL)
+        self.slew_Y = SlewRateLimiter(self.ROBOT_MAX_TRANSLATIONAL)
+        self.slew_Z = SlewRateLimiter(self.ROBOT_MAX_ROTATIONAL)
+
+        self.field_oriented_button = ToggleButton(7, False)
+        self.field_oriented_value = False
 
         self.module_lookup = \
         {
@@ -357,9 +362,12 @@ class DriveTrain():
         linearY = self.slew_Y.calculate(-joystick.getData()["axes"][0]) * self.ROBOT_MAX_TRANSLATIONAL
         angularZ = self.slew_Z.calculate(joystick.getData()["axes"][3]) * self.ROBOT_MAX_ROTATIONAL
 
-        print(self.toggleButton(7, joystick))
-        if self.toggleButton(7, joystick):
-            print(Rotation2d.fromDegrees(self.navx.getRotation2d()))
+        if joystick.getData()["buttons"][7] == 1.0:
+            self.field_oriented_value = self.field_oriented_button.toggle(joystick.getData()["buttons"])
+        else:
+            self.field_oriented_value = self.field_oriented_button.toggle(joystick.getData()["buttons"])
+
+        if self.field_oriented_value:
             # field  oriented
             self.speeds = ChassisSpeeds.fromFieldRelativeSpeeds(linearY, linearX, angularZ, self.navx.getRotation2d())
         else:
@@ -379,7 +387,19 @@ class DriveTrain():
         self.rear_left_state = SwerveModuleState.optimize(self.rear_left_state, Rotation2d(self.rear_left.getEncoderPosition()))
         self.rear_right_state = SwerveModuleState.optimize(self.rear_right_state, Rotation2d(self.rear_right.getEncoderPosition()))
 
-        print(f"{self.front_left_state.speed} {self.front_right_state.speed} {self.rear_left_state.speed} {self.rear_right_state.speed}")
+        # print encoder postions
+        print("\nEncoder Positions")
+        print(f"Front Left: {self.front_left.getEncoderPosition()}")
+        print(f"Front Right: {self.front_right.getEncoderPosition()}")
+        print(f"Rear Left: {self.rear_left.getEncoderPosition()}")
+        print(f"Rear Right: {self.rear_right.getEncoderPosition()}")
+
+        # print states
+        print("States")
+        print(f"Front Left: {self.front_left_state.speed} {self.front_left_state.angle.degrees()}")
+        print(f"Front Right: {self.front_right_state.speed} {self.front_right_state.angle.degrees()}")
+        print(f"Rear Left: {self.rear_left_state.speed} {self.rear_left_state.angle.degrees()}")
+        print(f"Rear Right: {self.rear_right_state.speed} {self.rear_right_state.angle.degrees()}")
 
         self.front_left.set(self.front_left_state)
         self.front_right.set(self.front_right_state)
