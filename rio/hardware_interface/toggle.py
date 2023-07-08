@@ -13,6 +13,10 @@ class ToggleButton():
             # currentButton = currentButton / 10000 if currentButton > 1 else currentButton
             if currentButton == -10000.0  and self.last_button != -10000.0:
                 self.flag = not self.flag
+                if self.flag:
+                    self.onCallback()
+                else:
+                    self.offCallback()
                 self.last_button = currentButton
                 return self.flag
             else:
@@ -26,7 +30,6 @@ class ToggleButton():
             else:
                 self.offCallback()
             self.last_button = currentButton
-            self.onCallback()
             return self.flag
         else:
             self.last_button = currentButton

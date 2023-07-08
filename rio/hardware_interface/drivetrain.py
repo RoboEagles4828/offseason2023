@@ -313,14 +313,14 @@ class DriveTrain():
         self.ROBOT_MAX_TRANSLATIONAL = 250 #16.4041995 # 5.0 # m/s
         self.ROBOT_MAX_ROTATIONAL = 250 * math.pi #16.4041995 * math.pi #rad/s
 
-        self.MODULE_MAX_SPEED = 50 #16.4041995 # m/s
+        self.MODULE_MAX_SPEED = 75 #16.4041995 # m/s
 
         self.move_scale = self.ROBOT_MAX_TRANSLATIONAL
         self.turn_scale = self.ROBOT_MAX_ROTATIONAL
 
-        self.slew_X = SlewRateLimiter(0.5)
-        self.slew_Y = SlewRateLimiter(0.5)
-        self.slew_Z = SlewRateLimiter(0.5)
+        self.slew_X = SlewRateLimiter(1)
+        self.slew_Y = SlewRateLimiter(1)
+        self.slew_Z = SlewRateLimiter(2)
 
         self.slew_X.reset(0)
         self.slew_Y.reset(0)
@@ -385,7 +385,7 @@ class DriveTrain():
             self.navx.zeroYaw()
 
         if abs(joystick.getData()["axes"][5]) >= 0.5 :
-            self.move_scale = self.ROBOT_MAX_TRANSLATIONAL / 2.0
+            self.move_scale = 150
             self.turn_scale = self.ROBOT_MAX_ROTATIONAL / 4.0
         else:
             self.move_scale = self.ROBOT_MAX_TRANSLATIONAL
@@ -429,7 +429,7 @@ class DriveTrain():
         # print(f"Rear Left: {round(self.rear_left_state.speed, 2)} {round(self.rear_left_state.angle.degrees(), 2)}", end=" ")
         # print(f"Rear Right: {round(self.rear_right_state.speed, 2)} {round(self.rear_right_state.angle.degrees(), 2)}")
 
-        print(f"{linearX} {linearY} {angularZ}")
+        # print(f"{linearX} {linearY} {angularZ}")
         # if abs(linearX) <= 3 and abs(linearY) <= 3 and abs(angularZ) <= 3:
         #     self.stop()
         # else:

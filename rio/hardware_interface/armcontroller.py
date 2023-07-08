@@ -73,19 +73,21 @@ class ArmController():
         }
         self.toggle_buttons = {
             "elevator_loading_station": ToggleButton(
-                10, False, # Right Stick In
+                5, False, # Right Bumper
                 self.elevator_loading_station_on, 
                 self.elevator_loading_station_off
             ),
 
             "elevator_mid_level": ToggleButton(
                 4, False, # Left Bumper
-                self.elevator_mid_level_on
+                self.elevator_mid_level_on,
+                self.elevator_mid_level_off
             ),
 
             "elevator_high_level": ToggleButton(
                 2, False, # X Button
-                self.elevator_high_level_on
+                self.elevator_high_level_on,
+                self.elevator_high_level_off
             ),
 
             "top_gripper_control": ToggleButton(
@@ -103,6 +105,7 @@ class ArmController():
             "top_slider_control": ToggleButton(
                 1, False, # B Button
                 self.top_slider_control_on,
+                self.top_slider_control_off
             )
         }
         self.toggle = False
@@ -140,8 +143,8 @@ class ArmController():
                 self.warn_timeout = False
 
     def setArm(self, joystick: Joystick):
-        for button in self.toggle_buttons.keys():
-            self.toggle_buttons[button].toggle(joystick.getData()["buttons"])
+        for button in self.toggle_buttons.values():
+            button.toggle(joystick.getData()["buttons"])
 
     # Callback functions for toggle buttons (These were originally lambda functions inlined, but we decided this was more readable)
     def elevator_loading_station_on(self):
@@ -155,10 +158,18 @@ class ArmController():
     def elevator_mid_level_on(self):
         self.elevator.setPosition(0.336)
         self.top_gripper_slider.setPosition(self.top_gripper_slider.max)
+
+    def elevator_mid_level_off(self):
+        self.elevator.setPosition(self.elevator.min)
+        self.top_gripper_slider.setPosition(self.top_gripper_slider.min)
     
     def elevator_high_level_on(self):
         self.elevator.setPosition(self.elevator.max)
         self.top_gripper_slider.setPosition(self.top_gripper_slider.max)
+    
+    def elevator_high_level_off(self):
+        self.elevator.setPosition(self.elevator.min)
+        self.top_gripper_slider.setPosition(self.top_gripper_slider.min)
 
     def top_gripper_control_on(self):
         self.top_gripper.setPosition(self.top_gripper.max)
@@ -174,6 +185,9 @@ class ArmController():
 
     def top_slider_control_on(self):
         self.top_gripper_slider.setPosition(self.top_gripper_slider.max)
+    
+    def top_slider_control_off(self):
+        self.top_gripper_slider.setPosition(self.top_gripper_slider.min)
 
 class Piston():
     def __init__(self, hub : wpilib.PneumaticHub, ports : "list[int]", min : float = 0.0, max : float = 1.0, reverse : bool = False, name : str = "Piston"):
