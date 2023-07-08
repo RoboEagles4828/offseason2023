@@ -422,19 +422,19 @@ class DriveTrain():
         self.rear_left_state = SwerveModuleState.optimize(self.rear_left_state, Rotation2d(self.rear_left.getEncoderPosition()))
         self.rear_right_state = SwerveModuleState.optimize(self.rear_right_state, Rotation2d(self.rear_right.getEncoderPosition()))
 
-        # print encoder postions
-        print("\nEncoder Positions")
-        print(f"Front Left: {self.front_left.getEncoderPosition()}")
-        print(f"Front Right: {self.front_right.getEncoderPosition()}")
-        print(f"Rear Left: {self.rear_left.getEncoderPosition()}")
-        print(f"Rear Right: {self.rear_right.getEncoderPosition()}")
+        # # print encoder postions
+        # print("\nEncoder Positions")
+        # print(f"Front Left: {self.front_left.getEncoderPosition()}")
+        # print(f"Front Right: {self.front_right.getEncoderPosition()}")
+        # print(f"Rear Left: {self.rear_left.getEncoderPosition()}")
+        # print(f"Rear Right: {self.rear_right.getEncoderPosition()}")
 
-        # print states
-        print("States")
-        print(f"Front Left: {self.front_left_state.speed} {self.front_left_state.angle.degrees()}")
-        print(f"Front Right: {self.front_right_state.speed} {self.front_right_state.angle.degrees()}")
-        print(f"Rear Left: {self.rear_left_state.speed} {self.rear_left_state.angle.degrees()}")
-        print(f"Rear Right: {self.rear_right_state.speed} {self.rear_right_state.angle.degrees()}")
+        # # print states
+        # print("States")
+        # print(f"Front Left: {self.front_left_state.speed} {self.front_left_state.angle.degrees()}")
+        # print(f"Front Right: {self.front_right_state.speed} {self.front_right_state.angle.degrees()}")
+        # print(f"Rear Left: {self.rear_left_state.speed} {self.rear_left_state.angle.degrees()}")
+        # print(f"Rear Right: {self.rear_right_state.speed} {self.rear_right_state.angle.degrees()}")
 
         self.front_left.set(self.front_left_state)
         self.front_right.set(self.front_right_state)

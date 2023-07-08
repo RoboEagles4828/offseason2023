@@ -4,6 +4,7 @@ from hardware_interface.armcontroller import ArmController
 import wpilib
 from wpilib.shuffleboard import Shuffleboard
 from auton_selector import AutonSelector
+import time
 
 class Robot(wpilib.TimedRobot):
     def robotInit(self):
@@ -14,7 +15,14 @@ class Robot(wpilib.TimedRobot):
         self.auton_run = False
         self.shuffleboard = Shuffleboard.getTab("Main")
         self.shuffleboard.add(self.auton_selector.autonChooser)
+        self.auton_run = False
 
+    def autonomousInit(self):
+        self.auton_selector.timer_reset()
+        self.auton_selector.set_start_time(self.auton_selector.timer.getFPGATimestamp())
+
+    def autonomousPeriodic(self):
+        self.auton_selector.run()
 
     def teleopPeriodic(self):
         self.drive_train.swerveDrive(self.joystick)
