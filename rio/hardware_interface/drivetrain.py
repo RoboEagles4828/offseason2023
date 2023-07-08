@@ -306,6 +306,7 @@ class DriveTrain():
         self.rear_right_location = MODULE_CONFIG["rear_right"]["location"]
         self.kinematics = SwerveDrive4Kinematics(self.front_left_location, self.front_right_location, self.rear_left_location, self.rear_right_location)
         self.navx = navx.AHRS.create_spi()
+        self.navx.calibrate()
         self.speed = ChassisSpeeds(0, 0, 0)
         self.wheel_radius = 0.0508
 
@@ -401,10 +402,10 @@ class DriveTrain():
         # print(f"Rear Right: {self.rear_right.getEncoderPosition()}")
 
         # print states
-        print(f"Front Left: {self.front_left_state.speed} {self.front_left_state.angle.degrees()}", end=" ")
-        print(f"Front Right: {self.front_right_state.speed} {self.front_right_state.angle.degrees()}", end= " ")
-        print(f"Rear Left: {self.rear_left_state.speed} {self.rear_left_state.angle.degrees()}", end=" ")
-        print(f"Rear Right: {self.rear_right_state.speed} {self.rear_right_state.angle.degrees()}")
+        print(f"Front Left: {round(self.front_left_state.speed, 2)} {round(self.front_left_state.angle.degrees(), 2)}", end=" ")
+        print(f"Front Right: {round(self.front_right_state.speed, 2)} {round(self.front_right_state.angle.degrees(), 2)}", end=" ")
+        print(f"Rear Left: {round(self.rear_left_state.speed, 2)} {round(self.rear_left_state.angle.degrees(), 2)}", end=" ")
+        print(f"Rear Right: {round(self.rear_right_state.speed, 2)} {round(self.rear_right_state.angle.degrees(), 2)}")
 
         self.front_left.set(self.front_left_state)
         self.front_right.set(self.front_right_state)

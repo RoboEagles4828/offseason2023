@@ -12,11 +12,13 @@ class AutonSelector():
         self.HIGH_PLACE = "High Place Auton"
         self.HIGH_TAXI = "High Taxi Auton"
         self.CHARGE = "Charge Auton"
+        self.TEST = "Test"
         self.autonChooser = wpilib.SendableChooser()
         self.autonChooser.setDefaultOption("Taxi Auton", self.TAXI)
         self.autonChooser.addOption("High Place Auton", self.HIGH_PLACE)
         self.autonChooser.addOption("High Taxi Auton", self.HIGH_TAXI)
         self.autonChooser.addOption("Charge Auton", self.CHARGE)
+        self.autonChooser.addOption("Test", self.TEST)
 
         self.selected = self.autonChooser.getSelected()
 
@@ -41,9 +43,20 @@ class AutonSelector():
             self.timer.reset()
             self.charge_auton()
             self.timer.stop()
+        elif self.selected == self.TEST:
+            self.test()
 
     def set_start_time(self, time):
         self.start = time
+
+    def test(self):
+        print("Pitch: " + str(self.drive_train.navx.getPitch()), end=" ")
+        print("Roll: " + str(self.drive_train.navx.getRoll()), end=" ")
+        print("Yaw: " + str(self.drive_train.navx.getYaw()), end=" ")
+        print("Angle: " + str(self.drive_train.navx.getAngle()), end=" ")
+        print("Rotation2D: " + str(self.drive_train.navx.getRotation2d().degrees()), end=" ")
+        print("Fused: " + str(self.drive_train.navx.getFusedHeading()), end=" ")
+        print("Compass: " + str(self.drive_train.navx.getCompassHeading()))
 
     def high_place_auton(self):
         if  0 <= self.timer.getFPGATimestamp() - self.start < 1:
