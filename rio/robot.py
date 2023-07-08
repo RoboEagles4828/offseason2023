@@ -24,6 +24,9 @@ class Robot(wpilib.TimedRobot):
     def autonomousPeriodic(self):
         self.auton_selector.run()
 
+    def teleopInit(self):
+        self.drive_train.reset_slew()
+
     def teleopPeriodic(self):
         self.drive_train.swerveDrive(self.joystick)
         self.arm_controller.setArm(self.joystick)

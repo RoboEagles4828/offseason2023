@@ -44,7 +44,7 @@ MODULE_CONFIG = {
         "axle_motor_port": 10, #4
         "axle_encoder_port": 11, #5
         "encoder_offset": 16.084 + 180.0, #327.393,
-        "location" : Translation2d(-0.52085486, -0.52085486) #Translation2d(0.52085486, -0.52085486)
+        "location" : Translation2d(0.52085486, 0.52085486) #Translation2d(0.52085486, -0.52085486)
     },
     "rear_right": {
         "wheel_joint_name": "rear_right_wheel_joint",
@@ -310,14 +310,21 @@ class DriveTrain():
         self.speed = ChassisSpeeds(0, 0, 0)
         self.wheel_radius = 0.0508
 
-        self.ROBOT_MAX_TRANSLATIONAL = 5.0 #31.4 * self.wheel_radius # m/s
-        self.ROBOT_MAX_ROTATIONAL = 5.0 * math.pi #rad/s
+        self.ROBOT_MAX_TRANSLATIONAL = 250 #16.4041995 # 5.0 # m/s
+        self.ROBOT_MAX_ROTATIONAL = 250 * math.pi #16.4041995 * math.pi #rad/s
 
-        self.MODULE_MAX_SPEED = 5.0 # m/s
+        self.MODULE_MAX_SPEED = 50 #16.4041995 # m/s
 
-        self.slew_X = SlewRateLimiter(self.ROBOT_MAX_TRANSLATIONAL)
-        self.slew_Y = SlewRateLimiter(self.ROBOT_MAX_TRANSLATIONAL)
-        self.slew_Z = SlewRateLimiter(self.ROBOT_MAX_ROTATIONAL)
+        self.move_scale = self.ROBOT_MAX_TRANSLATIONAL
+        self.turn_scale = self.ROBOT_MAX_ROTATIONAL
+
+        self.slew_X = SlewRateLimiter(0.5)
+        self.slew_Y = SlewRateLimiter(0.5)
+        self.slew_Z = SlewRateLimiter(0.5)
+
+        self.slew_X.reset(0)
+        self.slew_Y.reset(0)
+        self.slew_Z.reset(0)
 
         self.field_oriented_button = ToggleButton(7, False)
         self.field_oriented_value = False
@@ -330,6 +337,11 @@ class DriveTrain():
             'rear_right_axle_joint': self.rear_right,
         }
         self.toggle = False
+
+    def reset_slew(self):
+        self.slew_X.reset(0)
+        self.slew_Y.reset(0)
+        self.slew_Z.reset(0)
 
     def getEncoderData(self):
         names = [""]*8
@@ -357,22 +369,32 @@ class DriveTrain():
     def testModule(self):
         self.rear_right.encoderOffsetTest()
 
-    def swerveDrive(self, joystick: Joystick):
+    def swerveDrive(self, joystick: Joystick):      
         # slew 
         # gives joystick ramping
-        linearX = self.slew_X.calculate(joystick.getData()["axes"][1]) * self.ROBOT_MAX_TRANSLATIONAL
-        linearY = self.slew_Y.calculate(-joystick.getData()["axes"][0]) * self.ROBOT_MAX_TRANSLATIONAL
-        angularZ = self.slew_Z.calculate(joystick.getData()["axes"][3]) * self.ROBOT_MAX_ROTATIONAL
+        linearX = self.slew_X.calculate(joystick.getData()["axes"][1]) * self.move_scale
+        linearY = self.slew_Y.calculate(joystick.getData()["axes"][0]) * -self.move_scale
+        angularZ = self.slew_Z.calculate(joystick.getData()["axes"][3]) * self.turn_scale
 
         if joystick.getData()["buttons"][7] == 1.0:
             self.field_oriented_value = self.field_oriented_button.toggle(joystick.getData()["buttons"])
         else:
             self.field_oriented_value = self.field_oriented_button.toggle(joystick.getData()["buttons"])
 
+        if joystick.getData()["buttons"][6] == 1.0:
+            self.navx.zeroYaw()
+
+        if abs(joystick.getData()["axes"][5]) >= 0.5 :
+            self.move_scale = self.ROBOT_MAX_TRANSLATIONAL / 2.0
+            self.turn_scale = self.ROBOT_MAX_ROTATIONAL / 4.0
+        else:
+            self.move_scale = self.ROBOT_MAX_TRANSLATIONAL
+            self.move_scale = self.ROBOT_MAX_ROTATIONAL
+
         if self.field_oriented_value:
-            print(f"NavX: {self.navx.getRotation2d()}", end=" ")
+            print(f"NavX: {self.navx.getRotation2d().degrees()}", end=" ")
             # field  oriented
-            self.speeds = ChassisSpeeds.fromFieldRelativeSpeeds(linearY, linearX, angularZ, self.navx.getRotation2d())
+            self.speeds = ChassisSpeeds.fromFieldRelativeSpeeds(linearY, linearX, angularZ, self.navx.getRotation2d().rotateBy(Rotation2d(math.radians(-90))))
         else:
             self.speeds = ChassisSpeeds(linearX, linearY, angularZ)
 
@@ -402,11 +424,15 @@ class DriveTrain():
         # print(f"Rear Right: {self.rear_right.getEncoderPosition()}")
 
         # print states
-        print(f"Front Left: {round(self.front_left_state.speed, 2)} {round(self.front_left_state.angle.degrees(), 2)}", end=" ")
-        print(f"Front Right: {round(self.front_right_state.speed, 2)} {round(self.front_right_state.angle.degrees(), 2)}", end=" ")
-        print(f"Rear Left: {round(self.rear_left_state.speed, 2)} {round(self.rear_left_state.angle.degrees(), 2)}", end=" ")
-        print(f"Rear Right: {round(self.rear_right_state.speed, 2)} {round(self.rear_right_state.angle.degrees(), 2)}")
+        # print(f"Front Left: {round(self.front_left_state.speed, 2)} {round(self.front_left_state.angle.degrees(), 2)}", end=" ")
+        # print(f"Front Right: {round(self.front_right_state.speed, 2)} {round(self.front_right_state.angle.degrees(), 2)}", end=" ")
+        # print(f"Rear Left: {round(self.rear_left_state.speed, 2)} {round(self.rear_left_state.angle.degrees(), 2)}", end=" ")
+        # print(f"Rear Right: {round(self.rear_right_state.speed, 2)} {round(self.rear_right_state.angle.degrees(), 2)}")
 
+        print(f"{linearX} {linearY} {angularZ}")
+        # if abs(linearX) <= 3 and abs(linearY) <= 3 and abs(angularZ) <= 3:
+        #     self.stop()
+        # else:
         self.front_left.set(self.front_left_state)
         self.front_right.set(self.front_right_state)
         self.rear_left.set(self.rear_left_state)
