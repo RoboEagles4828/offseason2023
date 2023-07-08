@@ -71,48 +71,41 @@ class ArmController():
             # Wheels
             'elevator_center_joint': self.elevator,
         }
-        self.PRESET_MAP = {
-            "elevator_loading_station": {
-                "button": ["RB", 5],
-                "command": self.elevator_loading_station,
-                "toggle": True
-            },
-            "elevator_mid_level": {
-                "button": ["LB", 4],
-                "command": self.elevator_mid_level,
-                "toggle": True
-            },
-            "elevator_high_level": {
-                "button": ["X", 2],
-                "command": self.elevator_high_level,
-                "toggle": True
-            },
-            "top_gripper_control": {
-                "button": ["A", 0],
-                "command": self.top_gripper_control,
-                "toggle": True
-            },
-            "elevator_pivot_control": {
-                "button": ["Y", 3],
-                "command": self.elevator_pivot_control,
-                "toggle": True
-            },
-            "top_slider_control": {
-                "button": ["B", 1],
-                "command": self.top_slider_control,
-                "toggle": False
-            }
+        self.toggle_buttons = {
+            "elevator_loading_station": ToggleButton(
+                10, False, # Right Stick In
+                self.elevator_loading_station_on, 
+                self.elevator_loading_station_off
+            ),
+
+            "elevator_mid_level": ToggleButton(
+                4, False, # Left Bumper
+                self.elevator_mid_level_on
+            ),
+
+            "elevator_high_level": ToggleButton(
+                2, False, # X Button
+                self.elevator_high_level_on
+            ),
+
+            "top_gripper_control": ToggleButton(
+                0, False, # A Button
+                self.top_gripper_control_on,
+                self.top_gripper_control_off
+            ),
+
+            "elevator_pivot_control": ToggleButton(
+                3, False, # Y Button
+                self.elevator_pivot_control_on,
+                self.elevator_pivot_control_off
+            ),
+
+            "top_slider_control": ToggleButton(
+                1, False, # B Button
+                self.top_slider_control_on,
+            )
         }
-
-        self.top_gripper_slider_extended = False # Temp
-
-        self.functions = [self.elevator_loading_station, self.elevator_mid_level, self.elevator_high_level, self.top_gripper_control, self.elevator_pivot_control, self.top_slider_control]
-
         self.toggle = False
-        self.toggle_buttons = {}
-        for function in self.functions:
-            button = self.PRESET_MAP[function.__name__]["button"][1]
-            self.toggle_buttons[function.__name__] = ToggleButton(button, False)
         
     def getEncoderData(self):
         names = [""]*4
@@ -147,68 +140,43 @@ class ArmController():
                 self.warn_timeout = False
 
     def setArm(self, joystick: Joystick):
-        for function in self.functions:
-            toggle = self.PRESET_MAP[function.__name__]["toggle"]
-            button = self.PRESET_MAP[function.__name__]["button"][1]
-            if toggle:
-                button_val = self.toggle_buttons[function.__name__].toggle(joystick.getData()["buttons"])
-            else:
-                button_val = joystick.getData()["buttons"][button]
-            function(button_val)
-        
-    def elevator_loading_station(self, button_val):
-        if button_val == 1:
-            self.elevator.setPosition(0.056)
-            self.top_gripper_slider.setPosition(self.top_gripper_slider.max)
-        elif button_val == 0:
-            self.elevator.setPosition(self.elevator.min)
+        for button in self.toggle_buttons.keys():
+            self.toggle_buttons[button].toggle(joystick.getData()["buttons"])
+
+    # Callback functions for toggle buttons (These were originally lambda functions inlined, but we decided this was more readable)
+    def elevator_loading_station_on(self):
+        self.elevator.setPosition(0.056)
+        self.top_gripper_slider.setPosition(self.top_gripper_slider.max)
+
+    def elevator_loading_station_off(self):
+        self.elevator.setPosition(self.elevator.min)
+        self.top_gripper_slider.setPosition(self.top_gripper_slider.min)
+
+    def elevator_mid_level_on(self):
+        self.elevator.setPosition(0.336)
+        self.top_gripper_slider.setPosition(self.top_gripper_slider.max)
     
-    def elevator_mid_level(self, button_val):
-        if button_val == 1:
-            self.elevator.setPosition(0.336)
-            self.top_gripper_slider.setPosition(self.top_gripper_slider.max)
+    def elevator_high_level_on(self):
+        self.elevator.setPosition(self.elevator.max)
+        self.top_gripper_slider.setPosition(self.top_gripper_slider.max)
 
+    def top_gripper_control_on(self):
+        self.top_gripper.setPosition(self.top_gripper.max)
+
+    def top_gripper_control_off(self):
+        self.top_gripper.setPosition(self.top_gripper.min)
     
-    def elevator_high_level(self, button_val):
-        if button_val == 1:
-            self.elevator.setPosition(self.elevator.max)
-            self.top_gripper_slider.setPosition(self.top_gripper_slider.max)
+    def elevator_pivot_control_on(self):
+        self.arm_roller_bar.setPosition(self.arm_roller_bar.max)
 
-    def top_gripper_control(self, button_val):
-        if button_val == 1:
-            self.top_gripper.setPosition(self.top_gripper.max)
-        elif button_val == 0:
-            self.top_gripper.setPosition(self.top_gripper.min)
-    
-    def elevator_pivot_control(self, button_val):
-        if button_val == 1:
-            self.arm_roller_bar.setPosition(self.arm_roller_bar.max)
-        elif button_val == 0:
-            self.arm_roller_bar.setPosition(self.arm_roller_bar.min)
+    def elevator_pivot_control_off(self):
+        self.arm_roller_bar.setPosition(self.arm_roller_bar.min)
 
-    # def top_slider_control(self, button_val):
-    #     if button_val == 1:
-    #         self.toggle_buttons["top_slider_control"].toggle()
-    #         if self.top_gripper_slider.getPosition() == self.top_gripper_slider.max:
-    #             self.top_gripper_slider.setPosition(self.top_gripper_slider.min)
-    #         elif self.top_gripper_slider.getPosition() == self.top_gripper_slider.min:
-    #             self.top_gripper_slider.setPosition(self.top_gripper_slider.max)
-        # elif button_val == 0:
-            # self.top_gripper_slider.setPosition(self.top_gripper_slider.min)
+    def top_slider_control_on(self):
+        self.top_gripper_slider.setPosition(self.top_gripper_slider.max)
 
-    def top_slider_control(self, button_val):
-        if button_val == 1 and not self.top_gripper_slider_extended:
-            self.top_gripper_slider_extended = True
-            print(self.top_gripper_slider.getPosition())
-            if self.top_gripper_slider.getPosition() == self.top_gripper_slider.max:
-                self.top_gripper_slider.setPosition(self.top_gripper_slider.min)
-            elif self.top_gripper_slider.getPosition() == self.top_gripper_slider.min:
-                self.top_gripper_slider.setPosition(self.top_gripper_slider.max)
-        elif button_val == 0:
-            self.top_gripper_slider_extended = False
-            
 class Piston():
-    def __init__(self, hub : wpilib.PneumaticHub, ports : list[int], min : float = 0.0, max : float = 1.0, reverse : bool = False, name : str = "Piston"):
+    def __init__(self, hub : wpilib.PneumaticHub, ports : "list[int]", min : float = 0.0, max : float = 1.0, reverse : bool = False, name : str = "Piston"):
         self.solenoid = hub.makeDoubleSolenoid(ports[0], ports[1])
         self.state = self.solenoid.get() != wpilib.DoubleSolenoid.Value.kForward
         self.min = min
