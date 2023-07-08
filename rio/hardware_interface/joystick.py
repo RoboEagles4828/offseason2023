@@ -50,7 +50,7 @@ class Joystick:
         }
     
     def getData(self):
-        pov = self.joystick.getPOV(0)
+        pov = self.joystick.getPOV()
         leftX = self.joystick.getLeftX()
         leftY = self.joystick.getLeftY()
         rightX = self.joystick.getRightX()

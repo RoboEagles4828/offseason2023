@@ -310,9 +310,9 @@ class DriveTrain():
         self.wheel_radius = 0.0508
 
         self.ROBOT_MAX_TRANSLATIONAL = 5.0 #31.4 * self.wheel_radius # m/s
-        self.ROBOT_MAX_ROTATIONAL = 15.7 #rad/s
+        self.ROBOT_MAX_ROTATIONAL = 5.0 * math.pi #rad/s
 
-        self.MODULE_MAX_SPEED = 5.0 # ft/S
+        self.MODULE_MAX_SPEED = 5.0 # m/s
 
         self.slew_X = SlewRateLimiter(self.ROBOT_MAX_TRANSLATIONAL)
         self.slew_Y = SlewRateLimiter(self.ROBOT_MAX_TRANSLATIONAL)
@@ -357,6 +357,8 @@ class DriveTrain():
         self.rear_right.encoderOffsetTest()
 
     def swerveDrive(self, joystick: Joystick):
+        # slew 
+        # gives joystick ramping
         linearX = self.slew_X.calculate(joystick.getData()["axes"][1]) * self.ROBOT_MAX_TRANSLATIONAL
         linearY = self.slew_Y.calculate(-joystick.getData()["axes"][0]) * self.ROBOT_MAX_TRANSLATIONAL
         angularZ = self.slew_Z.calculate(joystick.getData()["axes"][3]) * self.ROBOT_MAX_ROTATIONAL
@@ -367,12 +369,16 @@ class DriveTrain():
             self.field_oriented_value = self.field_oriented_button.toggle(joystick.getData()["buttons"])
 
         if self.field_oriented_value:
+            print(f"NavX: {self.navx.getRotation2d()}", end=" ")
             # field  oriented
             self.speeds = ChassisSpeeds.fromFieldRelativeSpeeds(linearY, linearX, angularZ, self.navx.getRotation2d())
         else:
             self.speeds = ChassisSpeeds(linearX, linearY, angularZ)
 
         self.module_state = self.kinematics.toSwerveModuleStates(self.speeds)
+        
+        # normalize speeds
+        # if the speeds are greater than the max speed, scale them down
         self.kinematics.desaturateWheelSpeeds(self.module_state, self.speeds, self.MODULE_MAX_SPEED, self.ROBOT_MAX_TRANSLATIONAL, self.ROBOT_MAX_ROTATIONAL)
 
         self.front_left_state: SwerveModuleState = self.module_state[0]
@@ -381,23 +387,23 @@ class DriveTrain():
         self.rear_right_state: SwerveModuleState = self.module_state[3]
 
         # optimize states
+        # This makes the modules take the shortest path to the desired angle
         self.front_left_state = SwerveModuleState.optimize(self.front_left_state, Rotation2d(self.front_left.getEncoderPosition()))
         self.front_right_state = SwerveModuleState.optimize(self.front_right_state, Rotation2d(self.front_right.getEncoderPosition()))
         self.rear_left_state = SwerveModuleState.optimize(self.rear_left_state, Rotation2d(self.rear_left.getEncoderPosition()))
         self.rear_right_state = SwerveModuleState.optimize(self.rear_right_state, Rotation2d(self.rear_right.getEncoderPosition()))
 
         # print encoder postions
-        print("\nEncoder Positions")
-        print(f"Front Left: {self.front_left.getEncoderPosition()}")
-        print(f"Front Right: {self.front_right.getEncoderPosition()}")
-        print(f"Rear Left: {self.rear_left.getEncoderPosition()}")
-        print(f"Rear Right: {self.rear_right.getEncoderPosition()}")
+        # print("\nEncoder Positions")
+        # print(f"Front Left: {self.front_left.getEncoderPosition()}")
+        # print(f"Front Right: {self.front_right.getEncoderPosition()}")
+        # print(f"Rear Left: {self.rear_left.getEncoderPosition()}")
+        # print(f"Rear Right: {self.rear_right.getEncoderPosition()}")
 
         # print states
-        print("States")
-        print(f"Front Left: {self.front_left_state.speed} {self.front_left_state.angle.degrees()}")
-        print(f"Front Right: {self.front_right_state.speed} {self.front_right_state.angle.degrees()}")
-        print(f"Rear Left: {self.rear_left_state.speed} {self.rear_left_state.angle.degrees()}")
+        print(f"Front Left: {self.front_left_state.speed} {self.front_left_state.angle.degrees()}", end=" ")
+        print(f"Front Right: {self.front_right_state.speed} {self.front_right_state.angle.degrees()}", end= " ")
+        print(f"Rear Left: {self.rear_left_state.speed} {self.rear_left_state.angle.degrees()}", end=" ")
         print(f"Rear Right: {self.rear_right_state.speed} {self.rear_right_state.angle.degrees()}")
 
         self.front_left.set(self.front_left_state)

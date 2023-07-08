@@ -55,13 +55,12 @@ class AutonSelector():
         elif 3 <= self.timer.getFPGATimestamp() - self.start < 4:
             print(f"release {self.timer.getFPGATimestamp() - self.start}")
             self.arm_controller.top_gripper_control(0)
-        elif 4 <= self.timer.getFPGATimestamp() - self.start < 4.5:
-            print(f"roller down {self.timer.getFPGATimestamp() - self.start}")
-            self.arm_controller.arm_roller_bar.setPosition(self.arm_controller.arm_roller_bar.min)
-            self.timer.hasElapsed(0.5)
-        elif 4.5 <= self.timer.getFPGATimestamp() - self.start < 5.5:
+        elif 4 <= self.timer.getFPGATimestamp() - self.start < 5:
             print(f"elevator reset {self.timer.getFPGATimestamp() - self.start}")
             self.arm_controller.elevator.setPosition(self.arm_controller.elevator.min)
+        elif 5 <= self.timer.getFPGATimestamp() - self.start < 5.5:
+            print(f"roller down {self.timer.getFPGATimestamp() - self.start}")
+            self.arm_controller.arm_roller_bar.setPosition(self.arm_controller.arm_roller_bar.min)
 
     def taxi_auton(self):
         if self.timer.getFPGATimestamp() - self.start < 8.5:
