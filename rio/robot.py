@@ -3,6 +3,7 @@ from hardware_interface.joystick import Joystick
 from hardware_interface.armcontroller import ArmController
 import wpilib
 from wpilib.shuffleboard import Shuffleboard
+from wpilib.shuffleboard import SuppliedFloatValueWidget
 from auton_selector import AutonSelector
 import time
 
@@ -13,12 +14,13 @@ class Robot(wpilib.TimedRobot):
         self.joystick = Joystick()
         self.auton_selector = AutonSelector(self.arm_controller, self.drive_train)
         self.auton_run = False
-        self.camera_stream = wpilib.CameraServer()
-        self.camera_stream.launch()
+
         self.shuffleboard = Shuffleboard.getTab("Main")
-        self.shuffleboard.add(self.auton_selector.autonChooser)
-        self.shuffleboard.add(self.camera_stream)
-        self.auton_run = False
+        self.shuffleboard.add(title="AUTON", defaultValue=self.auton_selector.autonChooser)
+
+        self.shuffleboard.add("PROFILE", self.drive_train.profile_selector)
+        self.shuffleboard.addDouble("YAW", lambda: (self.drive_train.navx.getRotation2d().degrees()))
+        self.shuffleboard.addBoolean("FIELD ORIENTED", lambda: (self.drive_train.field_oriented_value))
 
     def autonomousInit(self):
         self.auton_selector.timer_reset()

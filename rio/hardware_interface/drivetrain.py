@@ -331,6 +331,10 @@ class DriveTrain():
         self.field_oriented_button = ToggleButton(7, False)
         self.field_oriented_value = False
 
+        self.profile_selector = wpilib.SendableChooser()
+        self.profile_selector.setDefaultOption("Competition", (500, 200))
+        self.profile_selector.addOption("Workshop", (250, 100))
+
         self.module_lookup = \
         {
             'front_left_axle_joint': self.front_left,
@@ -392,6 +396,9 @@ class DriveTrain():
             self.move_scale = self.slew_slow_translation.calculate(200)
             self.turn_scale = self.slew_slow_rotation.calculate(250.0/4.0)
         else:
+            self.ROBOT_MAX_TRANSLATIONAL = self.profile_selector.getSelected()[0]
+            self.ROBOT_MAX_ROTATIONAL = self.profile_selector.getSelected()[0] * math.pi
+            self.MODULE_MAX_SPEED = self.profile_selector.getSelected()[1]
             self.slew_slow_translation.reset(self.ROBOT_MAX_TRANSLATIONAL)
             self.slew_slow_rotation.reset(self.ROBOT_MAX_ROTATIONAL)
             self.move_scale = self.ROBOT_MAX_TRANSLATIONAL

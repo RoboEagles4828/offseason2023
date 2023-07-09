@@ -14,8 +14,8 @@ class AutonSelector():
         self.CHARGE = "Charge Auton"
         self.TEST = "Test"
         self.autonChooser = wpilib.SendableChooser()
-        self.autonChooser.setDefaultOption("Taxi Auton", self.TAXI)
-        self.autonChooser.addOption("High Place Auton", self.HIGH_PLACE)
+        self.autonChooser.addOption("Taxi Auton", self.TAXI)
+        self.autonChooser.setDefaultOption("High Place Auton", self.HIGH_PLACE)
         self.autonChooser.addOption("High Taxi Auton", self.HIGH_TAXI)
         self.autonChooser.addOption("Charge Auton", self.CHARGE)
         self.autonChooser.addOption("Test", self.TEST)
