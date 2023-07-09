@@ -62,29 +62,29 @@ class AutonSelector():
         if  0 <= self.timer.getFPGATimestamp() - self.start < 1:
             print(f"roller up {self.timer.getFPGATimestamp() - self.start}")
             self.arm_controller.arm_roller_bar.setPosition(self.arm_controller.arm_roller_bar.max)
-        elif 1 <= self.timer.getFPGATimestamp() - self.start < 3:
+        elif 1 <= self.timer.getFPGATimestamp() - self.start < 5:
             print(f"elevator high {self.timer.getFPGATimestamp() - self.start}")
             self.arm_controller.elevator_high_level_on()
-        elif 3 <= self.timer.getFPGATimestamp() - self.start < 4:
+        elif 5 <= self.timer.getFPGATimestamp() - self.start < 7:
             print(f"release {self.timer.getFPGATimestamp() - self.start}")
-            self.arm_controller.top_slider_control_off()
-        elif 4 <= self.timer.getFPGATimestamp() - self.start < 5:
+            self.arm_controller.top_gripper_control_off()
+        elif 7 <= self.timer.getFPGATimestamp() - self.start < 10:
             print(f"elevator reset {self.timer.getFPGATimestamp() - self.start}")
             self.arm_controller.elevator_high_level_off()
-        elif 5 <= self.timer.getFPGATimestamp() - self.start < 5.5:
+        elif 10 <= self.timer.getFPGATimestamp() - self.start < 11:
             print(f"roller down {self.timer.getFPGATimestamp() - self.start}")
             self.arm_controller.elevator_pivot_control_off()
 
     def taxi_auton(self):
-        if self.timer.getFPGATimestamp() - self.start < 8.5:
+        if self.timer.getFPGATimestamp() - self.start < 15:
             print(f"Taxi Auton {self.timer.getFPGATimestamp() - self.start}")
             self.drive_train.swerveDriveAuton(0, 1, 0)
-        elif self.timer.getFPGATimestamp() - self.start < 9:
+        elif self.timer.getFPGATimestamp() - self.start >= 15:
             print("Taxi Auton Stop")
             self.drive_train.stop()
 
     def high_taxi_auton(self):
-        if self.timer.getFPGATimestamp() - self.start > 5.5:
+        if self.timer.getFPGATimestamp() - self.start > 11:
             self.taxi_auton()
         else:
             self.high_place_auton()

@@ -13,8 +13,11 @@ class Robot(wpilib.TimedRobot):
         self.joystick = Joystick()
         self.auton_selector = AutonSelector(self.arm_controller, self.drive_train)
         self.auton_run = False
+        self.camera_stream = wpilib.CameraServer()
+        self.camera_stream.launch()
         self.shuffleboard = Shuffleboard.getTab("Main")
         self.shuffleboard.add(self.auton_selector.autonChooser)
+        self.shuffleboard.add(self.camera_stream)
         self.auton_run = False
 
     def autonomousInit(self):
