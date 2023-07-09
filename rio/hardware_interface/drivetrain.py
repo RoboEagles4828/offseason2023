@@ -321,8 +321,8 @@ class DriveTrain():
         self.slew_X = SlewRateLimiter(1)
         self.slew_Y = SlewRateLimiter(1)
         self.slew_Z = SlewRateLimiter(2)
-        self.slew_slow_translation = SlewRateLimiter(200)
-        self.slew_slow_rotation = SlewRateLimiter(200)
+        self.slew_slow_translation = SlewRateLimiter(self.ROBOT_MAX_TRANSLATIONAL)
+        self.slew_slow_rotation = SlewRateLimiter(self.ROBOT_MAX_ROTATIONAL*2)
 
         self.slew_X.reset(0)
         self.slew_Y.reset(0)
@@ -342,7 +342,7 @@ class DriveTrain():
             'rear_left_axle_joint': self.rear_left,
             'rear_right_axle_joint': self.rear_right,
         }
-        self.toggle = False
+        self.last_print = ""
 
     def reset_slew(self):
         self.slew_X.reset(0)
@@ -378,17 +378,9 @@ class DriveTrain():
     def swerveDrive(self, joystick: Joystick):      
         # slew 
         # gives joystick ramping
-        slew_val_x = self.slew_X.calculate(joystick.getData()["axes"][1])
-        slew_val_y = self.slew_Y.calculate(joystick.getData()["axes"][0])
-        slew_val_z = self.slew_Z.calculate(joystick.getData()["axes"][3])
-
-        linearX = slew_val_x * self.move_scale
-        linearY = slew_val_y * self.move_scale
-        if joystick.type == "xbox":
-            linearY *= -1
-        angularZ = slew_val_z * self.turn_scale
-
-        print(f"linX: {round(linearX, 2)} linY: {round(linearY, 2)} angZ: {round(angularZ, 2)} SlewX: {round(slew_val_x, 2)} SlewY: {round(slew_val_y, 2)} SlewZ: {round(slew_val_z, 2)} MoveScale: {round(self.move_scale, 2)} TurnScale: {round(self.turn_scale, 2)} Joy: {joystick.getData()['axes']}")
+        linearX = self.slew_X.calculate(joystick.getData()["axes"][1]) * self.move_scale
+        linearY = self.slew_Y.calculate(joystick.getData()["axes"][0]) * -self.move_scale
+        angularZ = self.slew_Z.calculate(joystick.getData()["axes"][3]) * self.turn_scale
 
         if joystick.getData()["buttons"][7] == 1.0:
             self.field_oriented_value = self.field_oriented_button.toggle(joystick.getData()["buttons"])
@@ -409,12 +401,17 @@ class DriveTrain():
             self.move_scale = self.slew_slow_translation.calculate(self.ROBOT_MAX_TRANSLATIONAL)
             self.turn_scale = self.slew_slow_rotation.calculate(self.ROBOT_MAX_ROTATIONAL)
 
-        if self.field_oriented_value:
-            print(f"NavX: {self.navx.getRotation2d().degrees()}")
+        if self.field_oriented_value:            
             # field  oriented
             self.speeds = ChassisSpeeds.fromFieldRelativeSpeeds(linearX, linearY, angularZ, self.navx.getRotation2d().__mul__(-1))
+            if self.last_print != f"NavX: {self.navx.getRotation2d().degrees()*-1} linX: {round(self.speeds.vx, 2)} linY: {round(self.speeds.vy, 2)} angZ: {round(self.speeds.omega, 2)} MoveScale: {round(self.move_scale, 2)} TurnScale: {round(self.turn_scale, 2)} Joy: {joystick.getData()['axes']}":
+                print(f"NavX: {self.navx.getRotation2d().degrees()*-1} linX: {round(self.speeds.vx, 2)} linY: {round(self.speeds.vy, 2)} angZ: {round(self.speeds.omega, 2)} MoveScale: {round(self.move_scale, 2)} TurnScale: {round(self.turn_scale, 2)} Joy: {joystick.getData()['axes']}")
+                self.last_print = f"NavX: {self.navx.getRotation2d().degrees()*-1} linX: {round(self.speeds.vx, 2)} linY: {round(self.speeds.vy, 2)} angZ: {round(self.speeds.omega, 2)} MoveScale: {round(self.move_scale, 2)} TurnScale: {round(self.turn_scale, 2)} Joy: {joystick.getData()['axes']}"
         else:
             self.speeds = ChassisSpeeds(linearX, linearY, angularZ)
+            if self.last_print != f"linX: {round(self.speeds.vx, 2)} linY: {round(self.speeds.vy, 2)} angZ: {round(self.speeds.omega, 2)} MoveScale: {round(self.move_scale, 2)} TurnScale: {round(self.turn_scale, 2)} Joy: {joystick.getData()['axes']}":
+                print(f"linX: {round(self.speeds.vx, 2)} linY: {round(self.speeds.vy, 2)} angZ: {round(self.speeds.omega, 2)} MoveScale: {round(self.move_scale, 2)} TurnScale: {round(self.turn_scale, 2)} Joy: {joystick.getData()['axes']}")
+                self.last_print = f"linX: {round(self.speeds.vx, 2)} linY: {round(self.speeds.vy, 2)} angZ: {round(self.speeds.omega, 2)} MoveScale: {round(self.move_scale, 2)} TurnScale: {round(self.turn_scale, 2)} Joy: {joystick.getData()['axes']}"
 
         self.module_state = self.kinematics.toSwerveModuleStates(self.speeds)
         
@@ -440,7 +437,7 @@ class DriveTrain():
         self.rear_right.set(self.rear_right_state)
 
     def swerveDriveAuton(self, linearX, linearY, angularZ):
-        self.speeds = ChassisSpeeds(linearX, linearY, angularZ)
+        self.speeds = ChassisSpeeds(linearX*self.ROBOT_MAX_TRANSLATIONAL, linearY*self.ROBOT_MAX_TRANSLATIONAL, angularZ*self.ROBOT_MAX_ROTATIONAL)
 
         self.module_state = self.kinematics.toSwerveModuleStates(self.speeds)
         self.kinematics.desaturateWheelSpeeds(self.module_state, self.speeds, self.MODULE_MAX_SPEED, self.ROBOT_MAX_TRANSLATIONAL, self.ROBOT_MAX_ROTATIONAL)
@@ -455,20 +452,6 @@ class DriveTrain():
         self.front_right_state = SwerveModuleState.optimize(self.front_right_state, Rotation2d(self.front_right.getEncoderPosition()))
         self.rear_left_state = SwerveModuleState.optimize(self.rear_left_state, Rotation2d(self.rear_left.getEncoderPosition()))
         self.rear_right_state = SwerveModuleState.optimize(self.rear_right_state, Rotation2d(self.rear_right.getEncoderPosition()))
-
-        # # print encoder postions
-        # print("\nEncoder Positions")
-        # print(f"Front Left: {self.front_left.getEncoderPosition()}")
-        # print(f"Front Right: {self.front_right.getEncoderPosition()}")
-        # print(f"Rear Left: {self.rear_left.getEncoderPosition()}")
-        # print(f"Rear Right: {self.rear_right.getEncoderPosition()}")
-
-        # # print states
-        # print("States")
-        # print(f"Front Left: {self.front_left_state.speed} {self.front_left_state.angle.degrees()}")
-        # print(f"Front Right: {self.front_right_state.speed} {self.front_right_state.angle.degrees()}")
-        # print(f"Rear Left: {self.rear_left_state.speed} {self.rear_left_state.angle.degrees()}")
-        # print(f"Rear Right: {self.rear_right_state.speed} {self.rear_right_state.angle.degrees()}")
 
         self.front_left.set(self.front_left_state)
         self.front_right.set(self.front_right_state)

@@ -54,6 +54,10 @@ class Joystick:
         }
     
     def getData(self):
+        if self.type.lower() == "xbox":
+            self.joystick = wpilib.XboxController(CONTROLLER_PORT)
+        elif self.type.lower() == "ps4":
+            self.joystick = wpilib.PS4Controller(CONTROLLER_PORT)
         pov = self.joystick.getPOV()
         leftX = self.joystick.getLeftX()
         leftY = self.joystick.getLeftY()

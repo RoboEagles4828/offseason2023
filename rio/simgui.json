@@ -55,6 +55,7 @@
     "types": {
       "/FMSInfo": "FMSInfo",
       "/Shuffleboard/Main/AUTON": "String Chooser",
+      "/Shuffleboard/Main/JOYSTICK": "String Chooser",
       "/Shuffleboard/Main/PROFILE": "String Chooser",
       "/Shuffleboard/Main/SendableChooser[0]": "String Chooser",
       "/SmartDashboard/Field": "Field2d"
