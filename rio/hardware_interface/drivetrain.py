@@ -378,11 +378,17 @@ class DriveTrain():
     def swerveDrive(self, joystick: Joystick):      
         # slew 
         # gives joystick ramping
-        linearX = self.slew_X.calculate(joystick.getData()["axes"][1]) * self.move_scale
-        linearY = self.slew_Y.calculate(joystick.getData()["axes"][0]) * -self.move_scale
-        angularZ = self.slew_Z.calculate(joystick.getData()["axes"][3]) * self.turn_scale
+        slew_val_x = self.slew_X.calculate(joystick.getData()["axes"][1])
+        slew_val_y = self.slew_Y.calculate(joystick.getData()["axes"][0])
+        slew_val_z = self.slew_Z.calculate(joystick.getData()["axes"][3])
 
-        print(f"{self.move_scale} {self.turn_scale} {linearX} {linearY} {angularZ}")
+        linearX = slew_val_x * self.move_scale
+        linearY = slew_val_y * self.move_scale
+        if joystick.type == "xbox":
+            linearY *= -1
+        angularZ = slew_val_z * self.turn_scale
+
+        print(f"linX: {round(linearX, 2)} linY: {round(linearY, 2)} angZ: {round(angularZ, 2)} SlewX: {round(slew_val_x, 2)} SlewY: {round(slew_val_y, 2)} SlewZ: {round(slew_val_z, 2)} MoveScale: {round(self.move_scale, 2)} TurnScale: {round(self.turn_scale, 2)} Joy: {joystick.getData()['axes']}")
 
         if joystick.getData()["buttons"][7] == 1.0:
             self.field_oriented_value = self.field_oriented_button.toggle(joystick.getData()["buttons"])
@@ -399,10 +405,9 @@ class DriveTrain():
             self.ROBOT_MAX_TRANSLATIONAL = self.profile_selector.getSelected()[0]
             self.ROBOT_MAX_ROTATIONAL = self.profile_selector.getSelected()[0] * math.pi
             self.MODULE_MAX_SPEED = self.profile_selector.getSelected()[1]
-            self.slew_slow_translation.reset(self.ROBOT_MAX_TRANSLATIONAL)
-            self.slew_slow_rotation.reset(self.ROBOT_MAX_ROTATIONAL)
-            self.move_scale = self.ROBOT_MAX_TRANSLATIONAL
-            self.move_scale = self.ROBOT_MAX_ROTATIONAL
+            
+            self.move_scale = self.slew_slow_translation.calculate(self.ROBOT_MAX_TRANSLATIONAL)
+            self.turn_scale = self.slew_slow_rotation.calculate(self.ROBOT_MAX_ROTATIONAL)
 
         if self.field_oriented_value:
             print(f"NavX: {self.navx.getRotation2d().degrees()}")

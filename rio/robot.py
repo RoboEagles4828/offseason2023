@@ -11,7 +11,7 @@ class Robot(wpilib.TimedRobot):
     def robotInit(self):
         self.arm_controller = ArmController()
         self.drive_train = DriveTrain()
-        self.joystick = Joystick()
+        self.joystick = Joystick("ps4")
         self.auton_selector = AutonSelector(self.arm_controller, self.drive_train)
         self.auton_run = False
 
