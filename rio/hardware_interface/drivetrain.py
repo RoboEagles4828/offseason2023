@@ -313,7 +313,7 @@ class DriveTrain():
         self.ROBOT_MAX_TRANSLATIONAL = 250 #16.4041995 # 5.0 # m/s
         self.ROBOT_MAX_ROTATIONAL = 250 * math.pi #16.4041995 * math.pi #rad/s
 
-        self.MODULE_MAX_SPEED = 75 #16.4041995 # m/s
+        self.MODULE_MAX_SPEED = 100 #16.4041995 # m/s
 
         self.move_scale = self.ROBOT_MAX_TRANSLATIONAL
         self.turn_scale = self.ROBOT_MAX_ROTATIONAL
@@ -392,9 +392,9 @@ class DriveTrain():
             self.move_scale = self.ROBOT_MAX_ROTATIONAL
 
         if self.field_oriented_value:
-            print(f"NavX: {self.navx.getRotation2d().degrees()}", end=" ")
+            print(f"NavX: {self.navx.getRotation2d().degrees()}")
             # field  oriented
-            self.speeds = ChassisSpeeds.fromFieldRelativeSpeeds(linearY, linearX, angularZ, self.navx.getRotation2d().rotateBy(Rotation2d(math.radians(-90))))
+            self.speeds = ChassisSpeeds.fromFieldRelativeSpeeds(linearX, linearY, angularZ, self.navx.getRotation2d().__mul__(-1))
         else:
             self.speeds = ChassisSpeeds(linearX, linearY, angularZ)
 
