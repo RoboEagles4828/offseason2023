@@ -12,12 +12,14 @@ class AutonSelector():
         self.HIGH_PLACE = "High Place Auton"
         self.HIGH_TAXI = "High Taxi Auton"
         self.CHARGE = "Charge Auton"
+        self.HIGH_CHARGE = "High Charge Auton"
         self.TEST = "Test"
         self.autonChooser = wpilib.SendableChooser()
         self.autonChooser.addOption("Taxi Auton", self.TAXI)
         self.autonChooser.setDefaultOption("High Place Auton", self.HIGH_PLACE)
         self.autonChooser.addOption("High Taxi Auton", self.HIGH_TAXI)
         self.autonChooser.addOption("Charge Auton", self.CHARGE)
+        self.autonChooser.addOption("High Charge Auton", self.HIGH_CHARGE)
         self.autonChooser.addOption("Test", self.TEST)
 
         self.selected = self.autonChooser.getSelected()
@@ -49,6 +51,13 @@ class AutonSelector():
             self.timer.stop()
         elif self.selected == self.TEST:
             self.test()
+        elif self.selected == self.HIGH_CHARGE:
+            self.timer.reset()
+            self.high_place_auton()
+            self.charge_auton()
+            self.set_start_time(self.timer.getFPGATimestamp())
+            self.post_charge_auton()
+            self.timer.stop()
 
     def set_start_time(self, time):
         self.start = time
