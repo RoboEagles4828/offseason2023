@@ -382,6 +382,18 @@ class DriveTrain():
         linearY = self.slew_Y.calculate(joystick.getData()["axes"][0]) * -self.move_scale
         angularZ = self.slew_Z.calculate(joystick.getData()["axes"][3]) * self.turn_scale
 
+        self.last_max_t = self.ROBOT_MAX_TRANSLATIONAL
+        self.last_max_r = self.ROBOT_MAX_ROTATIONAL
+
+        self.ROBOT_MAX_TRANSLATIONAL = self.profile_selector.getSelected()[0]
+        self.ROBOT_MAX_ROTATIONAL = self.profile_selector.getSelected()[0] * math.pi
+        self.MODULE_MAX_SPEED = self.profile_selector.getSelected()[1]
+
+        if self.last_max_t != self.ROBOT_MAX_TRANSLATIONAL or self.last_max_r != self.ROBOT_MAX_ROTATIONAL:
+            self.slew_slow_rotation = SlewRateLimiter(self.ROBOT_MAX_ROTATIONAL*2)
+            self.slew_slow_translation = SlewRateLimiter(self.ROBOT_MAX_TRANSLATIONAL)
+
+
         if joystick.getData()["buttons"][7] == 1.0:
             self.field_oriented_value = self.field_oriented_button.toggle(joystick.getData()["buttons"])
         else:
@@ -393,11 +405,7 @@ class DriveTrain():
         if joystick.getData()["axes"][5] < -0.5:
             self.move_scale = self.slew_slow_translation.calculate(200)
             self.turn_scale = self.slew_slow_rotation.calculate(250.0/4.0)
-        else:
-            self.ROBOT_MAX_TRANSLATIONAL = self.profile_selector.getSelected()[0]
-            self.ROBOT_MAX_ROTATIONAL = self.profile_selector.getSelected()[0] * math.pi
-            self.MODULE_MAX_SPEED = self.profile_selector.getSelected()[1]
-            
+        else:            
             self.move_scale = self.slew_slow_translation.calculate(self.ROBOT_MAX_TRANSLATIONAL)
             self.turn_scale = self.slew_slow_rotation.calculate(self.ROBOT_MAX_ROTATIONAL)
 
