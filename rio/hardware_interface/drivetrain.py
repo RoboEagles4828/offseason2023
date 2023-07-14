@@ -126,7 +126,7 @@ def getAxleRadians(ticks, displacementType):
     else:
         return 0
 
-wheelPositionCoefficient = 2.0 * math.pi / TICKS_PER_REV / WHEEL_JOINT_GEAR_RATIO
+wheelPositionCoefficient = (2.0 * math.pi) / TICKS_PER_REV / WHEEL_JOINT_GEAR_RATIO
 wheelVelocityCoefficient = wheelPositionCoefficient * 10.0
 # wheel (radians) -> shaft (ticks)
 def getWheelShaftTicks(radians, displacementType) -> int:
@@ -270,14 +270,14 @@ class SwerveModule():
 
     def set(self, state: SwerveModuleState):
         wheel_radius = 0.0508
-        set_wheel_motor_vel = state.speed / (wheel_radius) / math.pi * 2
-        self.wheel_motor.set(ctre.TalonFXControlMode.Velocity, set_wheel_motor_vel)
+        set_wheel_motor_vel = state.speed / (wheel_radius) / (math.pi * 2)
+        self.wheel_motor.set(ctre.TalonFXControlMode.Velocity, getWheelShaftTicks(set_wheel_motor_vel, "velocity"))
         self.axle_motor.set(ctre.TalonFXControlMode.MotionMagic, getShaftTicks(state.angle.radians(), "position"))
 
     def setVelocity(self, velocity):
         wheel_radius = 0.0508
-        set_wheel_motor_vel = velocity / (wheel_radius) / math.pi * 2
-        self.wheel_motor.set(ctre.TalonFXControlMode.Velocity, set_wheel_motor_vel)
+        set_wheel_motor_vel = velocity / (wheel_radius) / (math.pi * 2)
+        self.wheel_motor.set(ctre.TalonFXControlMode.Velocity, getWheelShaftTicks(set_wheel_motor_vel, "velocity"))
 
     def getEncoderData(self):
         output = [
@@ -312,22 +312,23 @@ class DriveTrain():
         self.kinematics = SwerveDrive4Kinematics(self.front_left_location, self.front_right_location, self.rear_left_location, self.rear_right_location)
         self.navx = navx.AHRS.create_spi()
         self.navx.calibrate()
-        self.speed = ChassisSpeeds(0, 0, 0)
+        self.speeds = ChassisSpeeds(0, 0, 0)
         self.wheel_radius = 0.0508
 
-        self.ROBOT_MAX_TRANSLATIONAL = 250 #16.4041995 # 5.0 # m/s
-        self.ROBOT_MAX_ROTATIONAL = 250 * math.pi #16.4041995 * math.pi #rad/s
+        self.ROBOT_MAX_TRANSLATIONAL = 5.0 #16.4041995 # 5.0 # m/s
+        self.ROBOT_MAX_ROTATIONAL = 5.0 * math.pi #16.4041995 * math.pi #rad/s
 
-        self.MODULE_MAX_SPEED = 250 #16.4041995 # m/s
+        self.MODULE_MAX_SPEED = 5.0 #16.4041995 # m/s
 
-        self.move_scale = self.ROBOT_MAX_TRANSLATIONAL
+        self.move_scale_x = self.ROBOT_MAX_TRANSLATIONAL
+        self.move_scale_y = self.ROBOT_MAX_TRANSLATIONAL
         self.turn_scale = self.ROBOT_MAX_ROTATIONAL
 
         self.slew_X = SlewRateLimiter(1)
         self.slew_Y = SlewRateLimiter(1)
         self.slew_Z = SlewRateLimiter(2)
-        self.slew_slow_translation = SlewRateLimiter(self.ROBOT_MAX_TRANSLATIONAL)
-        self.slew_slow_rotation = SlewRateLimiter(self.ROBOT_MAX_ROTATIONAL*2)
+        self.slew_slow_translation = SlewRateLimiter(0.5)
+        self.slew_slow_rotation = SlewRateLimiter(0.5)
 
         self.slew_X.reset(0)
         self.slew_Y.reset(0)
@@ -337,8 +338,8 @@ class DriveTrain():
         self.field_oriented_value = False
 
         self.profile_selector = wpilib.SendableChooser()
-        self.profile_selector.setDefaultOption("Competition", (500, 250))
-        self.profile_selector.addOption("Workshop", (250, 125))
+        self.profile_selector.setDefaultOption("Competition", (5.0, 2.5))
+        self.profile_selector.addOption("Workshop", (2.5, 1.25))
 
         self.whine_remove_selector = wpilib.SendableChooser()
         self.whine_remove_selector.setDefaultOption("OFF", False)
@@ -387,30 +388,22 @@ class DriveTrain():
         self.rear_right.encoderOffsetTest()
 
     def allZero(self, speeds: ChassisSpeeds):
-        if 0 <= abs(speeds.vx) <= 1:
-            if 0 <= abs(speeds.vy) <= 1:
-                if 0 <= abs(speeds.omega) <= 1:
+        if 0 <= abs(speeds.vx) <= 0.1:
+            if 0 <= abs(speeds.vy) <= 0.1:
+                if 0 <= abs(speeds.omega) <= 0.1:
                     return True
         return False
 
-    def swerveDrive(self, joystick: Joystick):      
-        # slew 
-        # gives joystick ramping
-        linearX = self.slew_X.calculate(joystick.getData()["axes"][1]) * self.move_scale
-        linearY = self.slew_Y.calculate(joystick.getData()["axes"][0]) * -self.move_scale
-        angularZ = self.slew_Z.calculate(joystick.getData()["axes"][3]) * self.turn_scale
-
-        self.last_max_t = self.ROBOT_MAX_TRANSLATIONAL
-        self.last_max_r = self.ROBOT_MAX_ROTATIONAL
-
+    def swerveDrive(self, joystick: Joystick):  
         self.ROBOT_MAX_TRANSLATIONAL = self.profile_selector.getSelected()[0]
         self.ROBOT_MAX_ROTATIONAL = self.profile_selector.getSelected()[1] * math.pi
         self.MODULE_MAX_SPEED = self.profile_selector.getSelected()[0]
 
-        if self.last_max_t != self.ROBOT_MAX_TRANSLATIONAL or self.last_max_r != self.ROBOT_MAX_ROTATIONAL:
-            self.slew_slow_rotation = SlewRateLimiter(self.ROBOT_MAX_ROTATIONAL*2)
-            self.slew_slow_translation = SlewRateLimiter(self.ROBOT_MAX_TRANSLATIONAL)
-
+        # slew 
+        # gives joystick ramping
+        linearX = self.slew_X.calculate(joystick.getData()["axes"][1]) * self.ROBOT_MAX_TRANSLATIONAL * self.move_scale_x
+        linearY = self.slew_Y.calculate(joystick.getData()["axes"][0]) * -self.ROBOT_MAX_TRANSLATIONAL * self.move_scale_y
+        angularZ = self.slew_Z.calculate(joystick.getData()["axes"][3]) * self.ROBOT_MAX_ROTATIONAL * self.turn_scale
 
         if joystick.getData()["buttons"][7] == 1.0:
             self.field_oriented_value = self.field_oriented_button.toggle(joystick.getData()["buttons"])
@@ -421,26 +414,25 @@ class DriveTrain():
             self.navx.zeroYaw()
 
         if joystick.getData()["axes"][5] < -0.5:
-            self.move_scale = self.slew_slow_translation.calculate(200)
-            self.turn_scale = self.slew_slow_rotation.calculate(250.0/4.0)
+            self.move_scale_x = self.slew_slow_translation.calculate(2.0)
+            self.move_scale_y = self.slew_slow_translation.calculate(2.0)
+            self.turn_scale = self.slew_slow_rotation.calculate(2.0)
         else:            
-            self.move_scale = self.slew_slow_translation.calculate(self.ROBOT_MAX_TRANSLATIONAL)
-            self.turn_scale = self.slew_slow_rotation.calculate(self.ROBOT_MAX_ROTATIONAL)
+            self.move_scale_x = self.slew_slow_translation.calculate(1.0)
+            self.move_scale_y = self.slew_slow_translation.calculate(1.0)
+            self.turn_scale = self.slew_slow_rotation.calculate(1.0)
 
         if self.field_oriented_value:            
             # field  oriented
             self.speeds = ChassisSpeeds.fromFieldRelativeSpeeds(linearX, linearY, angularZ, self.navx.getRotation2d().__mul__(-1))
-            if self.last_print != f"NavX: {self.navx.getRotation2d().degrees()*-1} linX: {round(self.speeds.vx, 2)} linY: {round(self.speeds.vy, 2)} angZ: {round(self.speeds.omega, 2)} MoveScale: {round(self.move_scale, 2)} TurnScale: {round(self.turn_scale, 2)} Joy: {joystick.getData()['axes']}":
-                #print(f"NavX: {self.navx.getRotation2d().degrees()*-1} linX: {round(self.speeds.vx, 2)} linY: {round(self.speeds.vy, 2)} angZ: {round(self.speeds.omega, 2)} MoveScale: {round(self.move_scale, 2)} TurnScale: {round(self.turn_scale, 2)} Joy: {joystick.getData()['axes']}")
-                self.last_print = f"NavX: {self.navx.getRotation2d().degrees()*-1} linX: {round(self.speeds.vx, 2)} linY: {round(self.speeds.vy, 2)} angZ: {round(self.speeds.omega, 2)} MoveScale: {round(self.move_scale, 2)} TurnScale: {round(self.turn_scale, 2)} Joy: {joystick.getData()['axes']}"
+            #if self.last_print != f"NavX: {self.navx.getRotation2d().degrees()*-1} linX: {round(self.speeds.vx, 2)} linY: {round(self.speeds.vy, 2)} angZ: {round(self.speeds.omega, 2)} MoveScaleX: {round(self.move_scale_x, 2)} MoveScaleY: {round(self.move_scale_y, 2)} TurnScale: {round(self.turn_scale, 2)}":
+            logging.info(f"NavX: {self.navx.getRotation2d().degrees()*-1} linX: {round(self.speeds.vx, 2)} linY: {round(self.speeds.vy, 2)} angZ: {round(self.speeds.omega, 2)} MoveScaleX: {round(self.move_scale_x, 2)} MoveScaleY: {round(self.move_scale_y, 2)} TurnScale: {round(self.turn_scale, 2)}")
+                #self.last_print = f"NavX: {self.navx.getRotation2d().degrees()*-1} linX: {round(self.speeds.vx, 2)} linY: {round(self.speeds.vy, 2)} angZ: {round(self.speeds.omega, 2)} MoveScaleX: {round(self.move_scale_x, 2)} MoveScaleY: {round(self.move_scale_y, 2)} TurnScale: {round(self.turn_scale, 2)}"
         else:
             self.speeds = ChassisSpeeds(linearX, linearY, angularZ)
-            if self.last_print != f"linX: {round(self.speeds.vx, 2)} linY: {round(self.speeds.vy, 2)} angZ: {round(self.speeds.omega, 2)} MoveScale: {round(self.move_scale, 2)} TurnScale: {round(self.turn_scale, 2)} Joy: {joystick.getData()['axes']}":
-                #print(f"linX: {round(self.speeds.vx, 2)} linY: {round(self.speeds.vy, 2)} angZ: {round(self.speeds.omega, 2)} MoveScale: {round(self.move_scale, 2)} TurnScale: {round(self.turn_scale, 2)} Joy: {joystick.getData()['axes']}")
-                self.last_print = f"linX: {round(self.speeds.vx, 2)} linY: {round(self.speeds.vy, 2)} angZ: {round(self.speeds.omega, 2)} MoveScale: {round(self.move_scale, 2)} TurnScale: {round(self.turn_scale, 2)} Joy: {joystick.getData()['axes']}"
-
-        print(f"Last: {self.last_state} Current: {self.speeds}")
-        self.last_print = f"Last: {self.last_state} Current: {self.speeds}"
+            #if self.last_print != f"linX: {round(self.speeds.vx, 2)} linY: {round(self.speeds.vy, 2)} angZ: {round(self.speeds.omega, 2)} MoveScaleX: {round(self.move_scale_x, 2)} MoveScaleY: {round(self.move_scale_y, 2)} TurnScale: {round(self.turn_scale, 2)}":
+            logging.info(f"linX: {round(self.speeds.vx, 2)} linY: {round(self.speeds.vy, 2)} angZ: {round(self.speeds.omega, 2)} MoveScaleX: {round(self.move_scale_x, 2)} MoveScaleY: {round(self.move_scale_y, 2)} TurnScale: {round(self.turn_scale, 2)}")
+                #self.last_print = f"linX: {round(self.speeds.vx, 2)} linY: {round(self.speeds.vy, 2)} angZ: {round(self.speeds.omega, 2)} MoveScaleX: {round(self.move_scale_x, 2)} MoveScaleY: {round(self.move_scale_y, 2)} TurnScale: {round(self.turn_scale, 2)}"
 
         self.module_state = self.kinematics.toSwerveModuleStates(self.speeds)
         
@@ -476,7 +468,8 @@ class DriveTrain():
         self.last_state = self.speeds
 
     def swerveDriveAuton(self, linearX, linearY, angularZ):
-        self.speeds = ChassisSpeeds(linearX*self.ROBOT_MAX_TRANSLATIONAL, linearY*self.ROBOT_MAX_TRANSLATIONAL, angularZ*self.ROBOT_MAX_ROTATIONAL)
+        self.speeds = ChassisSpeeds(linearX, linearY, angularZ)
+        print(self.speeds)
 
         self.module_state = self.kinematics.toSwerveModuleStates(self.speeds)
         self.kinematics.desaturateWheelSpeeds(self.module_state, self.speeds, self.MODULE_MAX_SPEED, self.ROBOT_MAX_TRANSLATIONAL, self.ROBOT_MAX_ROTATIONAL)

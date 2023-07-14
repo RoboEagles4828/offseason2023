@@ -61,6 +61,7 @@
       "/Shuffleboard/Main/JOYSTICK": "String Chooser",
       "/Shuffleboard/Main/PROFILE": "String Chooser",
       "/Shuffleboard/Main/SendableChooser[0]": "String Chooser",
+      "/Shuffleboard/Main/WHINE REMOVAL": "String Chooser",
       "/SmartDashboard/Field": "Field2d"
     }
   },

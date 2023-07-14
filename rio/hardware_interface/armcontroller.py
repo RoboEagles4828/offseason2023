@@ -109,6 +109,45 @@ class ArmController():
             )
         }
         self.toggle = False
+
+    def setToggleButtons(self):
+        self.toggle_buttons = {
+            "elevator_loading_station": ToggleButton(
+                5, False, # Right Bumper
+                self.elevator_loading_station_on, 
+                self.elevator_loading_station_off
+            ),
+
+            "elevator_mid_level": ToggleButton(
+                4, False, # Left Bumper
+                self.elevator_mid_level_on,
+                self.elevator_mid_level_off
+            ),
+
+            "elevator_high_level": ToggleButton(
+                2, False, # X Button
+                self.elevator_high_level_on,
+                self.elevator_high_level_off
+            ),
+
+            "top_gripper_control": ToggleButton(
+                0, False, # A Button
+                self.top_gripper_control_on,
+                self.top_gripper_control_off
+            ),
+
+            "elevator_pivot_control": ToggleButton(
+                3, False, # Y Button
+                self.elevator_pivot_control_on,
+                self.elevator_pivot_control_off
+            ),
+
+            "top_slider_control": ToggleButton(
+                1, False, # B Button
+                self.top_slider_control_on,
+                self.top_slider_control_off
+            )
+        }
         
     def getEncoderData(self):
         names = [""]*4
@@ -192,7 +231,7 @@ class ArmController():
 class Piston():
     def __init__(self, hub : wpilib.PneumaticHub, ports : "list[int]", min : float = 0.0, max : float = 1.0, reverse : bool = False, name : str = "Piston"):
         self.solenoid = hub.makeDoubleSolenoid(ports[0], ports[1])
-        self.state = self.solenoid.get() != wpilib.DoubleSolenoid.Value.kForward
+        self.state = int(self.solenoid.get() != wpilib.DoubleSolenoid.Value.kForward)
         self.min = min
         self.max = max
         self.reverse = reverse
@@ -212,18 +251,18 @@ class Piston():
     def setPosition(self, position : float):
         if position != self.lastCommand:
             logging.info(f"{self.name} Position: {position}")
-        self.lastCommand = position
-        center = abs((self.max - self.min) / 2 + self.min)
-        forward = wpilib.DoubleSolenoid.Value.kForward
-        reverse = wpilib.DoubleSolenoid.Value.kReverse
-        if abs(position) >= center and self.state == 0:
-            logging.info(f"{self.name} first block")
-            self.solenoid.set(reverse if self.reverse else forward)
-            self.state = 1
-        elif abs(position) < center and self.state == 1:
-            logging.info(f"{self.name} second block")
-            self.solenoid.set(forward if self.reverse else reverse)
-            self.state = 0
+            center = abs((self.max - self.min) / 2 + self.min)
+            forward = wpilib.DoubleSolenoid.Value.kForward
+            reverse = wpilib.DoubleSolenoid.Value.kReverse
+            if abs(position) >= center:
+                logging.info(f"{self.name} first block")
+                self.solenoid.set(forward)
+            elif abs(position) < center:
+                logging.info(f"{self.name} second block")
+                self.solenoid.set(reverse)
+            self.lastCommand = position
+        else:
+            logging.info(f"{self.name} Position: {position}")
 
 
 def commonTalonSetup(talon : ctre.WPI_TalonFX):
@@ -282,9 +321,7 @@ class Intake():
         self.motor.set(ctre.TalonFXControlMode.PercentOutput, 0)
 
     def setPosition(self, position : float):
-        if position != self.lastCommand:
-            logging.info(f"Intake Position: {position}")
-        self.lastCommand = position
+        logging.info(f"Intake Position: {position}")
         
         # Moves the intake
         center = (self.max - self.min) / 2 + self.min
@@ -332,6 +369,8 @@ class Elevator():
     def setPosition(self, position : float):
         if position != self.lastCommand:
             logging.info(f"Elevator Position: {position}")
-        self.lastCommand = position
-        percent = (position - self.min) / (self.max - self.min)
-        self.motor.set(ctre.TalonFXControlMode.MotionMagic, percent * self.totalTicks)
+            percent = (position - self.min) / (self.max - self.min)
+            self.motor.set(ctre.TalonFXControlMode.MotionMagic, percent * self.totalTicks)
+            self.lastCommand = position
+        else:
+            logging.info(f"Elevator Position: {position}")

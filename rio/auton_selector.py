@@ -88,6 +88,30 @@ class AutonSelector():
             print(f"roller down {self.timer.getFPGATimestamp() - self.start}")
             self.arm_controller.elevator_pivot_control_off()
 
+    def high_taxi_auton(self):
+        if  0 <= self.timer.getFPGATimestamp() - self.start < 1:
+            print(f"roller up {self.timer.getFPGATimestamp() - self.start}")
+            self.arm_controller.arm_roller_bar.setPosition(self.arm_controller.arm_roller_bar.max)
+        elif 1 <= self.timer.getFPGATimestamp() - self.start < 5:
+            print(f"elevator high {self.timer.getFPGATimestamp() - self.start}")
+            self.arm_controller.elevator_high_level_on()
+        elif 5 <= self.timer.getFPGATimestamp() - self.start < 7:
+            print(f"release {self.timer.getFPGATimestamp() - self.start}")
+            self.arm_controller.top_gripper_control_off()
+        elif 7 <= self.timer.getFPGATimestamp() - self.start < 10:
+            print(f"elevator reset {self.timer.getFPGATimestamp() - self.start}")
+            self.arm_controller.elevator_high_level_off()
+        elif 10 <= self.timer.getFPGATimestamp() - self.start < 10.5:
+            print(f"roller down {self.timer.getFPGATimestamp() - self.start}")
+            self.arm_controller.elevator_pivot_control_off()
+        elif 10.5 <= self.timer.getFPGATimestamp() - self.start < 10.5+1.25:
+            print(f"Taxi Auton {self.timer.getFPGATimestamp() - self.start}")
+            self.drive_train.swerveDriveAuton(-4, 0, 0)
+        elif self.timer.getFPGATimestamp() - self.start >= 10.5+1.25:
+            print("Taxi Auton Stop")
+            self.drive_train.stop()
+
+
     def taxi_auton(self):
         # if not self.turn_done:
         #     print(f"Taxi Turn {self.timer.getFPGATimestamp() - self.start}")
@@ -95,9 +119,9 @@ class AutonSelector():
         #     if self.drive_train.navx.getRotation2d().__mul__(-1).degrees() >= 180:
         #         self.turn_done = True
         #         self.drive_train.stop()
-        if self.timer.getFPGATimestamp() - self.start < 5:
+        if self.timer.getFPGATimestamp() - self.start < 1.25:
             print(f"Taxi Auton {self.timer.getFPGATimestamp() - self.start}")
-            self.drive_train.swerveDriveAuton(1, 0, 0)
+            self.drive_train.swerveDriveAuton(-4, 0, 0)
         elif self.timer.getFPGATimestamp() - self.start >= 3:
             print("Taxi Auton Stop")
             self.drive_train.stop()
@@ -111,17 +135,16 @@ class AutonSelector():
     def charge_auton(self):
         pitch = self.drive_train.navx.getPitch()
         if abs(pitch) < 10:
-            self.drive_train.swerveDriveAuton(0, 0.6, 0)
+            self.drive_train.swerveDriveAuton(0, 4, 0)
         elif abs(pitch < 10):
             self.drive_train.stop()
             
 
     def post_charge_auton(self):
         if self.timer.getFPGATimestamp() - self.start < 2:
-            self.drive_train.swerveDriveAuton(0, 0.3, 0)
+            self.drive_train.swerveDriveAuton(-1, 0, 0)
         else:
             self.drive_train.stop()
-        
 
 
     def timer_reset(self):

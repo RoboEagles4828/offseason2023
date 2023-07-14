@@ -1,3 +1,5 @@
+import logging
+
 class ToggleButton():
     def __init__(self, button, isAxis=False, onCallback=lambda: (), offCallback=lambda: ()):
         self.last_button = 0.0
@@ -14,8 +16,10 @@ class ToggleButton():
             if currentButton == -10000.0  and self.last_button != -10000.0:
                 self.flag = not self.flag
                 if self.flag:
+                    logging.info("on")
                     self.onCallback()
                 else:
+                    logging.info("off")
                     self.offCallback()
                 self.last_button = currentButton
                 return self.flag

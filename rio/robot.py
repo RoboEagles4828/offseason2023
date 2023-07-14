@@ -29,6 +29,8 @@ class Robot(wpilib.TimedRobot):
         self.shuffleboard.addDouble("YAW", lambda: (self.drive_train.navx.getRotation2d().degrees()))
         self.shuffleboard.addBoolean("FIELD ORIENTED", lambda: (self.drive_train.field_oriented_value))
 
+        self.arm_controller.setToggleButtons()
+
     def robotPeriodic(self):
         self.joystick.type = self.joystick_selector.getSelected()
 
@@ -41,7 +43,9 @@ class Robot(wpilib.TimedRobot):
     def autonomousPeriodic(self):
         self.auton_selector.run()
 
+
     def teleopInit(self):
+        self.arm_controller.setToggleButtons()
         self.drive_train.reset_slew()
 
     def teleopPeriodic(self):
