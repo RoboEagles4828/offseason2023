@@ -313,7 +313,7 @@ class DriveTrain():
         self.ROBOT_MAX_TRANSLATIONAL = 250 #16.4041995 # 5.0 # m/s
         self.ROBOT_MAX_ROTATIONAL = 250 * math.pi #16.4041995 * math.pi #rad/s
 
-        self.MODULE_MAX_SPEED = 100 #16.4041995 # m/s
+        self.MODULE_MAX_SPEED = 250 #16.4041995 # m/s
 
         self.move_scale = self.ROBOT_MAX_TRANSLATIONAL
         self.turn_scale = self.ROBOT_MAX_ROTATIONAL
@@ -332,8 +332,8 @@ class DriveTrain():
         self.field_oriented_value = False
 
         self.profile_selector = wpilib.SendableChooser()
-        self.profile_selector.setDefaultOption("Competition", (500, 200))
-        self.profile_selector.addOption("Workshop", (250, 100))
+        self.profile_selector.setDefaultOption("Competition", (500, 250))
+        self.profile_selector.addOption("Workshop", (250, 125))
 
         self.module_lookup = \
         {
@@ -386,8 +386,8 @@ class DriveTrain():
         self.last_max_r = self.ROBOT_MAX_ROTATIONAL
 
         self.ROBOT_MAX_TRANSLATIONAL = self.profile_selector.getSelected()[0]
-        self.ROBOT_MAX_ROTATIONAL = self.profile_selector.getSelected()[0] * math.pi
-        self.MODULE_MAX_SPEED = self.profile_selector.getSelected()[1]
+        self.ROBOT_MAX_ROTATIONAL = self.profile_selector.getSelected()[1] * math.pi
+        self.MODULE_MAX_SPEED = self.profile_selector.getSelected()[0]
 
         if self.last_max_t != self.ROBOT_MAX_TRANSLATIONAL or self.last_max_r != self.ROBOT_MAX_ROTATIONAL:
             self.slew_slow_rotation = SlewRateLimiter(self.ROBOT_MAX_ROTATIONAL*2)

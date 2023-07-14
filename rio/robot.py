@@ -34,6 +34,7 @@ class Robot(wpilib.TimedRobot):
         self.auton_selector.timer_reset()
         self.auton_selector.set_start_time(self.auton_selector.timer.getFPGATimestamp())
         self.arm_controller.top_gripper_control_on()
+        self.drive_train.navx.zeroYaw()
 
     def autonomousPeriodic(self):
         self.auton_selector.run()

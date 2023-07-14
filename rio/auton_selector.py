@@ -89,16 +89,16 @@ class AutonSelector():
             self.arm_controller.elevator_pivot_control_off()
 
     def taxi_auton(self):
-        if not self.turn_done:
-            print(f"Taxi Turn {self.timer.getFPGATimestamp() - self.start}")
-            self.drive_train.swerveDriveAuton(0, 0, 0.6)
-            if self.drive_train.navx.getRotation2d().degrees()*-1 >= 180:
-                self.turn_done = True
-                self.drive_train.stop()
-        elif self.timer.getFPGATimestamp() - self.start < 15:
+        # if not self.turn_done:
+        #     print(f"Taxi Turn {self.timer.getFPGATimestamp() - self.start}")
+        #     self.drive_train.swerveDriveAuton(0, 0, 0.6)
+        #     if self.drive_train.navx.getRotation2d().__mul__(-1).degrees() >= 180:
+        #         self.turn_done = True
+        #         self.drive_train.stop()
+        if self.timer.getFPGATimestamp() - self.start < 5:
             print(f"Taxi Auton {self.timer.getFPGATimestamp() - self.start}")
-            self.drive_train.swerveDriveAuton(0, 0.6, 0)
-        elif self.timer.getFPGATimestamp() - self.start >= 15:
+            self.drive_train.swerveDriveAuton(1, 0, 0)
+        elif self.timer.getFPGATimestamp() - self.start >= 3:
             print("Taxi Auton Stop")
             self.drive_train.stop()
 
