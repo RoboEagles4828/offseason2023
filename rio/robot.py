@@ -23,6 +23,8 @@ class Robot(wpilib.TimedRobot):
 
         self.shuffleboard.add(title="JOYSTICK", defaultValue=self.joystick_selector)
 
+        self.shuffleboard.add("WHINE REMOVAL", self.drive_train.whine_remove_selector)
+
         self.shuffleboard.add("PROFILE", self.drive_train.profile_selector)
         self.shuffleboard.addDouble("YAW", lambda: (self.drive_train.navx.getRotation2d().degrees()))
         self.shuffleboard.addBoolean("FIELD ORIENTED", lambda: (self.drive_train.field_oriented_value))

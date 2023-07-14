@@ -274,6 +274,11 @@ class SwerveModule():
         self.wheel_motor.set(ctre.TalonFXControlMode.Velocity, set_wheel_motor_vel)
         self.axle_motor.set(ctre.TalonFXControlMode.MotionMagic, getShaftTicks(state.angle.radians(), "position"))
 
+    def setVelocity(self, velocity):
+        wheel_radius = 0.0508
+        set_wheel_motor_vel = velocity / (wheel_radius) / math.pi * 2
+        self.wheel_motor.set(ctre.TalonFXControlMode.Velocity, set_wheel_motor_vel)
+
     def getEncoderData(self):
         output = [
             {
@@ -335,6 +340,10 @@ class DriveTrain():
         self.profile_selector.setDefaultOption("Competition", (500, 250))
         self.profile_selector.addOption("Workshop", (250, 125))
 
+        self.whine_remove_selector = wpilib.SendableChooser()
+        self.whine_remove_selector.setDefaultOption("OFF", False)
+        self.whine_remove_selector.addOption("ON", True)
+
         self.module_lookup = \
         {
             'front_left_axle_joint': self.front_left,
@@ -343,6 +352,8 @@ class DriveTrain():
             'rear_right_axle_joint': self.rear_right,
         }
         self.last_print = ""
+
+        self.last_state = ChassisSpeeds(0, 0, 0)
 
     def reset_slew(self):
         self.slew_X.reset(0)
@@ -374,6 +385,13 @@ class DriveTrain():
 
     def testModule(self):
         self.rear_right.encoderOffsetTest()
+
+    def allZero(self, speeds: ChassisSpeeds):
+        if 0 <= abs(speeds.vx) <= 1:
+            if 0 <= abs(speeds.vy) <= 1:
+                if 0 <= abs(speeds.omega) <= 1:
+                    return True
+        return False
 
     def swerveDrive(self, joystick: Joystick):      
         # slew 
@@ -413,13 +431,16 @@ class DriveTrain():
             # field  oriented
             self.speeds = ChassisSpeeds.fromFieldRelativeSpeeds(linearX, linearY, angularZ, self.navx.getRotation2d().__mul__(-1))
             if self.last_print != f"NavX: {self.navx.getRotation2d().degrees()*-1} linX: {round(self.speeds.vx, 2)} linY: {round(self.speeds.vy, 2)} angZ: {round(self.speeds.omega, 2)} MoveScale: {round(self.move_scale, 2)} TurnScale: {round(self.turn_scale, 2)} Joy: {joystick.getData()['axes']}":
-                print(f"NavX: {self.navx.getRotation2d().degrees()*-1} linX: {round(self.speeds.vx, 2)} linY: {round(self.speeds.vy, 2)} angZ: {round(self.speeds.omega, 2)} MoveScale: {round(self.move_scale, 2)} TurnScale: {round(self.turn_scale, 2)} Joy: {joystick.getData()['axes']}")
+                #print(f"NavX: {self.navx.getRotation2d().degrees()*-1} linX: {round(self.speeds.vx, 2)} linY: {round(self.speeds.vy, 2)} angZ: {round(self.speeds.omega, 2)} MoveScale: {round(self.move_scale, 2)} TurnScale: {round(self.turn_scale, 2)} Joy: {joystick.getData()['axes']}")
                 self.last_print = f"NavX: {self.navx.getRotation2d().degrees()*-1} linX: {round(self.speeds.vx, 2)} linY: {round(self.speeds.vy, 2)} angZ: {round(self.speeds.omega, 2)} MoveScale: {round(self.move_scale, 2)} TurnScale: {round(self.turn_scale, 2)} Joy: {joystick.getData()['axes']}"
         else:
             self.speeds = ChassisSpeeds(linearX, linearY, angularZ)
             if self.last_print != f"linX: {round(self.speeds.vx, 2)} linY: {round(self.speeds.vy, 2)} angZ: {round(self.speeds.omega, 2)} MoveScale: {round(self.move_scale, 2)} TurnScale: {round(self.turn_scale, 2)} Joy: {joystick.getData()['axes']}":
-                print(f"linX: {round(self.speeds.vx, 2)} linY: {round(self.speeds.vy, 2)} angZ: {round(self.speeds.omega, 2)} MoveScale: {round(self.move_scale, 2)} TurnScale: {round(self.turn_scale, 2)} Joy: {joystick.getData()['axes']}")
+                #print(f"linX: {round(self.speeds.vx, 2)} linY: {round(self.speeds.vy, 2)} angZ: {round(self.speeds.omega, 2)} MoveScale: {round(self.move_scale, 2)} TurnScale: {round(self.turn_scale, 2)} Joy: {joystick.getData()['axes']}")
                 self.last_print = f"linX: {round(self.speeds.vx, 2)} linY: {round(self.speeds.vy, 2)} angZ: {round(self.speeds.omega, 2)} MoveScale: {round(self.move_scale, 2)} TurnScale: {round(self.turn_scale, 2)} Joy: {joystick.getData()['axes']}"
+
+        print(f"Last: {self.last_state} Current: {self.speeds}")
+        self.last_print = f"Last: {self.last_state} Current: {self.speeds}"
 
         self.module_state = self.kinematics.toSwerveModuleStates(self.speeds)
         
@@ -439,10 +460,20 @@ class DriveTrain():
         self.rear_left_state = SwerveModuleState.optimize(self.rear_left_state, Rotation2d(self.rear_left.getEncoderPosition()))
         self.rear_right_state = SwerveModuleState.optimize(self.rear_right_state, Rotation2d(self.rear_right.getEncoderPosition()))
 
-        self.front_left.set(self.front_left_state)
-        self.front_right.set(self.front_right_state)
-        self.rear_left.set(self.rear_left_state)
-        self.rear_right.set(self.rear_right_state)
+        if self.whine_remove_selector.getSelected() and (self.allZero(self.last_state) and not self.allZero(self.speeds)):
+            print("First Cycle")
+            self.last_print = "First Cycle"
+            self.front_left.setVelocity(self.front_left_state.speed)
+            self.front_right.setVelocity(self.front_right_state.speed)
+            self.rear_left.setVelocity(self.rear_left_state.speed)
+            self.rear_right.setVelocity(self.rear_right_state.speed)
+        else:
+            self.front_left.set(self.front_left_state)
+            self.front_right.set(self.front_right_state)
+            self.rear_left.set(self.rear_left_state)
+            self.rear_right.set(self.rear_right_state)
+
+        self.last_state = self.speeds
 
     def swerveDriveAuton(self, linearX, linearY, angularZ):
         self.speeds = ChassisSpeeds(linearX*self.ROBOT_MAX_TRANSLATIONAL, linearY*self.ROBOT_MAX_TRANSLATIONAL, angularZ*self.ROBOT_MAX_ROTATIONAL)
