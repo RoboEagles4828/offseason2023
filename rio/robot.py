@@ -28,6 +28,8 @@ class Robot(wpilib.TimedRobot):
         self.shuffleboard.add("PROFILE", self.drive_train.profile_selector)
         self.shuffleboard.addDouble("YAW", lambda: (self.drive_train.navx.getRotation2d().degrees()))
         self.shuffleboard.addBoolean("FIELD ORIENTED", lambda: (self.drive_train.field_oriented_value))
+        self.shuffleboard.addDoubleArray("MOTOR TEMPS", lambda: (self.drive_train.motor_temps))
+        self.shuffleboard.addDoubleArray("JOYSTICK OUTPUT", lambda: ([self.drive_train.linX, self.drive_train.linY, self.drive_train.angZ]))
 
         self.arm_controller.setToggleButtons()
 
