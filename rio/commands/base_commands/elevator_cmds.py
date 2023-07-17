@@ -3,6 +3,7 @@ from hardware_interface.armcontroller import ArmController
 
 class ElevatorHighCommand(CommandBase):
     def __init__(self, arm_controller: ArmController):
+        CommandBase.__init__(self)
         self.arm_controller = arm_controller
 
     def initialize(self):
@@ -13,6 +14,7 @@ class ElevatorHighCommand(CommandBase):
 
 class ElevatorMidCommand(CommandBase):
     def __init__(self, arm_controller: ArmController):
+        CommandBase.__init__(self)
         self.arm_controller = arm_controller
 
     def initialize(self):
@@ -23,6 +25,7 @@ class ElevatorMidCommand(CommandBase):
 
 class ElevatorRetractCommand(CommandBase):
     def __init__(self, arm_controller: ArmController):
+        CommandBase.__init__(self)
         self.arm_controller = arm_controller
 
     def initialize(self):

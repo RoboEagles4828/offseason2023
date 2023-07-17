@@ -3,6 +3,7 @@ from hardware_interface.armcontroller import ArmController
 
 class GrabCommand(CommandBase):
     def __init__(self, arm_controller: ArmController):
+        CommandBase.__init__(self)
         self.arm_controller = arm_controller
 
     def initialize(self):
@@ -13,6 +14,7 @@ class GrabCommand(CommandBase):
     
 class ReleaseCommand(CommandBase):
     def __init__(self, arm_controller: ArmController):
+        CommandBase.__init__(self)
         self.arm_controller = arm_controller
 
     def initialize(self):
@@ -23,8 +25,9 @@ class ReleaseCommand(CommandBase):
     
 class PivotUpCommand(CommandBase):
     def __init__(self, arm_controller: ArmController):
+        CommandBase.__init__(self)
         self.arm_controller = arm_controller
-
+    
     def initialize(self):
         self.arm_controller.elevator_pivot_control_on()
 
@@ -33,6 +36,7 @@ class PivotUpCommand(CommandBase):
     
 class PivotDownCommand(CommandBase):
     def __init__(self, arm_controller: ArmController):
+        CommandBase.__init__(self)
         self.arm_controller = arm_controller
 
     def initialize(self):

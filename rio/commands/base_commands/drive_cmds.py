@@ -7,6 +7,7 @@ import math
 
 class MoveCommand(CommandBase):
     def __init__(self, drive_train: DriveTrain, meters, linearX, linearY, angularZ):
+        CommandBase.__init__(self)
         self.drive_train = drive_train
         self.meters = meters
         self.linearX = linearX
