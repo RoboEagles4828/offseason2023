@@ -190,7 +190,7 @@ class SwerveModule():
         return math.radians(self.encoder.getVelocity())
     
     def setupWheelMotor(self):
-        self.wheel_motor.configFactoryDefault()
+        self.wheel_motor.configFactoryDefault(timeout_ms)
         self.wheel_motor.configNeutralDeadband(0.01, timeout_ms)
 
         # Direction and Sensors
@@ -218,28 +218,33 @@ class SwerveModule():
         # Brake
         self.wheel_motor.setNeutralMode(ctre.NeutralMode.Brake)
 
+        # Supply Current Limit
+        supply_current_limit = 20
+        supply_current_threshold = 40
+        supply_current_threshold_time = 0.1
+        supply_current_limit_configs = ctre.SupplyCurrentLimitConfiguration(True, supply_current_limit, supply_current_threshold, supply_current_threshold_time)
+        self.wheel_motor.configSupplyCurrentLimit(supply_current_limit_configs, timeout_ms)
+        
+        # Stator Current Limit
+        stator_current_limit = 20
+        stator_current_threshold = 40
+        stator_current_threshold_time = 0.1
+        stator_current_limit_configs = ctre.StatorCurrentLimitConfiguration(True, stator_current_limit, stator_current_threshold, stator_current_threshold_time)
+        self.wheel_motor.configStatorCurrentLimit(stator_current_limit_configs, timeout_ms)
+
         # Velocity Ramp
-        # TODO: Tweak this value
         self.wheel_motor.configClosedloopRamp(0)
         self.wheel_motor.configOpenloopRamp(0)
 
-        # Current Limit
-        current_limit = 20
-        current_threshold = 40
-        current_threshold_time = 0.1
-        supply_current_limit_configs = ctre.SupplyCurrentLimitConfiguration(True, current_limit, current_threshold, current_threshold_time)
-        self.wheel_motor.configSupplyCurrentLimit(supply_current_limit_configs, timeout_ms)
-
     
     def setupAxleMotor(self):
-        self.axle_motor.configFactoryDefault()
+        self.axle_motor.configFactoryDefault(timeout_ms)
         self.axle_motor.configNeutralDeadband(0.01, timeout_ms)
         
         # Direction and Sensors
         self.axle_motor.setSensorPhase(AXLE_DIRECTION)
         self.axle_motor.setInverted(AXLE_DIRECTION)
         self.axle_motor.configSelectedFeedbackSensor(ctre.FeedbackDevice.IntegratedSensor, slot_idx, timeout_ms)
-        # self.axle_motor.setStatusFramePeriod(ctre.StatusFrameEnhanced.Status_13_Base_PIDF0, 10, timeout_ms)
         self.axle_motor.setStatusFramePeriod(ctre.StatusFrameEnhanced.Status_10_MotionMagic, 10, timeout_ms)
         self.axle_motor.setSelectedSensorPosition(getShaftTicks(self.getEncoderPosition(), "position"), pid_loop_idx, timeout_ms)
 
@@ -264,7 +269,25 @@ class SwerveModule():
         self.axle_motor.enableVoltageCompensation(True)
 
         # Braking
-        self.axle_motor.setNeutralMode(ctre.NeutralMode.Brake)
+        self.axle_motor.setNeutralMode(ctre.NeutralMode.Coast)
+
+        # Velocity Ramp Removed
+        self.axle_motor.configClosedloopRamp(0)
+        self.axle_motor.configOpenloopRamp(0)
+
+        # Supply Current Limit
+        supply_current_limit = 20
+        supply_current_threshold = 40
+        supply_current_threshold_time = 0.1
+        supply_current_limit_configs = ctre.SupplyCurrentLimitConfiguration(True, supply_current_limit, supply_current_threshold, supply_current_threshold_time)
+        self.axle_motor.configSupplyCurrentLimit(supply_current_limit_configs, timeout_ms)
+
+        # Stator Current Limit
+        stator_current_limit = 20
+        stator_current_threshold = 40
+        stator_current_threshold_time = 0.1
+        stator_current_limit_configs = ctre.StatorCurrentLimitConfiguration(True, stator_current_limit, stator_current_threshold, stator_current_threshold_time)
+        self.axle_motor.configStatorCurrentLimit(stator_current_limit_configs, timeout_ms)
 
     def neutralize_module(self):
         self.wheel_motor.set(ctre.TalonFXControlMode.PercentOutput, 0)
@@ -339,6 +362,8 @@ class DriveTrain():
         self.field_oriented_button = ToggleButton(7, False)
         self.field_oriented_value = False
 
+        self.auto_turn_value = "off"
+
         self.profile_selector = wpilib.SendableChooser()
         self.profile_selector.setDefaultOption("Competition", (24.0, 5.0))
         self.profile_selector.addOption("Workshop", (12.0, 2.5))
@@ -346,6 +371,8 @@ class DriveTrain():
         self.whine_remove_selector = wpilib.SendableChooser()
         self.whine_remove_selector.setDefaultOption("OFF", False)
         self.whine_remove_selector.addOption("ON", True)
+
+        self.slow = False
 
         self.module_lookup = \
         {
@@ -425,25 +452,50 @@ class DriveTrain():
         if joystick.getData()["buttons"][6] == 1.0:
             self.navx.zeroYaw()
 
-        if joystick.getData()["axes"][5] < -0.5:
+        if joystick.getData()["axes"][5] == 1.0:
+            self.slow = True
             self.move_scale_x = 2.0
             self.move_scale_y = 2.0
             self.turn_scale = 2.0
         else:            
+            self.slow = False
             self.move_scale_x = 1.0
             self.move_scale_y = 1.0
             self.turn_scale = 1.0
 
-        if self.field_oriented_value:            
+        if joystick.getData()["axes"][6] == 1.0:
+            self.auto_turn_value = "load"
+        elif joystick.getData()["axes"][6] == -1.0:
+            self.auto_turn_value = "score"
+        else:
+            self.auto_turn_value = "off"
+
+        if self.field_oriented_value and self.auto_turn_value == "none":            
             # field  oriented
             self.speeds = ChassisSpeeds.fromFieldRelativeSpeeds(linearX, linearY, angularZ, self.navx.getRotation2d().__mul__(-1))
             #if self.last_print != f"NavX: {self.navx.getRotation2d().degrees()*-1} linX: {round(self.speeds.vx, 2)} linY: {round(self.speeds.vy, 2)} angZ: {round(self.speeds.omega, 2)} MoveScaleX: {round(self.move_scale_x, 2)} MoveScaleY: {round(self.move_scale_y, 2)} TurnScale: {round(self.turn_scale, 2)}":
             #logging.info(f"NavX: {self.navx.getRotation2d().degrees()*-1} linX: {round(self.speeds.vx, 2)} linY: {round(self.speeds.vy, 2)} angZ: {round(self.speeds.omega, 2)} MoveScaleX: {round(self.move_scale_x, 2)} MoveScaleY: {round(self.move_scale_y, 2)} TurnScale: {round(self.turn_scale, 2)}")
                 #self.last_print = f"NavX: {self.navx.getRotation2d().degrees()*-1} linX: {round(self.speeds.vx, 2)} linY: {round(self.speeds.vy, 2)} angZ: {round(self.speeds.omega, 2)} MoveScaleX: {round(self.move_scale_x, 2)} MoveScaleY: {round(self.move_scale_y, 2)} TurnScale: {round(self.turn_scale, 2)}"
+        elif self.field_oriented_value and self.auto_turn_value == "load":
+            # auto turn to 0 degress while moving
+            if self.navx.getYaw() > 0.4:
+                self.speeds = ChassisSpeeds.fromFieldRelativeSpeeds(linearX, linearY, self.ROBOT_MAX_ROTATIONAL, self.navx.getRotation2d().__mul__(-1))
+            elif self.navx.getYaw() < -0.4:
+                self.speeds = ChassisSpeeds.fromFieldRelativeSpeeds(linearX, linearY, -self.ROBOT_MAX_ROTATIONAL, self.navx.getRotation2d().__mul__(-1))
+            else:
+                self.speeds = ChassisSpeeds.fromFieldRelativeSpeeds(linearX, linearY, 0.0, self.navx.getRotation2d().__mul__(-1))
+        elif self.field_oriented_value and self.auto_turn_value == "score":
+            # auto turn to 180 degress while moving
+            if self.navx.getYaw() > 179.5:
+                self.speeds = ChassisSpeeds.fromFieldRelativeSpeeds(linearX, linearY, self.ROBOT_MAX_ROTATIONAL, self.navx.getRotation2d().__mul__(-1))
+            elif self.navx.getYaw() < 179.5:
+                self.speeds = ChassisSpeeds.fromFieldRelativeSpeeds(linearX, linearY, -self.ROBOT_MAX_ROTATIONAL, self.navx.getRotation2d().__mul__(-1))
+            else:
+                self.speeds = ChassisSpeeds.fromFieldRelativeSpeeds(linearX, linearY, 0.0, self.navx.getRotation2d().__mul__(-1))
         else:
             self.speeds = ChassisSpeeds(linearX, linearY, angularZ)
             #if self.last_print != f"linX: {round(self.speeds.vx, 2)} linY: {round(self.speeds.vy, 2)} angZ: {round(self.speeds.omega, 2)} MoveScaleX: {round(self.move_scale_x, 2)} MoveScaleY: {round(self.move_scale_y, 2)} TurnScale: {round(self.turn_scale, 2)}":
-            logging.info(f"linX: {round(self.speeds.vx, 2)} linY: {round(self.speeds.vy, 2)} angZ: {round(self.speeds.omega, 2)} MoveScaleX: {round(self.move_scale_x, 2)} MoveScaleY: {round(self.move_scale_y, 2)} TurnScale: {round(self.turn_scale, 2)}")
+            #logging.info(f"linX: {round(self.speeds.vx, 2)} linY: {round(self.speeds.vy, 2)} angZ: {round(self.speeds.omega, 2)} MoveScaleX: {round(self.move_scale_x, 2)} MoveScaleY: {round(self.move_scale_y, 2)} TurnScale: {round(self.turn_scale, 2)}")
                 #self.last_print = f"linX: {round(self.speeds.vx, 2)} linY: {round(self.speeds.vy, 2)} angZ: {round(self.speeds.omega, 2)} MoveScaleX: {round(self.move_scale_x, 2)} MoveScaleY: {round(self.move_scale_y, 2)} TurnScale: {round(self.turn_scale, 2)}"
 
         self.module_state = self.kinematics.toSwerveModuleStates(self.speeds)
@@ -483,6 +535,8 @@ class DriveTrain():
 
         self.last_state = self.speeds
 
+        logging.info(f"Navx: {self.navx.getYaw()} linX: {round(self.speeds.vx, 2)} linY: {round(self.speeds.vy, 2)} angZ: {round(self.speeds.omega, 2)} AutoTurn: {self.auto_turn_value} Slow: {self.slow}")
+
     def swerveDriveAuton(self, linearX, linearY, angularZ):
         self.ROBOT_MAX_TRANSLATIONAL = self.profile_selector.getSelected()[0]
         self.ROBOT_MAX_ROTATIONAL = self.profile_selector.getSelected()[1] * math.pi
@@ -507,6 +561,7 @@ class DriveTrain():
         self.front_right.set(self.front_right_state)
         self.rear_left.set(self.rear_left_state)
         self.rear_right.set(self.rear_right_state)
+
 
 
 

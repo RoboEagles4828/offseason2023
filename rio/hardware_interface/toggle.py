@@ -13,13 +13,11 @@ class ToggleButton():
         currentButton = buttons_list[self.button]
         if self.isAxis:
             # currentButton = currentButton / 10000 if currentButton > 1 else currentButton
-            if currentButton == -10000.0  and self.last_button != -10000.0:
+            if currentButton == -1.0  and self.last_button != -1.0:
                 self.flag = not self.flag
                 if self.flag:
-                    logging.info("on")
                     self.onCallback()
                 else:
-                    logging.info("off")
                     self.offCallback()
                 self.last_button = currentButton
                 return self.flag
