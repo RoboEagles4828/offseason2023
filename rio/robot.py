@@ -102,7 +102,8 @@ def encoderAction(publisher):
     data = {
         'name': [],
         'position': [],
-        'velocity': []
+        'velocity': [],
+        'effort': []
     }
 
     global drive_train
@@ -111,6 +112,7 @@ def encoderAction(publisher):
         data['name'] += drive_data['name']
         data['position'] += drive_data['position']
         data['velocity'] += drive_data['velocity']
+        data['effort'] += drive_data['effort']
     
     global arm_controller
     with arm_controller_lock:
