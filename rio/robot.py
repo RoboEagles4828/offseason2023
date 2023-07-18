@@ -24,6 +24,8 @@ class Robot(wpilib.TimedRobot):
         self.shuffleboard.add(title="JOYSTICK", defaultValue=self.joystick_selector)
 
         self.shuffleboard.add("WHINE REMOVAL", self.drive_train.whine_remove_selector)
+        self.shuffleboard.addDoubleArray("MOTOR VELOCITY", lambda: (self.drive_train.motor_vels))
+        self.shuffleboard.addDoubleArray("MOTOR POSITIONS", lambda: (self.drive_train.motor_pos))
 
         self.shuffleboard.add("PROFILE", self.drive_train.profile_selector)
         self.shuffleboard.add("NAVX", self.drive_train.navx)

@@ -145,6 +145,11 @@ def getWheelRadians(ticks, displacementType):
         return ticks * wheelVelocityCoefficient
     else:
         return 0
+    
+def radiansToMeters(radians):
+    wheel_rad = 0.0508
+    wheel_circ = 2 * math.pi * wheel_rad
+    return radians * wheel_circ
 
 
 class SwerveModule():
@@ -292,12 +297,67 @@ class SwerveModule():
     def neutralize_module(self):
         self.wheel_motor.set(ctre.TalonFXControlMode.PercentOutput, 0)
         self.axle_motor.set(ctre.TalonFXControlMode.PercentOutput, 0)
+        
+    def setMotors(self, wheel_motor_vel, axle_position):
+        wheel_vel = getWheelShaftTicks(wheel_motor_vel, "velocity")
+        if abs(wheel_motor_vel) < 0.2:
+            self.neutralize_module()
+            return
+        else:
+            self.wheel_motor.set(ctre.TalonFXControlMode.Velocity, wheel_vel)
+        self.last_wheel_vel_cmd = wheel_vel
+
+        # MOTION MAGIC CONTROL FOR AXLE POSITION
+        axle_motorPosition = getAxleRadians(self.axle_motor.getSelectedSensorPosition(), "position")
+        axle_motorVelocity = getAxleRadians(self.axle_motor.getSelectedSensorVelocity(), "velocity")
+        axle_absolutePosition = self.getEncoderPosition()
+
+        # Reset
+        if axle_motorVelocity < encoder_reset_velocity:
+            self.reset_iterations += 1
+            if self.reset_iterations >= encoder_reset_iterations:
+                self.reset_iterations = 0
+                self.axle_motor.setSelectedSensorPosition(getShaftTicks(axle_absolutePosition, "position"))
+                axle_motorPosition = axle_absolutePosition
+        else:
+            self.reset_iterations = 0
+
+        # First let's assume that we will move directly to the target position.
+        newAxlePosition = axle_position
+
+        # The motor could get to the target position by moving clockwise or counterclockwise.
+        # The shortest path should be the direction that is less than pi radians away from the current motor position.
+        # The shortest path could loop around the circle and be less than 0 or greater than 2pi.
+        # We need to get the absolute current position to determine if we need to loop around the 0 - 2pi range.
+        
+        # The current motor position does not stay inside the 0 - 2pi range.
+        # We need the absolute position to compare with the target position.
+        axle_absoluteMotorPosition = math.fmod(axle_motorPosition, 2.0 * math.pi)
+        if axle_absoluteMotorPosition < 0.0:
+            axle_absoluteMotorPosition += 2.0 * math.pi
+
+        # If the target position was in the first quadrant area 
+        # and absolute motor position was in the last quadrant area
+        # then we need to move into the next loop around the circle.
+        if newAxlePosition - axle_absoluteMotorPosition < -math.pi:
+            newAxlePosition += 2.0 * math.pi
+        # If the target position was in the last quadrant area
+        # and absolute motor position was in the first quadrant area
+        # then we need to move into the previous loop around the circle.
+        elif newAxlePosition - axle_absoluteMotorPosition > math.pi:
+            newAxlePosition -= 2.0 * math.pi
+
+        # Last, add the current existing loops that the motor has gone through.
+        newAxlePosition += axle_motorPosition - axle_absoluteMotorPosition
+        self.axle_motor.set(ctre.TalonFXControlMode.MotionMagic, getShaftTicks(newAxlePosition, "position"))
+        # logging.info('AXLE MOTOR POS: ', newAxlePosition)
+        # logging.info('WHEEL MOTOR VEL: ', wheel_vel)
 
     def set(self, state: SwerveModuleState):
         wheel_radius = 0.0508
         set_wheel_motor_vel = state.speed / (wheel_radius) / (math.pi * 2)
-        self.wheel_motor.set(ctre.TalonFXControlMode.Velocity, getWheelShaftTicks(set_wheel_motor_vel, "velocity"))
-        self.axle_motor.set(ctre.TalonFXControlMode.MotionMagic, getShaftTicks(state.angle.radians(), "position"))
+        set_axle_motor_pos = state.angle.radians()
+        self.setMotors(set_wheel_motor_vel, set_axle_motor_pos)
 
     def setVelocity(self, velocity):
         wheel_radius = 0.0508
@@ -365,8 +425,8 @@ class DriveTrain():
         self.auto_turn_value = "off"
 
         self.profile_selector = wpilib.SendableChooser()
-        self.profile_selector.setDefaultOption("Competition", (24.0, 5.0))
-        self.profile_selector.addOption("Workshop", (12.0, 2.5))
+        self.profile_selector.setDefaultOption("Competition", (5.0, 2.5))
+        self.profile_selector.addOption("Workshop", (2.5, 1.25))
 
         self.whine_remove_selector = wpilib.SendableChooser()
         self.whine_remove_selector.setDefaultOption("OFF", False)
@@ -390,6 +450,9 @@ class DriveTrain():
         self.linX = 0
         self.linY = 0
         self.angZ = 0
+        
+        self.motor_vels = []
+        self.motor_pos = []
 
     def reset_slew(self):
         self.slew_X.reset(0)
@@ -436,9 +499,9 @@ class DriveTrain():
 
         # slew 
         # gives joystick ramping
-        linearX = joystick.getData()["axes"][1] * self.ROBOT_MAX_TRANSLATIONAL #/ self.move_scale_x
-        linearY = joystick.getData()["axes"][0] * -self.ROBOT_MAX_TRANSLATIONAL #/ self.move_scale_y
-        angularZ = joystick.getData()["axes"][3] * self.ROBOT_MAX_ROTATIONAL #/ self.turn_scale
+        linearX = joystick.getData()["axes"][1] * self.ROBOT_MAX_TRANSLATIONAL / self.move_scale_x
+        linearY = joystick.getData()["axes"][0] * -self.ROBOT_MAX_TRANSLATIONAL / self.move_scale_y
+        angularZ = joystick.getData()["axes"][3] * self.ROBOT_MAX_ROTATIONAL / self.turn_scale
 
         self.linX = linearX
         self.linY = linearY
@@ -479,17 +542,17 @@ class DriveTrain():
         elif self.field_oriented_value and self.auto_turn_value == "load":
             # auto turn to 0 degress while moving
             if self.navx.getYaw() > 0.4:
-                self.speeds = ChassisSpeeds.fromFieldRelativeSpeeds(linearX, linearY, self.ROBOT_MAX_ROTATIONAL, self.navx.getRotation2d().__mul__(-1))
+                self.speeds = ChassisSpeeds.fromFieldRelativeSpeeds(linearX, linearY, self.ROBOT_MAX_ROTATIONAL/self.turn_scale, self.navx.getRotation2d().__mul__(-1))
             elif self.navx.getYaw() < -0.4:
-                self.speeds = ChassisSpeeds.fromFieldRelativeSpeeds(linearX, linearY, -self.ROBOT_MAX_ROTATIONAL, self.navx.getRotation2d().__mul__(-1))
+                self.speeds = ChassisSpeeds.fromFieldRelativeSpeeds(linearX, linearY, -self.ROBOT_MAX_ROTATIONAL/self.turn_scale, self.navx.getRotation2d().__mul__(-1))
             else:
                 self.speeds = ChassisSpeeds.fromFieldRelativeSpeeds(linearX, linearY, 0.0, self.navx.getRotation2d().__mul__(-1))
         elif self.field_oriented_value and self.auto_turn_value == "score":
             # auto turn to 180 degress while moving
-            if self.navx.getYaw() > 179.5:
-                self.speeds = ChassisSpeeds.fromFieldRelativeSpeeds(linearX, linearY, self.ROBOT_MAX_ROTATIONAL, self.navx.getRotation2d().__mul__(-1))
-            elif self.navx.getYaw() < 179.5:
-                self.speeds = ChassisSpeeds.fromFieldRelativeSpeeds(linearX, linearY, -self.ROBOT_MAX_ROTATIONAL, self.navx.getRotation2d().__mul__(-1))
+            if self.navx.getYaw() < 179.5 and self.navx.getYaw() >= 0.0:
+                self.speeds = ChassisSpeeds.fromFieldRelativeSpeeds(linearX, linearY, -self.ROBOT_MAX_ROTATIONAL/self.turn_scale, self.navx.getRotation2d().__mul__(-1))
+            elif self.navx.getYaw() > -179.5 and self.navx.getYaw() < 0.0:
+                self.speeds = ChassisSpeeds.fromFieldRelativeSpeeds(linearX, linearY, self.ROBOT_MAX_ROTATIONAL/self.turn_scale, self.navx.getRotation2d().__mul__(-1))
             else:
                 self.speeds = ChassisSpeeds.fromFieldRelativeSpeeds(linearX, linearY, 0.0, self.navx.getRotation2d().__mul__(-1))
         else:
@@ -502,7 +565,7 @@ class DriveTrain():
         
         # normalize speeds
         # if the speeds are greater than the max speed, scale them down
-        self.kinematics.desaturateWheelSpeeds(self.module_state, self.speeds, self.MODULE_MAX_SPEED, self.ROBOT_MAX_TRANSLATIONAL, self.ROBOT_MAX_ROTATIONAL)
+        self.kinematics.desaturateWheelSpeeds(self.module_state, self.ROBOT_MAX_TRANSLATIONAL)
 
         self.front_left_state: SwerveModuleState = self.module_state[0]
         self.front_right_state: SwerveModuleState = self.module_state[1]
@@ -516,14 +579,6 @@ class DriveTrain():
         self.rear_left_state = SwerveModuleState.optimize(self.rear_left_state, Rotation2d(self.rear_left.getEncoderPosition()))
         self.rear_right_state = SwerveModuleState.optimize(self.rear_right_state, Rotation2d(self.rear_right.getEncoderPosition()))
 
-        # if self.whine_remove_selector.getSelected() and (self.allZero(self.last_state) and not self.allZero(self.speeds)):
-        #     print("First Cycle")
-        #     self.last_print = "First Cycle"
-        #     self.front_left.setVelocity(self.front_left_state.speed)
-        #     self.front_right.setVelocity(self.front_right_state.speed)
-        #     self.rear_left.setVelocity(self.rear_left_state.speed)
-        #     self.rear_right.setVelocity(self.rear_right_state.speed)
-        # else:
         self.front_left.set(self.front_left_state)
         self.front_right.set(self.front_right_state)
         self.rear_left.set(self.rear_left_state)
@@ -531,6 +586,8 @@ class DriveTrain():
 
         #logging.info(f"angz: {angularZ}, FL: {self.front_left_state.speed}, FR: {self.front_right_state.speed}, BL: {self.rear_left_state.speed}, BR: {self.rear_right_state.speed}")
 
+        self.motor_vels = [radiansToMeters(getWheelRadians(self.front_left.wheel_motor.getSelectedSensorVelocity(), "velocity")), radiansToMeters(getWheelRadians(self.front_right.wheel_motor.getSelectedSensorVelocity(), "velocity")), radiansToMeters(getWheelRadians(self.rear_left.wheel_motor.getSelectedSensorVelocity(), "velocity")), radiansToMeters(getWheelRadians(self.rear_right.wheel_motor.getSelectedSensorVelocity(), "velocity"))]
+        self.motor_pos = [self.front_left.getEncoderPosition(), self.front_right.getEncoderPosition(), self.rear_left.getEncoderPosition(), self.rear_right.getEncoderPosition()]
         self.motor_temps = [self.front_left.wheel_motor.getTemperature(), self.front_right.wheel_motor.getTemperature() ,self.rear_left.wheel_motor.getTemperature(), self.rear_right.wheel_motor.getTemperature()]
 
         self.last_state = self.speeds

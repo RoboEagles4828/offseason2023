@@ -45,7 +45,7 @@ class Joystick:
         return axis * SCALING_FACTOR_FIX * -1.0
     
     def scaleTrigger(self, trigger):
-        return trigger * SCALING_FACTOR_FIX * -1.0
+        return trigger * SCALING_FACTOR_FIX
     
     def getEmptyData(self):
         return {
