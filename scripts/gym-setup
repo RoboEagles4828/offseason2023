@@ -1,4 +1,5 @@
 #!/usr/bin/bash
 python_path="/isaac-sim/python.sh"
 gym_path="/root/edna/isaac/Swervesim"
+isaac $python_path -m pip uninstall -y swervesim
 isaac $python_path -m pip install -e $gym_path

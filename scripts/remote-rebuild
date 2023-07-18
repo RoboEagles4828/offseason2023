@@ -24,7 +24,7 @@ apply() {
     fi
 
     docker run --rm -it \
-        -v $HOME/edna2023:/opt/workspace:rw \
+        -v $HOME/offseason2023:/opt/workspace:rw \
         --user admin \
         --entrypoint /opt/workspace/scripts/remote-rebuild \
         ghcr.io/roboeagles4828/jetson:3 build $packages

@@ -47,7 +47,7 @@ else
 fi
 
 
-# Nividia Docker
+# Nvidia Docker
 if ! dpkg -s nvidia-docker2 > /dev/null; then
   echo -e "${ORANGE}INSTALLING NVIDIA DOCKER${NC}"
   distribution=$(. /etc/os-release;echo $ID$VERSION_ID) \
