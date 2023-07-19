@@ -1,5 +1,5 @@
 {
-    "name": "edna",
+    "name": "offseason",
     "image": "ghcr.io/roboeagles4828/developer-environment:6",
     "containerEnv": {
         "NVIDIA_VISIBLE_DEVICES": "all",
@@ -43,7 +43,7 @@
         "--runtime=nvidia",
         "--gpus", "all",
         "--network=host",
-        "--name=edna",
+        "--name=offseason",
         "--init"
     ],
     "privileged": true,

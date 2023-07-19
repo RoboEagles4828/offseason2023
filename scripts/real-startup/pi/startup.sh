@@ -1,5 +1,5 @@
 #!/bin/bash
-cd /home/ubuntu/edna2023/
+cd /home/ubuntu/offseason2023/
 source /opt/ros/humble/setup.bash
 source ./install/setup.bash
 export ROS_NAMESPACE=real

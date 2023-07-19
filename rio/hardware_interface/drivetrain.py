@@ -369,15 +369,41 @@ class SwerveModule():
             {
                 "name": self.wheel_joint_name,
                 "position": int(getWheelRadians(self.wheel_motor.getSelectedSensorPosition(), "position") * SCALING_FACTOR_FIX),
-                "velocity": int(getWheelRadians(self.wheel_motor.getSelectedSensorVelocity(), "velocity") * SCALING_FACTOR_FIX)
+                "velocity": int(getWheelRadians(self.wheel_motor.getSelectedSensorVelocity(), "velocity") * SCALING_FACTOR_FIX),
+                "effort": self.getWheelMotorEffort()
             },
             {
                 "name": self.axle_joint_name,
                 "position": int(self.getEncoderPosition() * SCALING_FACTOR_FIX),
-                "velocity": int(self.getEncoderVelocity() * SCALING_FACTOR_FIX)
+                "velocity": int(self.getEncoderVelocity() * SCALING_FACTOR_FIX),
+                "effort": self.getAxleMotorEffort()
             }
         ]
         return output
+    
+    def getAxleMotorEffort(self):
+        output = self.axle_motor.getMotorOutputPercent()
+        output = round(output/0.17, 2)
+        
+        if abs(output) < 1.0:
+            return int(output * SCALING_FACTOR_FIX)
+        else:
+            if output < 0:
+                return int(-SCALING_FACTOR_FIX)
+            else:
+                return int(SCALING_FACTOR_FIX)
+        
+    def getWheelMotorEffort(self):
+        output = self.wheel_motor.getMotorOutputPercent()
+        output = round(output/0.17, 2)
+        
+        if abs(output) < 1.0:
+            return int(output * SCALING_FACTOR_FIX)
+        else:
+            if output < 0:
+                return int(-SCALING_FACTOR_FIX)
+            else:
+                return int(SCALING_FACTOR_FIX)
     
 ############################################################################################################################################################
 # DriveTrain Class
@@ -463,6 +489,7 @@ class DriveTrain():
         names = [""]*8
         positions = [0]*8
         velocities = [0]*8
+        efforts = [0]*8
 
         encoderInfo = []
         encoderInfo += self.front_left.getEncoderData() 
@@ -474,7 +501,8 @@ class DriveTrain():
             names[index] = encoder['name']
             positions[index] = encoder['position']
             velocities[index] = encoder['velocity']
-        return { "name": names, "position": positions, "velocity": velocities }
+            efforts[index] = encoder['effort']
+        return { "name": names, "position": positions, "velocity": velocities, "effort": efforts }
 
     def stop(self):
         self.front_left.neutralize_module()

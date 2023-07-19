@@ -17,7 +17,7 @@ services:
     working_dir: /opt/workspace
     user: admin
     volumes:
-    - ${HOME}/edna2023:/opt/workspace
+    - ${HOME}/offseason2023:/opt/workspace
   zed_cam:
     image: ghcr.io/roboeagles4828/jetson-zed:1
     network_mode: "host"
@@ -44,8 +44,8 @@ services:
       - /usr/share/vpi2:/usr/share/vpi2
       - /run/jtop.sock:/run/jtop.sock:ro
       - /dev/*:/dev/*
-      - ${HOME}/edna2023/scripts/config/SN39192289.conf:/usr/local/zed/settings/SN39192289.conf
-      - ${HOME}/edna2023/src/edna_bringup/launch/zed2i.launch.py:/root/ros2_ws/src/zed-ros2-wrapper/zed_wrapper/launch/zed2i.launch.py
+      - ${HOME}/offseason2023/scripts/config/SN39192289.conf:/usr/local/zed/settings/SN39192289.conf
+      - ${HOME}/offseason2023/src/edna_bringup/launch/zed2i.launch.py:/root/ros2_ws/src/zed-ros2-wrapper/zed_wrapper/launch/zed2i.launch.py
     depends_on:
       - main_control
     deploy:

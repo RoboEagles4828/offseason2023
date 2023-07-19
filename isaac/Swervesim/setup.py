@@ -24,7 +24,7 @@ INSTALL_REQUIRES = [
 setup(
     name="swervesim",
     author="NVIDIA",
-    version="1.1.0",
+    version="1.2.0",
     description="RL environments for robot learning in NVIDIA Isaac Sim.",
     keywords=["robotics", "rl"],
     include_package_data=True,

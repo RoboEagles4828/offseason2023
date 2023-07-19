@@ -59,8 +59,8 @@ launch_isaac() {
 }
 
 # Update the urdf file before launching
-if [ -d /workspaces/edna2023/install ]; then
-    source /workspaces/edna2023/install/setup.bash
+if [ -d /workspaces/offseason2023/install ]; then
+    source /workspaces/offseason2023/install/setup.bash
     xacro src/edna_description/urdf/robots/edna.urdf.xacro > src/edna_description/urdf/edna.urdf namespace:=$ROS_NAMESPACE
 fi
 

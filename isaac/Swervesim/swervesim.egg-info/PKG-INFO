@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: swervesim
-Version: 1.1.0
+Version: 1.2.0
 Summary: RL environments for robot learning in NVIDIA Isaac Sim.
 Author: NVIDIA
 Keywords: robotics,rl

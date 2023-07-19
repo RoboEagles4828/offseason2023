@@ -35,7 +35,7 @@ from omni.isaac.core.objects import DynamicSphere
 
 from omni.isaac.core.utils.prims import get_prim_at_path
 from omni.isaac.core.utils.torch.rotations import *
-from omni.isaac.core.prims import RigidPrimView, GeometryPrim
+from omni.isaac.core.prims import RigidPrimView, RigidPrim
 from omni.isaac.core.utils.stage import add_reference_to_stage
 
 
@@ -156,12 +156,12 @@ class Swerve_Field_Task(RLTask):
         # add_reference_to_stage(cone, self.default_zero_env_path+"/Cone_6")
         # add_reference_to_stage(cone, self.default_zero_env_path+"/Cone_7")
         # add_reference_to_stage(cone, self.default_zero_env_path+"/Cone_8")
-        self.cone_1 = GeometryPrim(self.default_zero_env_path+"/Cone_1","cone_1_view",position=np.array([1.20298,-0.56861,0.0]))
-        self.cone_2 = GeometryPrim(self.default_zero_env_path+"/Cone_2","cone_2_view",position=np.array([1.20298,3.08899,0.0]))
-        self.cone_3 = GeometryPrim(self.default_zero_env_path+"/Cone_3","cone_3_view",position=np.array([-1.20298,-0.56861,0.0]))
-        self.cone_4 = GeometryPrim(self.default_zero_env_path+"/Cone_4","cone_4_view",position=np.array([-1.20298,3.08899,0.0]))
-        chargestation_1 = GeometryPrim(self.default_zero_env_path+"/ChargeStation_1","cone_3_view",position=np.array([-4.20298,-0.56861,0.0]))
-        chargestation_2 = GeometryPrim(self.default_zero_env_path+"/ChargeStation_2","cone_4_view",position=np.array([4.20298,0.56861,0.0]))
+        self.cone_1 = RigidPrim(self.default_zero_env_path+"/Cone_1","cone_1_view",position=np.array([1.20298,-0.56861,0.0]))
+        self.cone_2 = RigidPrim(self.default_zero_env_path+"/Cone_2","cone_2_view",position=np.array([1.20298,3.08899,0.0]))
+        self.cone_3 = RigidPrim(self.default_zero_env_path+"/Cone_3","cone_3_view",position=np.array([-1.20298,-0.56861,0.0]))
+        self.cone_4 = RigidPrim(self.default_zero_env_path+"/Cone_4","cone_4_view",position=np.array([-1.20298,3.08899,0.0]))
+        chargestation_1 = RigidPrim(self.default_zero_env_path+"/ChargeStation_1","cone_3_view",position=np.array([-4.20298,-0.56861,0.0]))
+        chargestation_2 = RigidPrim(self.default_zero_env_path+"/ChargeStation_2","cone_4_view",position=np.array([4.20298,0.56861,0.0]))
         
 
         add_reference_to_stage(cube, self.default_zero_env_path+"/Cube_1")
@@ -172,10 +172,10 @@ class Swerve_Field_Task(RLTask):
         # add_reference_to_stage(cube, self.default_zero_env_path+"/Cube_6")
         # add_reference_to_stage(cube, self.default_zero_env_path+"/Cube_7")
         # add_reference_to_stage(cube, self.default_zero_env_path+"/Cube_8")
-        self.cube_1 = GeometryPrim(self.default_zero_env_path+"/Cube_1","cube_1_view",position=np.array([1.20298,0.65059,0.121]))
-        self.cube_2 = GeometryPrim(self.default_zero_env_path+"/Cube_2","cube_2_view",position=np.array([1.20298,1.86979,0.121]))
-        self.cube_3 = GeometryPrim(self.default_zero_env_path+"/Cube_3","cube_3_view",position=np.array([-1.20298,0.65059,0.121]))
-        self.cube_4 = GeometryPrim(self.default_zero_env_path+"/Cube_4","cube_4_view",position=np.array([-1.20298,1.86979,0.121]))
+        self.cube_1 = RigidPrim(self.default_zero_env_path+"/Cube_1","cube_1_view",position=np.array([1.20298,0.65059,0.121]))
+        self.cube_2 = RigidPrim(self.default_zero_env_path+"/Cube_2","cube_2_view",position=np.array([1.20298,1.86979,0.121]))
+        self.cube_3 = RigidPrim(self.default_zero_env_path+"/Cube_3","cube_3_view",position=np.array([-1.20298,0.65059,0.121]))
+        self.cube_4 = RigidPrim(self.default_zero_env_path+"/Cube_4","cube_4_view",position=np.array([-1.20298,1.86979,0.121]))
 
         return
 
@@ -314,8 +314,7 @@ class Swerve_Field_Task(RLTask):
         self.dof_pos[env_ids, 3] = torch_rand_float(
             -math.pi, math.pi, (num_resets, 1), device=self._device).squeeze()
         self.dof_vel[env_ids, :] = 0
-
-        root_pos = self.initial_root_pos.clone()
+        root_pos = self.root_pos.clone()
         root_pos[env_ids, 0] += torch_rand_float(-0.5, 0.5,
                                                  (num_resets, 1), device=self._device).view(-1)
         root_pos[env_ids, 1] += torch_rand_float(-0.5, 0.5,
@@ -349,7 +348,7 @@ class Swerve_Field_Task(RLTask):
         self.dof_vel = self._swerve.get_joint_velocities()
 
         # self.initial_ball_pos, self.initial_ball_rot = self._balls.get_world_poses()
-        # self.initial_root_pos, self.initial_root_rot = self.root_pos.clone(), self.root_rot.clone()
+        self.initial_root_pos, self.initial_root_rot = self.root_pos.clone(), self.root_rot.clone()
 
         # initialize some data used later on
         self.extras = {}
@@ -379,8 +378,8 @@ class Swerve_Field_Task(RLTask):
 
         # shift the target up so it visually aligns better
         ball_pos = self.target_positions[envs_long] + self._env_pos[envs_long]
-        self._balls.set_world_poses(
-            ball_pos[:, 0:3], self.initial_ball_rot[envs_long].clone(), indices=env_ids)
+        # self._balls.set_world_poses(
+        #     ball_pos[:, 0:3], self.initial_ball_rot[envs_long].clone(), indices=env_ids)
 
     def calculate_metrics(self) -> None:
 
