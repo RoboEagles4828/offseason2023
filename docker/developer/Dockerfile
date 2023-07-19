@@ -87,7 +87,15 @@ COPY src /tmp/src
 USER ${USERNAME}
 RUN /opt/install-scripts/install-rosdeps
 USER root
-RUN mkdir -p /opt/workspace
+RUN mkdir -p '/opt/workspace'
+
+#######################
+# Install Python deps #
+#######################
+RUN pip install rticonnextdds-connector \
+robotpy==2023.4.2.1 \
+robotpy[all] \
+wpilib==2023.4.2.0 
 
 ######################
 # Docker Permissions #

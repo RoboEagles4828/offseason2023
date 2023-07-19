@@ -1,7 +1,7 @@
 version: "3.6"
 services:
   main_control:
-    # image: "ghcr.io/roboeagles4828/developer-environment:6"
+    # image: "ghcr.io/roboeagles4828/developer-environment:7"
     image: "ghcr.io/roboeagles4828/jetson:3"
     network_mode: "host"
     environment:
