@@ -9,4 +9,5 @@ view_tmp.rviz
 .devcontainer/.env
 src/edna_description/urdf/edna.urdf
 .env
-.rsyncmetadata
+.rsyncmetadatario/simgui-ds.json
+rio/simgui-window.json
