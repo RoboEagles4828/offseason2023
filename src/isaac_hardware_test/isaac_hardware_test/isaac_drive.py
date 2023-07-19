@@ -30,6 +30,7 @@ class IsaacDriveHardware(Node):
         
         self.realtime_isaac_command: JointState = JointState()
         self.joint_state_command: JointState = JointState()
+        
 
     def real_callback(self, joint_state: JointState):
         self.joint_names = list(joint_state.name)
@@ -41,7 +42,7 @@ class IsaacDriveHardware(Node):
         self.joint_state2 = joint_state
         self.read()
         
-    def convertToRosPosition(isaac_position: float):
+    def convertToRosPosition(self, isaac_position: float):
         if isaac_position > math.pi:
             return isaac_position - 2.0 * math.pi
         elif isaac_position < -math.pi:
@@ -49,6 +50,7 @@ class IsaacDriveHardware(Node):
         return isaac_position
         
     def read(self):
+        self.joint_state_command.effort = []
         if self.joint_state2 == None:
             self._logger.warn("Velocity message recieved was null")
             return
@@ -58,12 +60,12 @@ class IsaacDriveHardware(Node):
         velocities = self.joint_state2.velocity
         efforts = self.joint_state2.effort
         
-        for i in range(len(self.joint_names)):
-            for j in range(len(names)):
+        for i in range(len(self.joint_names)-1):
+            for j in range(len(names)-1):
                 if names[j] == self.joint_names[i]:
-                    self.joint_state_command.position[i] = self.convertToRosPosition(positions[j])
-                    self.joint_state_command.velocity[i] = velocities[j]
-                    self.joint_state_command.effort[i] = efforts[j]
+                    self.joint_state_command.position.append(self.convertToRosPosition(positions[j]))
+                    self.joint_state_command.velocity.append(velocities[j])
+                    self.joint_state_command.effort.append(efforts[j])
                     break
                 
         # self.joint_state_command.header.stamp = Time(seconds=self._clock.now().seconds_nanoseconds()[0], nanoseconds=self._clock.now().seconds_nanoseconds()[1])
