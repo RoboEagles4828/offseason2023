@@ -4,6 +4,7 @@ from rclpy.node import Node
 from rclpy.parameter import Parameter
 from sensor_msgs.msg import JointState
 from rclpy.time import Time, Duration
+from std_msgs.msg import Header
 import math
 
 class IsaacDriveHardware(Node):
@@ -30,6 +31,8 @@ class IsaacDriveHardware(Node):
         
         self.realtime_isaac_command: JointState = JointState()
         self.joint_state_command: JointState = JointState()
+        
+        self.header = Header()
         
 
     def real_callback(self, joint_state: JointState):
@@ -78,25 +81,27 @@ class IsaacDriveHardware(Node):
         self.drive_joint_names.clear()
         for j, i in enumerate(self.joint_names):
             if i.__contains__("wheel") or i.__contains__("axle"):
-                effort = self.joint_state.effort[j]
-                self.command_effort.append(effort/10000.0)
+                vel = self.joint_state.velocity[j]
+                self.command_effort.append(vel/10000.0)
                 self.drive_joint_names.append(i)
             else:
                 position = self.joint_state.position[j]
-                self.command_position.append(position/10000.0)
+                self.command_position.append(position)
                 self.arm_joint_names.append(i)
-                
-        # self.realtime_isaac_command.header.stamp = Time(seconds=self._clock.now().seconds_nanoseconds()[0], nanoseconds=self._clock.now().seconds_nanoseconds()[1])
+                        
+        self.header.stamp = self._clock.now().to_msg()
         
-        # self.realtime_isaac_command.header.stamp = Time(seconds=self._clock.now().seconds_nanoseconds()[0], nanoseconds=self._clock.now().seconds_nanoseconds()[1])nd)
-        
+        self.realtime_isaac_command.header = self.header
         self.realtime_isaac_command.name = self.drive_joint_names
-        self.realtime_isaac_command.velocity = self.empty
+        self.realtime_isaac_command.velocity = self.command_effort
         self.realtime_isaac_command.position = self.empty
-        self.realtime_isaac_command.effort = self.command_effort
+        self.realtime_isaac_command.effort = self.empty
         
         self.realtime_isaac_publisher_drive.publish(self.realtime_isaac_command)
         
+        self.header.stamp = self._clock.now().to_msg()
+        
+        self.realtime_isaac_command.header = self.header
         self.realtime_isaac_command.name = self.arm_joint_names
         self.realtime_isaac_command.velocity = self.empty
         self.realtime_isaac_command.position = self.command_position

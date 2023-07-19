@@ -274,7 +274,7 @@ class SwerveModule():
         self.axle_motor.enableVoltageCompensation(True)
 
         # Braking
-        self.axle_motor.setNeutralMode(ctre.NeutralMode.Coast)
+        self.axle_motor.setNeutralMode(ctre.NeutralMode.Brake)
 
         # Velocity Ramp Removed
         self.axle_motor.configClosedloopRamp(0)
