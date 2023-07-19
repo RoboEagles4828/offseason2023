@@ -28,7 +28,7 @@
     "###Joysticks": {
       "Collapsed": "0",
       "Pos": "480,465",
-      "Size": "952,278"
+      "Size": "952,82"
     },
     "###NetworkTables": {
       "Collapsed": "1",
@@ -52,8 +52,8 @@
     },
     "###System Joysticks": {
       "Collapsed": "0",
-      "Pos": "519,19",
-      "Size": "425,254"
+      "Pos": "515,44",
+      "Size": "232,254"
     },
     "###Timing": {
       "Collapsed": "0",

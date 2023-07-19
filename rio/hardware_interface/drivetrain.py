@@ -620,7 +620,8 @@ class DriveTrain():
 
         self.last_state = self.speeds
 
-        logging.info(f"Navx: {Rotation2d.fromDegrees(self.navx.getFusedHeading()).__mul__(-1)} linX: {round(self.speeds.vx, 2)} linY: {round(self.speeds.vy, 2)} angZ: {round(self.speeds.omega, 2)} AutoTurn: {self.auto_turn_value} Slow: {self.slow}")
+        logging.info(f"Vel: {self.motor_vels} Pos: {self.motor_pos} Temp: {self.motor_temps} X: {self.linX} Y: {self.linY} Z {self.angZ}")
+        #logging.info(f"Navx: {Rotation2d.fromDegrees(self.navx.getFusedHeading()).__mul__(-1)} linX: {round(self.speeds.vx, 2)} linY: {round(self.speeds.vy, 2)} angZ: {round(self.speeds.omega, 2)} AutoTurn: {self.auto_turn_value} Slow: {self.slow}")
 
     def swerveDriveAuton(self, linearX, linearY, angularZ):
         self.ROBOT_MAX_TRANSLATIONAL = self.profile_selector.getSelected()[0]
