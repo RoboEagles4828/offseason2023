@@ -34,7 +34,7 @@ MODULE_CONFIG = {
         "axle_joint_name": "front_right_axle_joint",
         "axle_motor_port": 4, #10
         "axle_encoder_port": 5, #11
-        "encoder_offset": 45.439 + 180.0, #15.908,
+        "encoder_offset": 45.439, #+ 180.0, #15.908, TODO: REDO ENCODER OFFSET
         "location" : Translation2d(-0.52085486, -0.52085486)# Translation2d(-0.52085486, 0.52085486)
     },
     "rear_left": {
@@ -43,7 +43,7 @@ MODULE_CONFIG = {
         "axle_joint_name": "rear_left_axle_joint",
         "axle_motor_port": 10, #4
         "axle_encoder_port": 11, #5
-        "encoder_offset": 16.084 + 180.0, #327.393,
+        "encoder_offset": 16.084, #+ 180.0, #327.393, TODO: REDO ENCODER OFFSET
         "location" : Translation2d(0.52085486, 0.52085486) #Translation2d(0.52085486, -0.52085486)
     },
     "rear_right": {
@@ -151,6 +151,12 @@ def radiansToMeters(radians):
     wheel_circ = 2 * math.pi * wheel_rad
     return radians * wheel_circ
 
+def metersToRadians(meters):
+    wheel_rad = 0.0508
+    wheel_circ = 2 * math.pi * wheel_rad
+    
+    return meters/wheel_circ
+
 
 class SwerveModule():
     def __init__(self, module_config) -> None:
@@ -181,8 +187,7 @@ class SwerveModule():
     def setupEncoder(self):
         self.encoderconfig = ctre.sensors.CANCoderConfiguration()
         self.encoderconfig.absoluteSensorRange = ctre.sensors.AbsoluteSensorRange.Unsigned_0_to_360
-        self.encoderconfig.initializationStrategy = ctre.sensors.SensorInitializationStrategy.BootToAbsolutePosition
-        self.encoderconfig.magnetOffsetDegrees = self.encoder_offset
+        self.encoderconfig.initializationStrategy = ctre.sensors.SensorInitializationStrategy.BootToZero # TODO: CHANGE BACK TO ABSOLUTE
         self.encoderconfig.sensorDirection = ENCODER_DIRECTION
         self.encoder.configAllSettings(self.encoderconfig)
         self.encoder.setPositionToAbsolute(timeout_ms)
@@ -611,6 +616,8 @@ class DriveTrain():
         self.front_right.set(self.front_right_state)
         self.rear_left.set(self.rear_left_state)
         self.rear_right.set(self.rear_right_state)
+        
+        
 
         #logging.info(f"angz: {angularZ}, FL: {self.front_left_state.speed}, FR: {self.front_right_state.speed}, BL: {self.rear_left_state.speed}, BR: {self.rear_right_state.speed}")
 
@@ -620,7 +627,7 @@ class DriveTrain():
 
         self.last_state = self.speeds
 
-        logging.info(f"Vel: {self.motor_vels} Pos: {self.motor_pos} Temp: {self.motor_temps} X: {self.linX} Y: {self.linY} Z {self.angZ}")
+        logging.info(f"RL: {self.rear_left_state.speed} {self.rear_left_state.angle.radians()} Vel: {self.motor_vels} Pos: {self.motor_pos}")
         #logging.info(f"Navx: {Rotation2d.fromDegrees(self.navx.getFusedHeading()).__mul__(-1)} linX: {round(self.speeds.vx, 2)} linY: {round(self.speeds.vy, 2)} angZ: {round(self.speeds.omega, 2)} AutoTurn: {self.auto_turn_value} Slow: {self.slow}")
 
     def swerveDriveAuton(self, linearX, linearY, angularZ):
