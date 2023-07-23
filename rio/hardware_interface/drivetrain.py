@@ -25,7 +25,7 @@ MODULE_CONFIG = {
         "axle_joint_name": "front_left_axle_joint",
         "axle_motor_port": 1, #7
         "axle_encoder_port": 2, #8
-        "encoder_offset": 18.721, # 248.203,
+        "encoder_offset": 0.0, #18.721, # 248.203,
         "location" : Translation2d(-0.52085486, 0.52085486) # Translation2d(0.52085486, 0.52085486)
     },
     "front_right": {
@@ -34,7 +34,7 @@ MODULE_CONFIG = {
         "axle_joint_name": "front_right_axle_joint",
         "axle_motor_port": 4, #10
         "axle_encoder_port": 5, #11
-        "encoder_offset": 45.439, #+ 180.0, #15.908, TODO: REDO ENCODER OFFSET
+        "encoder_offset": 0.0, #45.439, #+ 180.0, #15.908, TODO: REDO ENCODER OFFSET
         "location" : Translation2d(-0.52085486, -0.52085486)# Translation2d(-0.52085486, 0.52085486)
     },
     "rear_left": {
@@ -43,7 +43,7 @@ MODULE_CONFIG = {
         "axle_joint_name": "rear_left_axle_joint",
         "axle_motor_port": 10, #4
         "axle_encoder_port": 11, #5
-        "encoder_offset": 16.084, #+ 180.0, #327.393, TODO: REDO ENCODER OFFSET
+        "encoder_offset": 0.0, #16.084, #+ 180.0, #327.393, TODO: REDO ENCODER OFFSET
         "location" : Translation2d(0.52085486, 0.52085486) #Translation2d(0.52085486, -0.52085486)
     },
     "rear_right": {
@@ -52,7 +52,7 @@ MODULE_CONFIG = {
         "axle_joint_name": "rear_right_axle_joint",
         "axle_motor_port": 7, #1
         "axle_encoder_port": 8, #2
-        "encoder_offset": -9.141, #201.094,
+        "encoder_offset": 0.0, #-9.141, #201.094,
         "location" : Translation2d(0.52085486, -0.52085486) # Translation2d(-0.52085486, -0.52085486)
     }
 }
@@ -187,10 +187,7 @@ class SwerveModule():
     def setupEncoder(self):
         self.encoderconfig = ctre.sensors.CANCoderConfiguration()
         self.encoderconfig.absoluteSensorRange = ctre.sensors.AbsoluteSensorRange.Unsigned_0_to_360
-        self.encoderconfig.initializationStrategy = ctre.sensors.SensorInitializationStrategy.BootToZero # TODO: CHANGE BACK TO ABSOLUTE
-        self.encoderconfig.sensorDirection = ENCODER_DIRECTION
-        self.encoder.configAllSettings(self.encoderconfig)
-        self.encoder.setPositionToAbsolute(timeout_ms)
+        self.encoderconfig.initializationStrategy = ctre.sensors.SensorInitializationStrategy.BootToAbsolutePosition
         self.encoder.setStatusFramePeriod(ctre.sensors.CANCoderStatusFrame.SensorData, 10, timeout_ms)
     
     def getEncoderPosition(self):
@@ -484,7 +481,7 @@ class DriveTrain():
         
         self.motor_vels = []
         self.motor_pos = []
-
+        
     def reset_slew(self):
         self.slew_X.reset(0)
         self.slew_Y.reset(0)
@@ -524,8 +521,15 @@ class DriveTrain():
                 if 0 <= abs(speeds.omega) <= 0.1:
                     return True
         return False
+    
+    def customOptimize(self, desiredState: SwerveModuleState, currentAngle: Rotation2d):
+        delta = desiredState.angle.__sub__(currentAngle)
+        if abs(delta.radians()) > (math.pi/2.0):
+            return SwerveModuleState(desiredState.speed * -1.0, desiredState.angle.rotateBy(Rotation2d.fromDegrees(180.0)))
+        else:
+            return SwerveModuleState(desiredState.speed, desiredState.angle)
 
-    def swerveDrive(self, joystick: Joystick):  
+    def swerveDrive(self, joystick: Joystick):
         self.ROBOT_MAX_TRANSLATIONAL = self.profile_selector.getSelected()[0]
         self.ROBOT_MAX_ROTATIONAL = self.profile_selector.getSelected()[1]
         self.MODULE_MAX_SPEED = self.profile_selector.getSelected()[0]
@@ -607,10 +611,16 @@ class DriveTrain():
 
         # optimize states
         # This makes the modules take the shortest path to the desired angle
-        self.front_left_state = SwerveModuleState.optimize(self.front_left_state, Rotation2d(self.front_left.getEncoderPosition()))
-        self.front_right_state = SwerveModuleState.optimize(self.front_right_state, Rotation2d(self.front_right.getEncoderPosition()))
-        self.rear_left_state = SwerveModuleState.optimize(self.rear_left_state, Rotation2d(self.rear_left.getEncoderPosition()))
-        self.rear_right_state = SwerveModuleState.optimize(self.rear_right_state, Rotation2d(self.rear_right.getEncoderPosition()))
+        # self.front_left_state = SwerveModuleState.optimize(self.front_left_state, Rotation2d(self.front_left.getEncoderPosition()))
+        # self.front_right_state = SwerveModuleState.optimize(self.front_right_state, Rotation2d(self.front_right.getEncoderPosition()))
+        # self.rear_left_state = SwerveModuleState.optimize(self.rear_left_state, Rotation2d(self.rear_left.getEncoderPosition()))
+        # self.rear_right_state = SwerveModuleState.optimize(self.rear_right_state, Rotation2d(self.rear_right.getEncoderPosition()))
+        
+        # using custom optimize
+        self.front_left_state = self.customOptimize(self.front_left_state, Rotation2d(self.front_left.getEncoderPosition()))
+        self.front_right_state = self.customOptimize(self.front_right_state, Rotation2d(self.front_right.getEncoderPosition()))
+        self.rear_left_state = self.customOptimize(self.rear_left_state, Rotation2d(self.rear_left.getEncoderPosition()))
+        self.rear_right_state = self.customOptimize(self.rear_right_state, Rotation2d(self.rear_right.getEncoderPosition()))
 
         self.front_left.set(self.front_left_state)
         self.front_right.set(self.front_right_state)
@@ -626,9 +636,14 @@ class DriveTrain():
         self.motor_temps = [self.front_left.wheel_motor.getTemperature(), self.front_right.wheel_motor.getTemperature() ,self.rear_left.wheel_motor.getTemperature(), self.rear_right.wheel_motor.getTemperature()]
 
         self.last_state = self.speeds
+        
+        if self.field_oriented_value:
+            self.print = f"Navx: {Rotation2d.fromDegrees(self.navx.getFusedHeading()).__mul__(-1)} "
+        else:
+            self.print = ""
 
-        logging.info(f"RL: {self.rear_left_state.speed} {self.rear_left_state.angle.radians()} Vel: {self.motor_vels} Pos: {self.motor_pos}")
-        #logging.info(f"Navx: {Rotation2d.fromDegrees(self.navx.getFusedHeading()).__mul__(-1)} linX: {round(self.speeds.vx, 2)} linY: {round(self.speeds.vy, 2)} angZ: {round(self.speeds.omega, 2)} AutoTurn: {self.auto_turn_value} Slow: {self.slow}")
+        #logging.info(f"FR: {self.front_left_state.speed}, {self.front_left_state.angle.radians()} | Vel: {self.motor_vels} Pos: {self.motor_pos}")
+        logging.info(f"{self.print}linX: {round(self.speeds.vx, 2)} linY: {round(self.speeds.vy, 2)} angZ: {round(self.speeds.omega, 2)} AutoTurn: {self.auto_turn_value} Slow: {self.slow}")
 
     def swerveDriveAuton(self, linearX, linearY, angularZ):
         self.ROBOT_MAX_TRANSLATIONAL = self.profile_selector.getSelected()[0]
@@ -649,6 +664,12 @@ class DriveTrain():
         self.front_right_state = SwerveModuleState.optimize(self.front_right_state, Rotation2d(self.front_right.getEncoderPosition()))
         self.rear_left_state = SwerveModuleState.optimize(self.rear_left_state, Rotation2d(self.rear_left.getEncoderPosition()))
         self.rear_right_state = SwerveModuleState.optimize(self.rear_right_state, Rotation2d(self.rear_right.getEncoderPosition()))
+        
+        # using custom optimize
+        # self.front_left_state = self.customOptimize(self.front_left_state, Rotation2d(self.front_left.getEncoderPosition()))
+        # self.front_right_state = self.customOptimize(self.front_right_state, Rotation2d(self.front_right.getEncoderPosition()))
+        # self.rear_left_state = self.customOptimize(self.rear_left_state, Rotation2d(self.rear_left.getEncoderPosition()))
+        # self.rear_right_state = self.customOptimize(self.rear_right_state, Rotation2d(self.rear_right.getEncoderPosition()))
 
         self.front_left.set(self.front_left_state)
         self.front_right.set(self.front_right_state)

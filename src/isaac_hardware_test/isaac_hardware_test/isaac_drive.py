@@ -75,8 +75,8 @@ class IsaacDriveHardware(Node):
         self.joint_state_publisher.publish(self.joint_state_command)
                     
     def write(self):
-        self.command_effort.clear()
-        self.command_position.clear()
+        self.command_effort = []
+        self.command_position = []
         self.arm_joint_names.clear()
         self.drive_joint_names.clear()
         for j, i in enumerate(self.joint_names):
@@ -85,9 +85,28 @@ class IsaacDriveHardware(Node):
                 self.command_effort.append(vel/10000.0)
                 self.drive_joint_names.append(i)
             else:
-                position = self.joint_state.position[j]
-                self.command_position.append(position)
                 self.arm_joint_names.append(i)
+                position = self.joint_state.position[j]/10000.0
+                
+                # Elevator
+                if i == "arm_roller_bar_joint":
+                    # split position among 2 joints
+                    self.command_position.append(position)
+                    self.arm_joint_names.append("elevator_outer_1_joint")
+                    if position == 0.07:
+                        self.command_position.append(0.2)
+                    elif position == 0.0:
+                        self.command_position.append(0.0)
+                elif i == "top_slider_joint":
+                    self.command_position.append(position)
+                elif i == "top_gripper_left_arm_joint":
+                    self.command_position.append(position)
+                    self.arm_joint_names.append("top_gripper_right_arm_joint")
+                    self.command_position.append(position)
+                elif i == "elevator_center_joint":
+                    self.command_position.append(position/2.0)
+                    self.arm_joint_names.append("elevator_outer_2_joint")
+                    self.command_position.append(position/2.0)
                         
         self.header.stamp = self._clock.now().to_msg()
         

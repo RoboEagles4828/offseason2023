@@ -479,32 +479,45 @@ class ImportBot(BaseSample):
                     ("ReadSimTime", "omni.isaac.core_nodes.IsaacReadSimulationTime"),
                     ("Context", "omni.isaac.ros2_bridge.ROS2Context"),
                     ("PublishJointState", "omni.isaac.ros2_bridge.ROS2PublishJointState"),
-                    ("SubscribeJointState", "omni.isaac.ros2_bridge.ROS2SubscribeJointState"),
+                    ("SubscribeDriveState", "omni.isaac.ros2_bridge.ROS2SubscribeJointState"),
+                    ("SubscribeArmState", "omni.isaac.ros2_bridge.ROS2SubscribeJointState"),
                     ("articulation_controller", "omni.isaac.core_nodes.IsaacArticulationController"),
+                    ("arm_articulation_controller", "omni.isaac.core_nodes.IsaacArticulationController"),
                     
                 ],
                 og.Controller.Keys.SET_VALUES: [
                     ("PublishJointState.inputs:topicName", "isaac_joint_states"),
-                    ("SubscribeJointState.inputs:topicName", "isaac_drive_commands"),
+                    ("SubscribeDriveState.inputs:topicName", "isaac_drive_commands"),
+                    ("SubscribeArmState.inputs:topicName", "isaac_arm_commands"),
                     ("articulation_controller.inputs:usePath", False),
-                    ("SubscribeJointState.inputs:nodeNamespace", f"/{NAMESPACE}"),
+                    ("arm_articulation_controller.inputs:usePath", False),
+                    ("SubscribeDriveState.inputs:nodeNamespace", f"/{NAMESPACE}"),
+                    ("SubscribeArmState.inputs:nodeNamespace", f"/{NAMESPACE}"),
                     ("PublishJointState.inputs:nodeNamespace", f"/{NAMESPACE}"),
                 ],
                 og.Controller.Keys.CONNECT: [
                     ("OnPlaybackTick.outputs:tick", "PublishJointState.inputs:execIn"),
-                    ("OnPlaybackTick.outputs:tick", "SubscribeJointState.inputs:execIn"),
+                    ("OnPlaybackTick.outputs:tick", "SubscribeDriveState.inputs:execIn"),
+                    ("OnPlaybackTick.outputs:tick", "SubscribeArmState.inputs:execIn"),
                    
-                    ("OnPlaybackTick.outputs:tick", "articulation_controller.inputs:execIn"),
+                    ("SubscribeDriveState.outputs:execOut", "articulation_controller.inputs:execIn"),
+                    ("SubscribeArmState.outputs:execOut", "arm_articulation_controller.inputs:execIn"),
                     ("ReadSimTime.outputs:simulationTime", "PublishJointState.inputs:timeStamp"),
+                    
                     ("Context.outputs:context", "PublishJointState.inputs:context"),
-                    ("Context.outputs:context", "SubscribeJointState.inputs:context"),
-                    ("SubscribeJointState.outputs:jointNames", "articulation_controller.inputs:jointNames"),
-                    ("SubscribeJointState.outputs:velocityCommand", "articulation_controller.inputs:velocityCommand"),
+                    ("Context.outputs:context", "SubscribeDriveState.inputs:context"),
+                    ("Context.outputs:context", "SubscribeArmState.inputs:context"),
+                    
+                    ("SubscribeDriveState.outputs:jointNames", "articulation_controller.inputs:jointNames"),
+                    ("SubscribeDriveState.outputs:velocityCommand", "articulation_controller.inputs:velocityCommand"),
+                    ("SubscribeArmState.outputs:jointNames", "arm_articulation_controller.inputs:jointNames"),
+                    ("SubscribeArmState.outputs:positionCommand", "arm_articulation_controller.inputs:positionCommand"),
                 ],
             }
         )
 
         set_target_prims(primPath=f"{robot_controller_path}/articulation_controller", targetPrimPaths=[robot_prim_path])
+        set_target_prims(primPath=f"{robot_controller_path}/arm_articulation_controller", targetPrimPaths=[robot_prim_path])
         set_target_prims(primPath=f"{robot_controller_path}/PublishJointState", targetPrimPaths=[robot_prim_path])
         return
 

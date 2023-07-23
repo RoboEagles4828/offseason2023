@@ -147,7 +147,6 @@ class Robot(wpilib.TimedRobot):
         logging.warning("Running in simulation!") if wpilib.RobotBase.isSimulation() else logging.info("Running in real!")
         
         self.threads = []
-        self.threads = []
         if self.use_threading:
             logging.info("Initializing Threads")
             global stop_threads

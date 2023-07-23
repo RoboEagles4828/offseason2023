@@ -16,6 +16,15 @@ import typing
 
 if typing.TYPE_CHECKING:
     from rio.ros2robot import EdnaRobot
+    
+import threading
+import logging
+import time
+import traceback
+import os
+import inspect
+
+from dds.dds import DDS_Subscriber
 
 # Calculations
 axle_radius = 0.05
@@ -27,6 +36,15 @@ wheel_mass = 0.2313
 center_axle_moi = 0.5 * pow(axle_radius, 2) * axle_mass
 center_side_wheel_moi = (0.25 * pow(wheel_radius, 2) * wheel_mass) + ((1/12) * pow(wheel_length, 2) * wheel_mass)
 center_wheel_moi = 0.5 * pow(wheel_radius, 2) * wheel_mass
+
+curr_path = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+xml_path = os.path.join(curr_path, "dds/xml/ROS_RTI.xml")
+
+rti_init_lock = threading.Lock()
+joint_state_lock = threading.Lock()
+
+ISAAC_PARTICIPANT_NAME = "ROS2_PARTICIPANT_LIB::isaac_subscriber"
+ISAAC_READER_NAME = "isaac_joint_states_subscriber::isaac_joint_states_reader"
 
 class PhysicsEngine:
     def __init__(self, physics_controller: PhysicsInterface, robot: "EdnaRobot"):
@@ -52,23 +70,149 @@ class PhysicsEngine:
         self.armRollerBar = wpilib.simulation.DoubleSolenoidSim(self.pneumaticHub, *PORTS['ARM_ROLLER_BAR'])
         self.topGripperSlider = wpilib.simulation.DoubleSolenoidSim(self.pneumaticHub, *PORTS['TOP_GRIPPER_SLIDER'])
         self.topGripper = wpilib.simulation.DoubleSolenoidSim(self.pneumaticHub, *PORTS['TOP_GRIPPER'])
+        
+        self.isaac_thread = threading.Thread(target=self.isaacThread, daemon=True)
+        
+        self.joint_state = None
+        
+        self.front_left_wheel = 0
+        self.front_right_wheel = 0
+        self.rear_left_wheel = 0
+        self.rear_right_wheel = 0
+        
+        self.front_left_axle = 0
+        self.front_right_axle = 0
+        self.rear_left_axle = 0
+        self.rear_right_axle = 0
+        
+        self.empty = {
+            "wheel": [
+                0,
+                0
+            ],
+            "axle": [
+                0,
+                0
+            ]
+        }
+        
+        self.empty_list = [0, 0]
+        
+        self.front_left_state = self.empty
+        self.front_right_state = self.empty
+        self.rear_left_state = self.empty
+        self.rear_right_state = self.empty
+        
+        self.elevator_state = self.empty_list
+        
+    def initDDS(self, ddsAction, participantName, actionName):
+        dds = None
+        with rti_init_lock:
+            dds = ddsAction(xml_path, participantName, actionName)
+        return dds
 
+    def threadLoop(self, name, dds, action):
+        logging.info(f"Starting {name} thread")
+        global stop_threads
+        try:
+            while stop_threads == False:
+                action(dds)
+                time.sleep(20/1000)
+        except Exception as e:
+            logging.error(f"An issue occured with the {name} thread")
+            logging.error(e)
+            logging.error(traceback.format_exc())
+        
+        logging.info(f"Closing {name} thread")
+        dds.close()
 
     def update_sim(self, now: float, tm_diff: float) -> None:
-
+        
+        # Get swerve module_indicies
+        with joint_state_lock:
+            if self.joint_state != None:
+                self.front_left_wheel = self.joint_state["name"].index("front_left_wheel_joint")
+                self.front_right_wheel = self.joint_state["name"].index("front_right_wheel_joint")
+                self.rear_left_wheel = self.joint_state["name"].index("rear_left_wheel_joint")
+                self.rear_right_wheel = self.joint_state["name"].index("rear_right_wheel_joint")
+                
+                self.front_left_axle = self.joint_state["name"].index("front_left_axle_joint")
+                self.front_right_axle = self.joint_state["name"].index("front_right_axle_joint")
+                self.rear_left_axle = self.joint_state["name"].index("rear_left_axle_joint")
+                self.rear_right_axle = self.joint_state["name"].index("rear_right_axle_joint")
+                
+                self.elevator_center = self.joint_state["name"].index("elevator_center_joint")
+                
+                self.elevator_state = [
+                    self.joint_state["position"][self.elevator_center],
+                    self.joint_state["velocity"][self.elevator_center]
+                ]
+                
+                self.front_left_state = {
+                    "wheel": [
+                        self.joint_state["position"][self.front_left_wheel],
+                        self.joint_state["velocity"][self.front_left_wheel]
+                    ],
+                    "axle": [
+                        self.joint_state["position"][self.front_left_axle],
+                        self.joint_state["velocity"][self.front_left_axle]
+                    ]
+                }
+                
+                self.front_right_state = {
+                    "wheel": [
+                        self.joint_state["position"][self.front_right_wheel],
+                        self.joint_state["velocity"][self.front_right_wheel]
+                    ],
+                    "axle": [
+                        self.joint_state["position"][self.front_right_axle],
+                        self.joint_state["velocity"][self.front_right_axle]
+                    ]
+                }
+                
+                self.rear_left_state = {
+                    "wheel": [
+                        self.joint_state["position"][self.rear_left_wheel],
+                        self.joint_state["velocity"][self.rear_left_wheel]
+                    ],
+                    "axle": [
+                        self.joint_state["position"][self.rear_left_axle],
+                        self.joint_state["velocity"][self.rear_left_axle]
+                    ]
+                }
+                
+                self.rear_right_state = {
+                    "wheel": [
+                        self.joint_state["position"][self.rear_right_wheel],
+                        self.joint_state["velocity"][self.rear_right_wheel]
+                    ],
+                    "axle": [
+                        self.joint_state["position"][self.rear_right_axle],
+                        self.joint_state["velocity"][self.rear_right_axle]
+                    ]
+                }        
+        
         # Simulate Swerve Modules
-        self.frontLeftModuleSim.update(tm_diff)
-        self.frontRightModuleSim.update(tm_diff)
-        self.rearLeftModuleSim.update(tm_diff)
-        self.rearRightModuleSim.update(tm_diff)
+        self.frontLeftModuleSim.update(tm_diff, self.front_left_state["wheel"], self.front_left_state["axle"])
+        self.frontRightModuleSim.update(tm_diff, self.front_right_state["wheel"], self.front_right_state["axle"])
+        self.rearLeftModuleSim.update(tm_diff, self.rear_left_state["wheel"], self.rear_left_state["axle"])
+        self.rearRightModuleSim.update(tm_diff, self.rear_right_state["wheel"], self.rear_right_state["axle"])
 
         # Simulate Arm
-        self.elevator.update(tm_diff)
+        self.elevator.update(tm_diff, self.elevator_state[0], self.elevator_state[1])
         # self.intake.update(tm_diff)
 
         # Add Currents into Battery Simulation
         self.roborio.setVInVoltage(self.battery.calculate([0.0]))
-
+        
+    def isaacThread(self):
+        isaac_subscriber = self.initDDS(DDS_Subscriber, ISAAC_PARTICIPANT_NAME, ISAAC_READER_NAME)
+        self.threadLoop("isaac", isaac_subscriber, self.isaacAction)
+        
+    def isaacAction(self, subscriber):
+        with joint_state_lock:
+            self.joint_state = subscriber.read()
+            logging.info(self.isaac_thread.is_alive())
 
 class SwerveModuleSim():
     wheel : TalonFxSim = None
@@ -86,9 +230,9 @@ class SwerveModuleSim():
         # The issue is from the controller commanding the axle position to stay at the same position when idle
         # but if the axle is moving during that time it will constantly overshoot the idle position
     
-    def update(self, tm_diff):
-        self.wheel.update(tm_diff)
-        self.axle.update(tm_diff)
+    def update(self, tm_diff, wheel_state, axle_state):
+        self.wheel.update(tm_diff, wheel_state[0], wheel_state[1])
+        self.axle.update(tm_diff, axle_state[0], axle_state[1])
         self.encoder.update(tm_diff, self.axle.getVelocityRadians())
     
     # Useful for debugging the simulation or code
