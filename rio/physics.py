@@ -141,8 +141,6 @@ class PhysicsEngine:
                 self.rear_left_axle = self.joint_state["name"].index("rear_left_axle_joint")
                 self.rear_right_axle = self.joint_state["name"].index("rear_right_axle_joint")
                 
-                self.elevator_center = self.joint_state["name"].index("elevator_center_joint")
-                
                 self.elevator_state = [
                     self.joint_state["position"][self.elevator_center],
                     self.joint_state["velocity"][self.elevator_center]
@@ -193,13 +191,13 @@ class PhysicsEngine:
                 }        
         
         # Simulate Swerve Modules
-        self.frontLeftModuleSim.update(tm_diff, self.front_left_state["wheel"], self.front_left_state["axle"])
-        self.frontRightModuleSim.update(tm_diff, self.front_right_state["wheel"], self.front_right_state["axle"])
-        self.rearLeftModuleSim.update(tm_diff, self.rear_left_state["wheel"], self.rear_left_state["axle"])
-        self.rearRightModuleSim.update(tm_diff, self.rear_right_state["wheel"], self.rear_right_state["axle"])
+        self.frontLeftModuleSim.update(tm_diff, self.front_left_state["wheel"], self.front_left_state["axle"], True)
+        self.frontRightModuleSim.update(tm_diff, self.front_right_state["wheel"], self.front_right_state["axle"], True)
+        self.rearLeftModuleSim.update(tm_diff, self.rear_left_state["wheel"], self.rear_left_state["axle"], True)
+        self.rearRightModuleSim.update(tm_diff, self.rear_right_state["wheel"], self.rear_right_state["axle"], True)
 
         # Simulate Arm
-        self.elevator.update(tm_diff, self.elevator_state[0], self.elevator_state[1])
+        self.elevator.update(tm_diff, 0, 0, False)
         # self.intake.update(tm_diff)
 
         # Add Currents into Battery Simulation
@@ -230,9 +228,9 @@ class SwerveModuleSim():
         # The issue is from the controller commanding the axle position to stay at the same position when idle
         # but if the axle is moving during that time it will constantly overshoot the idle position
     
-    def update(self, tm_diff, wheel_state, axle_state):
-        self.wheel.update(tm_diff, wheel_state[0], wheel_state[1])
-        self.axle.update(tm_diff, axle_state[0], axle_state[1])
+    def update(self, tm_diff, wheel_state, axle_state, use_isaac):
+        self.wheel.update(tm_diff, wheel_state[0], wheel_state[1], use_isaac)
+        self.axle.update(tm_diff, axle_state[0], axle_state[1], use_isaac)
         self.encoder.update(tm_diff, self.axle.getVelocityRadians())
     
     # Useful for debugging the simulation or code

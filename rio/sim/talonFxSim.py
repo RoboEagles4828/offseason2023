@@ -28,19 +28,21 @@ class TalonFxSim:
 
     # Simulates the movement of falcon 500 motors by getting the voltages from the
     # the motor model that is being controlled by the robot code.
-    def update(self, period : float, isaac_position : float, isaac_velocity : float):
+    def update(self, period : float, isaac_position : float, isaac_velocity : float, use_isaac : bool):
         self.talonSim = self.talon.getSimCollection()
         
         # Update the motor model
         voltage = self.talonSim.getMotorOutputLeadVoltage() * self.sensorPhase
         self.motor.setInputVoltage(voltage)
         self.motor.update(period)
-        # newPosition = self.motor.getAngularPosition()
-        # self.deltaPosition = newPosition - self.position
-        # self.position = newPosition
-        # self.velocity = self.motor.getAngularVelocity()
-        self.position = isaac_position
-        self.velocity = isaac_velocity
+        if not use_isaac:
+            newPosition = self.motor.getAngularPosition()
+            self.deltaPosition = newPosition - self.position
+            self.position = newPosition
+            self.velocity = self.motor.getAngularVelocity()
+        else:
+            self.position = isaac_position * self.gearRatio
+            self.velocity = isaac_velocity * self.gearRatio
 
         if self.fwdLimitEnabled and self.position >= self.fwdLimit:
             self.talonSim.setLimitFwd(True)

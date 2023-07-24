@@ -108,11 +108,10 @@ def encoderAction(publisher):
 
     global drive_train
     with drive_train_lock:
-        drive_data = drive_train.getEncoderData()
+        drive_data = drive_train.getModuleCommand()
         data['name'] += drive_data['name']
         data['position'] += drive_data['position']
         data['velocity'] += drive_data['velocity']
-        data['effort'] += drive_data['effort']
     
     global arm_controller
     with arm_controller_lock:
