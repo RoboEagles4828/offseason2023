@@ -119,7 +119,7 @@ This code contains trade secrets of Real-Time Innovations, Inc.
 
       <domain_participant name="isaac_subscriber" domain_ref="ROS2_DOMAIN_LIB::ROS2_DOMAIN_ISAAC">
         <subscriber name="isaac_joint_states_subscriber">
-            <data_reader name="isaac_joint_states_reader" topic_ref="rt/${env:ROS_NAMESPACE}/isaac_joint_states" />
+            <data_reader name="isaac_joint_states_reader" topic_ref="rt/saranga/isaac_joint_states" />
         </subscriber>
       </domain_participant>
     </domain_participant_library>

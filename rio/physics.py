@@ -41,7 +41,6 @@ curr_path = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe
 xml_path = os.path.join(curr_path, "dds/xml/ROS_RTI.xml")
 
 rti_init_lock = threading.Lock()
-joint_state_lock = threading.Lock()
 
 ISAAC_PARTICIPANT_NAME = "ROS2_PARTICIPANT_LIB::isaac_subscriber"
 ISAAC_READER_NAME = "isaac_joint_states_subscriber::isaac_joint_states_reader"
@@ -129,66 +128,67 @@ class PhysicsEngine:
     def update_sim(self, now: float, tm_diff: float) -> None:
         
         # Get swerve module_indicies
-        with joint_state_lock:
-            if self.joint_state != None:
-                self.front_left_wheel = self.joint_state["name"].index("front_left_wheel_joint")
-                self.front_right_wheel = self.joint_state["name"].index("front_right_wheel_joint")
-                self.rear_left_wheel = self.joint_state["name"].index("rear_left_wheel_joint")
-                self.rear_right_wheel = self.joint_state["name"].index("rear_right_wheel_joint")
-                
-                self.front_left_axle = self.joint_state["name"].index("front_left_axle_joint")
-                self.front_right_axle = self.joint_state["name"].index("front_right_axle_joint")
-                self.rear_left_axle = self.joint_state["name"].index("rear_left_axle_joint")
-                self.rear_right_axle = self.joint_state["name"].index("rear_right_axle_joint")
-                
-                self.elevator_state = [
-                    self.joint_state["position"][self.elevator_center],
-                    self.joint_state["velocity"][self.elevator_center]
+        if self.joint_state != None:
+            self.front_left_wheel = self.joint_state["name"].index("front_left_wheel_joint")
+            self.front_right_wheel = self.joint_state["name"].index("front_right_wheel_joint")
+            self.rear_left_wheel = self.joint_state["name"].index("rear_left_wheel_joint")
+            self.rear_right_wheel = self.joint_state["name"].index("rear_right_wheel_joint")
+            
+            self.front_left_axle = self.joint_state["name"].index("front_left_axle_joint")
+            self.front_right_axle = self.joint_state["name"].index("front_right_axle_joint")
+            self.rear_left_axle = self.joint_state["name"].index("rear_left_axle_joint")
+            self.rear_right_axle = self.joint_state["name"].index("rear_right_axle_joint")
+            
+            self.elevator_state = [
+                self.joint_state["position"][self.elevator_center],
+                self.joint_state["velocity"][self.elevator_center]
+            ]
+            
+            self.front_left_state = {
+                "wheel": [
+                    self.joint_state["position"][self.front_left_wheel],
+                    self.joint_state["velocity"][self.front_left_wheel]
+                ],
+                "axle": [
+                    self.joint_state["position"][self.front_left_axle],
+                    self.joint_state["velocity"][self.front_left_axle]
                 ]
+            }
+            
+            self.front_right_state = {
+                "wheel": [
+                    self.joint_state["position"][self.front_right_wheel],
+                    self.joint_state["velocity"][self.front_right_wheel]
+                ],
+                "axle": [
+                    self.joint_state["position"][self.front_right_axle],
+                    self.joint_state["velocity"][self.front_right_axle]
+                ]
+            }
+            
+            self.rear_left_state = {
+                "wheel": [
+                    self.joint_state["position"][self.rear_left_wheel],
+                    self.joint_state["velocity"][self.rear_left_wheel]
+                ],
+                "axle": [
+                    self.joint_state["position"][self.rear_left_axle],
+                    self.joint_state["velocity"][self.rear_left_axle]
+                ]
+            }
+            
+            self.rear_right_state = {
+                "wheel": [
+                    self.joint_state["position"][self.rear_right_wheel],
+                    self.joint_state["velocity"][self.rear_right_wheel]
+                ],
+                "axle": [
+                    self.joint_state["position"][self.rear_right_axle],
+                    self.joint_state["velocity"][self.rear_right_axle]
+                ]
+            }     
                 
-                self.front_left_state = {
-                    "wheel": [
-                        self.joint_state["position"][self.front_left_wheel],
-                        self.joint_state["velocity"][self.front_left_wheel]
-                    ],
-                    "axle": [
-                        self.joint_state["position"][self.front_left_axle],
-                        self.joint_state["velocity"][self.front_left_axle]
-                    ]
-                }
-                
-                self.front_right_state = {
-                    "wheel": [
-                        self.joint_state["position"][self.front_right_wheel],
-                        self.joint_state["velocity"][self.front_right_wheel]
-                    ],
-                    "axle": [
-                        self.joint_state["position"][self.front_right_axle],
-                        self.joint_state["velocity"][self.front_right_axle]
-                    ]
-                }
-                
-                self.rear_left_state = {
-                    "wheel": [
-                        self.joint_state["position"][self.rear_left_wheel],
-                        self.joint_state["velocity"][self.rear_left_wheel]
-                    ],
-                    "axle": [
-                        self.joint_state["position"][self.rear_left_axle],
-                        self.joint_state["velocity"][self.rear_left_axle]
-                    ]
-                }
-                
-                self.rear_right_state = {
-                    "wheel": [
-                        self.joint_state["position"][self.rear_right_wheel],
-                        self.joint_state["velocity"][self.rear_right_wheel]
-                    ],
-                    "axle": [
-                        self.joint_state["position"][self.rear_right_axle],
-                        self.joint_state["velocity"][self.rear_right_axle]
-                    ]
-                }        
+        logging.info(self.joint_state)   
         
         # Simulate Swerve Modules
         self.frontLeftModuleSim.update(tm_diff, self.front_left_state["wheel"], self.front_left_state["axle"], True)
@@ -208,9 +208,8 @@ class PhysicsEngine:
         self.threadLoop("isaac", isaac_subscriber, self.isaacAction)
         
     def isaacAction(self, subscriber):
-        with joint_state_lock:
-            self.joint_state = subscriber.read()
-            logging.info(self.isaac_thread.is_alive())
+        self.joint_state = subscriber.read()
+        logging.info(self.isaac_thread.is_alive())
 
 class SwerveModuleSim():
     wheel : TalonFxSim = None
@@ -231,7 +230,7 @@ class SwerveModuleSim():
     def update(self, tm_diff, wheel_state, axle_state, use_isaac):
         self.wheel.update(tm_diff, wheel_state[0], wheel_state[1], use_isaac)
         self.axle.update(tm_diff, axle_state[0], axle_state[1], use_isaac)
-        self.encoder.update(tm_diff, self.axle.getVelocityRadians())
+        self.encoder.update(tm_diff, axle_state[1])
     
     # Useful for debugging the simulation or code
     def __str__(self) -> str:
