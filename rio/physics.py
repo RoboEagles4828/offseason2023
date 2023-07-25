@@ -41,6 +41,7 @@ curr_path = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe
 xml_path = os.path.join(curr_path, "dds/xml/ROS_RTI.xml")
 
 rti_init_lock = threading.Lock()
+stop_threads=False
 
 ISAAC_PARTICIPANT_NAME = "ROS2_PARTICIPANT_LIB::isaac_subscriber"
 ISAAC_READER_NAME = "isaac_joint_states_subscriber::isaac_joint_states_reader"
@@ -71,6 +72,7 @@ class PhysicsEngine:
         self.topGripper = wpilib.simulation.DoubleSolenoidSim(self.pneumaticHub, *PORTS['TOP_GRIPPER'])
         
         self.isaac_thread = threading.Thread(target=self.isaacThread, daemon=True)
+        self.isaac_thread.start()
         
         self.joint_state = None
         

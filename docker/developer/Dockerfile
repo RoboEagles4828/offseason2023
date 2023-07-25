@@ -94,8 +94,11 @@ RUN mkdir -p '/opt/workspace'
 #######################
 RUN pip install rticonnextdds-connector \
 robotpy==2023.4.2.1 \
+robotpy[ctre] \
 robotpy[all] \
-wpilib==2023.4.2.0 
+robotpy[commands2] \
+robotpy[navx] \
+wpilib==2023.4.2.0  
 
 ######################
 # Docker Permissions #
