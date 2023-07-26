@@ -72,7 +72,7 @@ This code contains trade secrets of Real-Time Innovations, Inc.
         </domain>
         <domain name="ROS2_DOMAIN_ISAAC" domain_id="0">
           <register_type name="sensor_msgs::msg::dds_::JointState_" type_ref="sensor_msgs::msg::dds_::JointState_" />
-          <topic name="rt/${env:ROS_NAMESPACE}/isaac_joint_states" register_type_ref="sensor_msgs::msg::dds_::JointState_"/>
+          <topic name="rt/saranga/isaac_joint_states" register_type_ref="sensor_msgs::msg::dds_::JointState_"/>
         </domain>
     </domain_library>
 
@@ -116,7 +116,6 @@ This code contains trade secrets of Real-Time Innovations, Inc.
             <data_writer name="stage_writer" topic_ref="rt/real/frc_stage" />
           </publisher>
       </domain_participant>
-
       <domain_participant name="isaac_subscriber" domain_ref="ROS2_DOMAIN_LIB::ROS2_DOMAIN_ISAAC">
         <subscriber name="isaac_joint_states_subscriber">
             <data_reader name="isaac_joint_states_reader" topic_ref="rt/saranga/isaac_joint_states" />

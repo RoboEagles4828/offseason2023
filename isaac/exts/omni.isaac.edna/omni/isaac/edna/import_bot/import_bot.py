@@ -296,8 +296,8 @@ class ImportBot(BaseSample):
     
     def setup_camera_action_graph(self, robot_prim_path):
         camera_graph = "{}/camera_sensor_graph".format(robot_prim_path)
-        enable_left_cam = False
-        enable_right_cam = False
+        enable_left_cam = True
+        enable_right_cam = True
         rgbType = "RgbType"
         infoType = "InfoType"
         depthType = "DepthType"
