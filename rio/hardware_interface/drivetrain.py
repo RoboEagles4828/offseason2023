@@ -456,8 +456,8 @@ class DriveTrain():
         self.auto_turn_value = "off"
 
         self.profile_selector = wpilib.SendableChooser()
-        self.profile_selector.setDefaultOption("Competition", (5.0, 2.5))
-        self.profile_selector.addOption("Workshop", (2.5, 1.25))
+        self.profile_selector.setDefaultOption("Competition", (5.0, 2.5, "Competiton"))
+        self.profile_selector.addOption("Workshop", (2.5, 1.25, "Workshop"))
 
         self.whine_remove_selector = wpilib.SendableChooser()
         self.whine_remove_selector.setDefaultOption("OFF", False)
@@ -686,6 +686,43 @@ class DriveTrain():
         print(f"{round(self.front_left_state.angle.radians(), 2)} {round(self.front_right_state.angle.radians(), 2)} {round(self.rear_left_state.angle.radians(), 2)} {round(self.rear_right_state.angle.radians(), 2)} | {round(self.front_left.getEncoderPosition(), 2)}")
         
         return data
+    
+    def getDashboardData(self, joystick: Joystick, auton, controlsConnected, airTank, intakePiston, elevatorSliderPiston, elevatorPivotPiston, battery):
+        data = [
+            self.field_oriented_value,
+            Rotation2d.fromDegrees(self.navx.getFusedHeading()).__mul__(-1).degrees(),
+            joystick.type,
+            self.auto_turn_value,
+            self.slow,
+            self.profile_selector.getSelected()[2],
+            auton,
+            controlsConnected,
+            "off",
+            130,
+            radiansToMeters(getWheelRadians(self.front_left.wheel_motor.getSelectedSensorVelocity(), "velocity")),
+            radiansToMeters(getWheelRadians(self.front_right.wheel_motor.getSelectedSensorVelocity(), "velocity")),
+            radiansToMeters(getWheelRadians(self.rear_left.wheel_motor.getSelectedSensorVelocity(), "velocity")),
+            radiansToMeters(getWheelRadians(self.rear_right.wheel_motor.getSelectedSensorVelocity(), "velocity")),
+            math.degrees(self.front_left.getEncoderPosition()),
+            math.degrees(self.front_right.getEncoderPosition()),
+            math.degrees(self.rear_left.getEncoderPosition()),
+            math.degrees(self.rear_right.getEncoderPosition()),
+            self.front_left.wheel_motor.getTemperature(),
+            self.front_right.wheel_motor.getTemperature(),
+            self.rear_left.wheel_motor.getTemperature(),
+            self.rear_right.wheel_motor.getTemperature(),
+            airTank,
+            intakePiston,
+            elevatorSliderPiston,
+            elevatorPivotPiston,
+            battery,
+        ]
+        for axis in joystick.getData()['axes']:
+            data.append(axis)
+        for button in joystick.getData()['buttons']:
+            data.append(button)
+        return data
+
 
     def swerveDriveAuton(self, linearX, linearY, angularZ):
         self.ROBOT_MAX_TRANSLATIONAL = self.profile_selector.getSelected()[0]

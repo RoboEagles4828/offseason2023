@@ -15,10 +15,12 @@ import threading
 
 ENABLE_STAGE_BROADCASTER = True
 ENABLE_ENCODER = True
+ENABLE_DASHBOARD = True
 
 # Global Variables
 arm_controller : ArmController = None
 drive_train : DriveTrain = None
+dashboard_data_list = list()
 frc_stage = "DISABLED"
 fms_attached = False
 stop_threads = False
@@ -61,7 +63,7 @@ def threadLoop(name, dds, action):
     global frc_stage
     try:
         while stop_threads == False:
-            if (frc_stage == 'AUTON' and name != "joystick") or (name in ["encoder", "stage-broadcaster"]) or (frc_stage == 'TELEOP'):
+            if (frc_stage == 'AUTON' and name != "joystick") or (name in ["encoder", "stage-broadcaster", "dashboard"]) or (frc_stage == 'TELEOP'):
                 action(dds)
             time.sleep(20/1000)
     except Exception as e:
@@ -79,6 +81,8 @@ def startThread(name) -> threading.Thread | None:
         thread = threading.Thread(target=encoderThread, daemon=True)
     elif name == "stage-broadcaster":
         thread = threading.Thread(target=stageBroadcasterThread, daemon=True)
+    elif name == "dashboard":
+        thread = threading.Thread(target=dashboardThread, daemon=True)
     
     thread.start()
     return thread
@@ -139,6 +143,24 @@ def stageBroadcasterAction(publisher : DDS_Publisher):
     publisher.write({ "data": f"{frc_stage}|{fms_attached}|{is_disabled}" })
 ############################################
 
+################## DASHBOARD ##################
+DASHBOARD_PARTICIPANT_NAME = "ROS2_PARTICIPANT_LIB::dashboard"
+DASHBOARD_WRITER_NAME = "dashboard_publisher::dashboard_writer"
+
+
+def dashboardThread():
+    dashboard_publisher = initDDS(DDS_Publisher, DASHBOARD_PARTICIPANT_NAME, DASHBOARD_WRITER_NAME)
+    threadLoop('dashboard', dashboard_publisher, dashboardAction)
+    
+def dashboardAction(publisher : DDS_Publisher):
+    global dashboard_data_list
+    data = ""
+    for i in dashboard_data_list:
+        data += f"{str(i)}|"
+    publisher.write({ "data": data })
+    time.sleep(1)
+############################################
+
 class Robot(wpilib.TimedRobot):
     def robotInit(self):
         self.use_threading = True
@@ -152,9 +174,11 @@ class Robot(wpilib.TimedRobot):
             stop_threads = False
             if ENABLE_ENCODER: self.threads.append({"name": "encoder", "thread": startThread("encoder") })
             if ENABLE_STAGE_BROADCASTER: self.threads.append({"name": "stage-broadcaster", "thread": startThread("stage-broadcaster") })
+            if ENABLE_DASHBOARD: self.threads.append({"name": "dashboard", "thread": startThread("dashboard") })
         else:
             self.encoder_publisher = DDS_Publisher(xml_path, ENCODER_PARTICIPANT_NAME, ENCODER_WRITER_NAME)
             self.stage_publisher = DDS_Publisher(xml_path, STAGE_PARTICIPANT_NAME, STAGE_WRITER_NAME)
+            self.dashboard_publisher = DDS_Publisher(xml_path, DASHBOARD_PARTICIPANT_NAME, DASHBOARD_WRITER_NAME)
         
         self.arm_controller = initArmController()
         self.drive_train = initDriveTrain()
@@ -187,6 +211,17 @@ class Robot(wpilib.TimedRobot):
 
     def robotPeriodic(self):
         self.joystick.type = self.joystick_selector.getSelected()
+        global dashboard_data_list
+        dashboard_data_list = self.drive_train.getDashboardData(
+            self.joystick,
+            self.auton_selector.autonChooser.getSelected(),
+            self.joystick.joystick.isConnected(),
+            float(self.arm_controller.compressor.getPressure()),
+            f"{bool(self.arm_controller.top_gripper.solenoid.get())}/{self.arm_controller.top_gripper.getPosition()}",
+            f"{bool(self.arm_controller.top_gripper_slider.solenoid.get())}/{self.arm_controller.top_gripper_slider.getPosition()}",
+            f"{bool(self.arm_controller.arm_roller_bar.solenoid.get())}/{self.arm_controller.arm_roller_bar.getPosition()}",
+            float(wpilib.RobotController.getBatteryVoltage()),
+        )
 
 
     # Auton
