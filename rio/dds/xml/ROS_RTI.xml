@@ -27,7 +27,7 @@ This code contains trade secrets of Real-Time Innovations, Inc.
       <module name="msg">
         <module name="dds_">
           <struct name="String_">
-            <member name="data" type="string" stringMaxLength="255" />
+            <member name="data" type="string" stringMaxLength="300" />
           </struct>
         </module>
       </module>

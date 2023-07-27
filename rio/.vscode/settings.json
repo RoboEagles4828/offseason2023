@@ -1,0 +1,31 @@
+{
+    "python.autoComplete.extraPaths": [
+        "/workspaces/offseason2023/build/joint_trajectory_teleop",
+        "/home/saranga/FRC/offseason2023/install/joint_trajectory_teleop/lib/python3.10/site-packages",
+        "/workspaces/offseason2023/build/isaac_hardware_test",
+        "/home/saranga/FRC/offseason2023/install/isaac_hardware_test/lib/python3.10/site-packages",
+        "/workspaces/offseason2023/build/frc_auton",
+        "/home/saranga/FRC/offseason2023/install/frc_auton/lib/python3.10/site-packages",
+        "/workspaces/offseason2023/build/edna_tests",
+        "/home/saranga/FRC/offseason2023/install/edna_tests/lib/python3.10/site-packages",
+        "/workspaces/offseason2023/build/edna_debugger",
+        "/home/saranga/FRC/offseason2023/install/edna_debugger/lib/python3.10/site-packages",
+        "/opt/ros/humble/lib/python3.10/site-packages",
+        "/opt/ros/humble/local/lib/python3.10/dist-packages"
+    ],
+    "python.analysis.extraPaths": [
+        "/workspaces/offseason2023/build/joint_trajectory_teleop",
+        "/home/saranga/FRC/offseason2023/install/joint_trajectory_teleop/lib/python3.10/site-packages",
+        "/workspaces/offseason2023/build/isaac_hardware_test",
+        "/home/saranga/FRC/offseason2023/install/isaac_hardware_test/lib/python3.10/site-packages",
+        "/workspaces/offseason2023/build/frc_auton",
+        "/home/saranga/FRC/offseason2023/install/frc_auton/lib/python3.10/site-packages",
+        "/workspaces/offseason2023/build/edna_tests",
+        "/home/saranga/FRC/offseason2023/install/edna_tests/lib/python3.10/site-packages",
+        "/workspaces/offseason2023/build/edna_debugger",
+        "/home/saranga/FRC/offseason2023/install/edna_debugger/lib/python3.10/site-packages",
+        "/opt/ros/humble/lib/python3.10/site-packages",
+        "/opt/ros/humble/local/lib/python3.10/dist-packages"
+    ],
+    "ros.distro": "humble"
+}

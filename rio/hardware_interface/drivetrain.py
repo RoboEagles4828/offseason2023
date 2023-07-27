@@ -492,6 +492,11 @@ class DriveTrain():
         
         self.new_motion_magic = MotionMagic((8.0 - 2.0) / accelerationConstant / velocityCoefficient, 2.0 / velocityConstant / velocityCoefficient) 
         
+        self.front_left_state: SwerveModuleState = SwerveModuleState(0, Rotation2d(0))
+        self.front_right_state: SwerveModuleState = SwerveModuleState(0, Rotation2d(0))
+        self.rear_left_state: SwerveModuleState = SwerveModuleState(0, Rotation2d(0))
+        self.rear_right_state: SwerveModuleState = SwerveModuleState(0, Rotation2d(0))
+        
     def reset_slew(self):
         self.slew_X.reset(0)
         self.slew_Y.reset(0)
@@ -653,7 +658,7 @@ class DriveTrain():
             self.print = ""
 
         #logging.info(f"FR: {self.front_left_state.speed}, {self.front_left_state.angle.radians()} | Vel: {self.motor_vels} Pos: {self.motor_pos}")
-        #logging.info(f"{self.print}linX: {round(self.speeds.vx, 2)} linY: {round(self.speeds.vy, 2)} angZ: {round(self.speeds.omega, 2)} AutoTurn: {self.auto_turn_value} Slow: {self.slow}")
+        logging.info(f"{self.print}linX: {round(self.speeds.vx, 2)} linY: {round(self.speeds.vy, 2)} angZ: {round(self.speeds.omega, 2)} AutoTurn: {self.auto_turn_value} Slow: {self.slow}")
         
     def getModuleCommand(self):
         data = dict()
@@ -683,11 +688,11 @@ class DriveTrain():
         ]
         data["position"] = [0.0]*8
         
-        print(f"{round(self.front_left_state.angle.radians(), 2)} {round(self.front_right_state.angle.radians(), 2)} {round(self.rear_left_state.angle.radians(), 2)} {round(self.rear_right_state.angle.radians(), 2)} | {round(self.front_left.getEncoderPosition(), 2)}")
+        #print(f"{round(self.front_left_state.angle.radians(), 2)} {round(self.front_right_state.angle.radians(), 2)} {round(self.rear_left_state.angle.radians(), 2)} {round(self.rear_right_state.angle.radians(), 2)} | {round(self.front_left.getEncoderPosition(), 2)}")
         
         return data
     
-    def getDashboardData(self, joystick: Joystick, auton, controlsConnected, airTank, intakePiston, elevatorSliderPiston, elevatorPivotPiston, battery):
+    def getDashboardData(self, joystick: Joystick, auton, controlsConnected, airTank, intakePiston, elevatorSliderPiston, elevatorPivotPiston, elevatorPosition, battery):
         data = [
             self.field_oriented_value,
             Rotation2d.fromDegrees(self.navx.getFusedHeading()).__mul__(-1).degrees(),
@@ -699,14 +704,14 @@ class DriveTrain():
             controlsConnected,
             "off",
             130,
-            radiansToMeters(getWheelRadians(self.front_left.wheel_motor.getSelectedSensorVelocity(), "velocity")),
-            radiansToMeters(getWheelRadians(self.front_right.wheel_motor.getSelectedSensorVelocity(), "velocity")),
-            radiansToMeters(getWheelRadians(self.rear_left.wheel_motor.getSelectedSensorVelocity(), "velocity")),
-            radiansToMeters(getWheelRadians(self.rear_right.wheel_motor.getSelectedSensorVelocity(), "velocity")),
-            math.degrees(self.front_left.getEncoderPosition()),
-            math.degrees(self.front_right.getEncoderPosition()),
-            math.degrees(self.rear_left.getEncoderPosition()),
-            math.degrees(self.rear_right.getEncoderPosition()),
+            self.front_left_state.speed,
+            self.front_right_state.speed,
+            self.rear_left_state.speed,
+            self.rear_right_state.speed,
+            self.front_left_state.angle.degrees(),
+            self.front_right_state.angle.degrees(),
+            self.rear_left_state.angle.degrees(),
+            self.rear_right_state.angle.degrees(),
             self.front_left.wheel_motor.getTemperature(),
             self.front_right.wheel_motor.getTemperature(),
             self.rear_left.wheel_motor.getTemperature(),
@@ -715,12 +720,13 @@ class DriveTrain():
             intakePiston,
             elevatorSliderPiston,
             elevatorPivotPiston,
+            elevatorPosition,
             battery,
         ]
-        for axis in joystick.getData()['axes']:
-            data.append(axis)
         for button in joystick.getData()['buttons']:
             data.append(button)
+        for axis in joystick.getData()['axes']:
+            data.append(axis)
         return data
 
 

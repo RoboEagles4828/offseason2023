@@ -6,12 +6,12 @@
     "GLOBAL": {
       "fps": "120",
       "height": "1016",
-      "maximized": "1",
+      "maximized": "0",
       "style": "1",
       "userScale": "3",
       "width": "1846",
-      "xpos": "487",
-      "ypos": "145"
+      "xpos": "274",
+      "ypos": "347"
     }
   },
   "Window": {
@@ -27,7 +27,7 @@
     },
     "###Joysticks": {
       "Collapsed": "0",
-      "Pos": "480,465",
+      "Pos": "735,437",
       "Size": "976,278"
     },
     "###NetworkTables": {
@@ -37,7 +37,7 @@
     },
     "###Other Devices": {
       "Collapsed": "0",
-      "Pos": "203,-54",
+      "Pos": "216,-289",
       "Size": "409,997"
     },
     "###Plot <0>": {
@@ -57,7 +57,7 @@
     },
     "###Timing": {
       "Collapsed": "0",
-      "Pos": "204,465",
+      "Pos": "-11,301",
       "Size": "162,168"
     },
     "Debug##Default": {
