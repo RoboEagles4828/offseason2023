@@ -296,7 +296,7 @@ class ImportBot(BaseSample):
     
     def setup_camera_action_graph(self, robot_prim_path):
         camera_graph = "{}/camera_sensor_graph".format(robot_prim_path)
-        enable_left_cam = False
+        enable_left_cam = True
         enable_right_cam = False
         rgbType = "RgbType"
         infoType = "InfoType"
@@ -487,7 +487,8 @@ class ImportBot(BaseSample):
                 ],
                 og.Controller.Keys.SET_VALUES: [
                     ("PublishJointState.inputs:topicName", "isaac_joint_states"),
-                    ("SubscribeDriveState.inputs:topicName", "isaac_drive_commands"),
+                    ("SubscribeDriveState.inputs:topicName", "isaac_joint_commands"),
+                    # ("SubscribeDriveState.inputs:topicName", "isaac_drive_commands"),
                     ("SubscribeArmState.inputs:topicName", "isaac_arm_commands"),
                     ("articulation_controller.inputs:usePath", False),
                     ("arm_articulation_controller.inputs:usePath", False),

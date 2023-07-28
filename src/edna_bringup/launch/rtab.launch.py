@@ -11,7 +11,7 @@ def generate_launch_description():
 
     use_sim_time = LaunchConfiguration('use_sim_time')
 
-    rtabmap_ros_path = get_package_share_directory("rtabmap_ros")
+    rtabmap_ros_path = get_package_share_directory("rtabmap_launch")
 
     rtabmap_args = {
         'rtabmap_args': '--delete_db_on_start',
@@ -19,8 +19,8 @@ def generate_launch_description():
         'namespace': f'{NAMESPACE}_rtab',
         # Frames
         'frame_id': f'{NAMESPACE}/base_link',
-        'odom_frame_id': f'{NAMESPACE}/odom',
-        'map_frame_id': f'{NAMESPACE}/map',
+        # 'odom_frame_id': f'{NAMESPACE}/odom',
+        'map_frame_id': f'{NAMESPACE}_rtab/map',
         # Topics
         'rgb_topic': f'/{NAMESPACE}/left/rgb',
         'camera_info_topic': f'/{NAMESPACE}/left/camera_info',
