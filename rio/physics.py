@@ -141,6 +141,8 @@ class PhysicsEngine:
             self.rear_left_axle = self.joint_state["name"].index("rear_left_axle_joint")
             self.rear_right_axle = self.joint_state["name"].index("rear_right_axle_joint")
             
+            self.elevator_center = self.joint_state["name"].index("elevator_center_joint")
+            
             self.elevator_state = [
                 self.joint_state["position"][self.elevator_center],
                 self.joint_state["velocity"][self.elevator_center]
@@ -190,7 +192,7 @@ class PhysicsEngine:
                 ]
             }     
                 
-        logging.info(self.joint_state)   
+        # logging.info(self.joint_state)   
         
         # Simulate Swerve Modules
         self.frontLeftModuleSim.update(tm_diff, self.front_left_state["wheel"], self.front_left_state["axle"], True)
@@ -211,7 +213,7 @@ class PhysicsEngine:
         
     def isaacAction(self, subscriber):
         self.joint_state = subscriber.read()
-        logging.info(self.isaac_thread.is_alive())
+        # logging.info(self.isaac_thread.is_alive())
 
 class SwerveModuleSim():
     wheel : TalonFxSim = None
