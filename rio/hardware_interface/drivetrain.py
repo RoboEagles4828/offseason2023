@@ -28,7 +28,7 @@ MODULE_CONFIG = {
         "axle_joint_name": "front_left_axle_joint",
         "axle_motor_port": 1, #7
         "axle_encoder_port": 2, #8
-        "encoder_offset": 0.0, #18.721, # 248.203,
+        "encoder_offset": 18.721, # 248.203,
         "location" : Translation2d(-0.52085486, 0.52085486) # Translation2d(0.52085486, 0.52085486)
     },
     "front_right": {
@@ -37,7 +37,7 @@ MODULE_CONFIG = {
         "axle_joint_name": "front_right_axle_joint",
         "axle_motor_port": 4, #10
         "axle_encoder_port": 5, #11
-        "encoder_offset": 0.0, #45.439, #+ 180.0, #15.908, TODO: REDO ENCODER OFFSET
+        "encoder_offset": 45.439 + 180.0, #15.908, TODO: REDO ENCODER OFFSET
         "location" : Translation2d(-0.52085486, -0.52085486)# Translation2d(-0.52085486, 0.52085486)
     },
     "rear_left": {
@@ -46,7 +46,7 @@ MODULE_CONFIG = {
         "axle_joint_name": "rear_left_axle_joint",
         "axle_motor_port": 10, #4
         "axle_encoder_port": 11, #5
-        "encoder_offset": 0.0, #16.084, #+ 180.0, #327.393, TODO: REDO ENCODER OFFSET
+        "encoder_offset": 16.084 + 180.0, #327.393, TODO: REDO ENCODER OFFSET
         "location" : Translation2d(0.52085486, 0.52085486) #Translation2d(0.52085486, -0.52085486)
     },
     "rear_right": {
@@ -55,7 +55,7 @@ MODULE_CONFIG = {
         "axle_joint_name": "rear_right_axle_joint",
         "axle_motor_port": 7, #1
         "axle_encoder_port": 8, #2
-        "encoder_offset": 0.0, #-9.141, #201.094,
+        "encoder_offset": -9.141, #201.094,
         "location" : Translation2d(0.52085486, -0.52085486) # Translation2d(-0.52085486, -0.52085486)
     }
 }
@@ -490,7 +490,15 @@ class DriveTrain():
         self.motion_magic_3 = ProfiledPIDControllerRadians(axle_pid_constants["kP"], axle_pid_constants["kI"], axle_pid_constants["kD"], TrapezoidProfileRadians.Constraints(2.0 / velocityConstant / velocityCoefficient, (8.0 - 2.0) / accelerationConstant / velocityCoefficient))
         self.motion_magic_4 = ProfiledPIDControllerRadians(axle_pid_constants["kP"], axle_pid_constants["kI"], axle_pid_constants["kD"], TrapezoidProfileRadians.Constraints(2.0 / velocityConstant / velocityCoefficient, (8.0 - 2.0) / accelerationConstant / velocityCoefficient))
         
-        self.new_motion_magic = MotionMagic((8.0 - 2.0) / accelerationConstant / velocityCoefficient, 2.0 / velocityConstant / velocityCoefficient) 
+        self.new_motion_magic_1 = MotionMagic((8.0 - 2.0) / accelerationConstant / velocityCoefficient, 2.0 / velocityConstant / velocityCoefficient)
+        self.new_motion_magic_2 = MotionMagic((8.0 - 2.0) / accelerationConstant / velocityCoefficient, 2.0 / velocityConstant / velocityCoefficient)
+        self.new_motion_magic_3 = MotionMagic((8.0 - 2.0) / accelerationConstant / velocityCoefficient, 2.0 / velocityConstant / velocityCoefficient)
+        self.new_motion_magic_4 = MotionMagic((8.0 - 2.0) / accelerationConstant / velocityCoefficient, 2.0 / velocityConstant / velocityCoefficient)
+        
+        self.front_left_state = SwerveModuleState(0, Rotation2d(0))
+        self.front_right_state = SwerveModuleState(0, Rotation2d(0))
+        self.rear_left_state = SwerveModuleState(0, Rotation2d(0))
+        self.rear_right_state = SwerveModuleState(0, Rotation2d(0))
         
     def reset_slew(self):
         self.slew_X.reset(0)
@@ -534,8 +542,8 @@ class DriveTrain():
     
     def customOptimize(self, desiredState: SwerveModuleState, currentAngle: Rotation2d):
         delta = desiredState.angle.__sub__(currentAngle)
-        if abs(delta.radians()) > (math.pi/2.0):
-            return SwerveModuleState(desiredState.speed * -1.0, desiredState.angle.rotateBy(Rotation2d.fromDegrees(180.0)))
+        if abs(delta.degrees()) > (90):
+            return SwerveModuleState(desiredState.speed * -1.0, desiredState.angle.rotateBy(Rotation2d.fromDegrees(179.5)))
         else:
             return SwerveModuleState(desiredState.speed, desiredState.angle)
 
@@ -621,10 +629,10 @@ class DriveTrain():
 
         # optimize states
         #This makes the modules take the shortest path to the desired angle
-        self.front_left_state = SwerveModuleState.optimize(self.front_left_state, Rotation2d(self.front_left.getEncoderPosition()))
-        self.front_right_state = SwerveModuleState.optimize(self.front_right_state, Rotation2d(self.front_right.getEncoderPosition()))
-        self.rear_left_state = SwerveModuleState.optimize(self.rear_left_state, Rotation2d(self.rear_left.getEncoderPosition()))
-        self.rear_right_state = SwerveModuleState.optimize(self.rear_right_state, Rotation2d(self.rear_right.getEncoderPosition()))
+        # self.front_left_state = SwerveModuleState.optimize(self.front_left_state, Rotation2d(self.front_left.getEncoderPosition()))
+        # self.front_right_state = SwerveModuleState.optimize(self.front_right_state, Rotation2d(self.front_right.getEncoderPosition()))
+        # self.rear_left_state = SwerveModuleState.optimize(self.rear_left_state, Rotation2d(self.rear_left.getEncoderPosition()))
+        # self.rear_right_state = SwerveModuleState.optimize(self.rear_right_state, Rotation2d(self.rear_right.getEncoderPosition()))
         
         # using custom optimize
         # self.front_left_state = self.customOptimize(self.front_left_state, Rotation2d(self.front_left.getEncoderPosition()))
@@ -665,10 +673,12 @@ class DriveTrain():
         # m3_val = self.motion_magic_3.calculate(self.rear_left.getEncoderPosition())
         # m4_val = self.motion_magic_4.calculate(self.rear_right.getEncoderPosition())
         
-        m1_val = self.new_motion_magic.getNextVelocity(self.front_left_state.angle.radians(), self.front_left.getEncoderPosition())
-        m2_val = self.new_motion_magic.getNextVelocity(self.front_right_state.angle.radians(), self.front_right.getEncoderPosition())
-        m3_val = self.new_motion_magic.getNextVelocity(self.rear_left_state.angle.radians(), self.rear_left.getEncoderPosition())
-        m4_val = self.new_motion_magic.getNextVelocity(self.rear_right_state.angle.radians(), self.rear_right.getEncoderPosition())
+        m1_val = self.new_motion_magic_1.getNextVelocity(self.front_left_state.angle.radians(), self.front_left.getEncoderPosition())
+        m2_val = self.new_motion_magic_2.getNextVelocity(self.front_right_state.angle.radians(), self.front_right.getEncoderPosition())
+        m3_val = self.new_motion_magic_3.getNextVelocity(self.rear_left_state.angle.radians(), self.rear_left.getEncoderPosition())
+        m4_val = self.new_motion_magic_4.getNextVelocity(self.rear_right_state.angle.radians(), self.rear_right.getEncoderPosition())
+        
+        # m1_val, m2_val, m3_val, m4_val = 0.0, 0.0, 0.0, 0.0
         
         data["name"] = getJointList()
         data["velocity"] = [
@@ -683,7 +693,7 @@ class DriveTrain():
         ]
         data["position"] = [0.0]*8
         
-        print(f"{round(self.front_left_state.angle.radians(), 2)} {round(self.front_right_state.angle.radians(), 2)} {round(self.rear_left_state.angle.radians(), 2)} {round(self.rear_right_state.angle.radians(), 2)} | {round(self.front_left.getEncoderPosition(), 2)}")
+        print(f"{round(self.linX, 2)} {round(self.linY, 2)} {round(self.angZ, 2)} | {round(self.front_left_state.angle.radians(), 2)} {round(self.front_left_state.speed, 2)} | {round(math.degrees(getAxleRadians(self.front_left.axle_motor.getSelectedSensorPosition(), 'position')), 2)}")
         
         return data
 

@@ -239,7 +239,11 @@ class Piston():
         self.lastCommand = None
 
     def getPosition(self):
-        return float(self.state) * (self.max - self.min) + self.min
+        # return float(self.state) * (self.max - self.min) + self.min
+        ret = 0.0
+        if self.lastCommand:
+            ret = self.lastCommand
+        return ret
     
     # The Solenoids don't have a velocity value, so we set it to zero here
     def getVelocity(self):

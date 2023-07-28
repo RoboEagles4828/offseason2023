@@ -488,7 +488,7 @@ class ImportBot(BaseSample):
                 og.Controller.Keys.SET_VALUES: [
                     ("PublishJointState.inputs:topicName", "isaac_joint_states"),
                     ("SubscribeDriveState.inputs:topicName", "isaac_joint_commands"),
-                    # ("SubscribeDriveState.inputs:topicName", "isaac_drive_commands"),
+                    ("SubscribeDriveState.inputs:topicName", "isaac_drive_commands"),
                     ("SubscribeArmState.inputs:topicName", "isaac_arm_commands"),
                     ("articulation_controller.inputs:usePath", False),
                     ("arm_articulation_controller.inputs:usePath", False),

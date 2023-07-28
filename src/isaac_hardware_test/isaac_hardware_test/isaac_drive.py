@@ -104,6 +104,12 @@ class IsaacDriveHardware(Node):
                     self.arm_joint_names.append("top_gripper_right_arm_joint")
                     self.command_position.append(position)
                 elif i == "elevator_center_joint":
+                    elevator_max = 0.56
+                    elevator_min = 0.0
+                    
+                    #scale position to be between 0 and 1
+                    position = (position - elevator_min)/(elevator_max - elevator_min)
+                    
                     self.command_position.append(position/2.0)
                     self.arm_joint_names.append("elevator_outer_2_joint")
                     self.command_position.append(position/2.0)
