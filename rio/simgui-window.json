@@ -6,12 +6,12 @@
     "GLOBAL": {
       "fps": "120",
       "height": "1016",
-      "maximized": "0",
+      "maximized": "1",
       "style": "1",
       "userScale": "3",
       "width": "1846",
-      "xpos": "274",
-      "ypos": "347"
+      "xpos": "74",
+      "ypos": "64"
     }
   },
   "Window": {
@@ -27,7 +27,7 @@
     },
     "###Joysticks": {
       "Collapsed": "0",
-      "Pos": "735,437",
+      "Pos": "667,373",
       "Size": "976,278"
     },
     "###NetworkTables": {
@@ -37,8 +37,8 @@
     },
     "###Other Devices": {
       "Collapsed": "0",
-      "Pos": "216,-289",
-      "Size": "409,997"
+      "Pos": "272,179",
+      "Size": "451,997"
     },
     "###Plot <0>": {
       "Collapsed": "0",
@@ -47,12 +47,12 @@
     },
     "###RoboRIO": {
       "Collapsed": "0",
-      "Pos": "733,104",
+      "Pos": "237,38",
       "Size": "233,216"
     },
     "###System Joysticks": {
       "Collapsed": "0",
-      "Pos": "879,158",
+      "Pos": "187,324",
       "Size": "425,254"
     },
     "###Timing": {

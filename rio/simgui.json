@@ -1,45 +1,8 @@
 {
   "HALProvider": {
     "Other Devices": {
-      "Talon FX[13]": {
-        "header": {
-          "open": true
-        }
-      },
-      "Talon FX[13]/Fwd Limit": {
-        "header": {
-          "open": true
-        }
-      },
-      "Talon FX[13]/Integrated Sensor": {
-        "header": {
-          "open": true
-        }
-      },
-      "Talon FX[1]": {
-        "header": {
-          "open": true
-        }
-      },
-      "Talon FX[1]/Integrated Sensor": {
-        "header": {
-          "open": true
-        }
-      },
-      "Talon FX[9]": {
-        "header": {
-          "open": true
-        }
-      },
-      "Talon FX[9]/Integrated Sensor": {
-        "header": {
-          "open": true
-        }
-      },
-      "navX-Sensor[4]": {
-        "header": {
-          "open": true
-        }
+      "window": {
+        "visible": false
       }
     },
     "RoboRIO": {
