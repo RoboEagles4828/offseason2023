@@ -16,22 +16,16 @@ def generate_launch_description():
     rtabmap_args = {
         'rtabmap_args': '--delete_db_on_start',
         'use_sim_time': use_sim_time,
-        'namespace': f'{NAMESPACE}_rtab',
         # Frames
         'frame_id': f'{NAMESPACE}/base_link',
-        # 'odom_frame_id': f'{NAMESPACE}/odom',
-        'map_frame_id': f'{NAMESPACE}_rtab/map',
         # Topics
         'rgb_topic': f'/{NAMESPACE}/left/rgb',
         'camera_info_topic': f'/{NAMESPACE}/left/camera_info',
         'depth_topic': f'/{NAMESPACE}/left/depth',
         'imu_topic': f'/{NAMESPACE}/imu',
-        'odom_topic': f'/{NAMESPACE}/zed/odom',
 
         'approx_sync': 'false',
         'wait_imu_to_init': 'true',
-        'visual_odometry': 'false',
-        'publish_tf_odom': 'false',
         'qos': '1',
         'rviz': 'true',
     }
