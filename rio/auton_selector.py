@@ -29,9 +29,12 @@ class AutonSelector():
         self.turn_done = False
         self.first_pitch = False
 
-    def run(self):
+    def run(self, auton=None):
         self.timer.start()
-        self.selected = self.autonChooser.getSelected()
+        if auton:
+            self.selected = auton
+        else:
+            self.selected = self.autonChooser.getSelected()
         if self.selected == self.TAXI:
             self.taxi_auton()
             self.timer.stop()

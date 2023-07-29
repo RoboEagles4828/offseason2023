@@ -458,6 +458,9 @@ class DriveTrain():
         self.profile_selector = wpilib.SendableChooser()
         self.profile_selector.setDefaultOption("Competition", (5.0, 2.5, "Competiton"))
         self.profile_selector.addOption("Workshop", (2.5, 1.25, "Workshop"))
+        
+        self.comp = [5.0, 2.5]
+        self.work = [2.5, 1.25]
 
         self.whine_remove_selector = wpilib.SendableChooser()
         self.whine_remove_selector.setDefaultOption("OFF", False)
@@ -544,10 +547,20 @@ class DriveTrain():
         else:
             return SwerveModuleState(desiredState.speed, desiredState.angle)
 
-    def swerveDrive(self, joystick: Joystick):
-        self.ROBOT_MAX_TRANSLATIONAL = self.profile_selector.getSelected()[0]
-        self.ROBOT_MAX_ROTATIONAL = self.profile_selector.getSelected()[1]
-        self.MODULE_MAX_SPEED = self.profile_selector.getSelected()[0]
+    def swerveDrive(self, joystick: Joystick, profile=None):
+        if profile:
+            if profile == "competition":
+                self.ROBOT_MAX_TRANSLATIONAL = self.comp[0]
+                self.ROBOT_MAX_ROTATIONAL = self.comp[1]
+                self.MODULE_MAX_SPEED = self.comp[0]
+            elif profile == "workshop":
+                self.ROBOT_MAX_TRANSLATIONAL = self.work[0]
+                self.ROBOT_MAX_ROTATIONAL = self.work[1]
+                self.MODULE_MAX_SPEED = self.work[0]
+        else:
+            self.ROBOT_MAX_TRANSLATIONAL = self.profile_selector.getSelected()[0]
+            self.ROBOT_MAX_ROTATIONAL = self.profile_selector.getSelected()[1]
+            self.MODULE_MAX_SPEED = self.profile_selector.getSelected()[0]
 
         # slew 
         # gives joystick ramping
@@ -658,7 +671,7 @@ class DriveTrain():
             self.print = ""
 
         #logging.info(f"FR: {self.front_left_state.speed}, {self.front_left_state.angle.radians()} | Vel: {self.motor_vels} Pos: {self.motor_pos}")
-        logging.info(f"{self.print}linX: {round(self.speeds.vx, 2)} linY: {round(self.speeds.vy, 2)} angZ: {round(self.speeds.omega, 2)} AutoTurn: {self.auto_turn_value} Slow: {self.slow}")
+        #logging.info(f"{self.print}linX: {round(self.speeds.vx, 2)} linY: {round(self.speeds.vy, 2)} angZ: {round(self.speeds.omega, 2)} AutoTurn: {self.auto_turn_value} Slow: {self.slow}")
         
     def getModuleCommand(self):
         data = dict()
@@ -695,7 +708,7 @@ class DriveTrain():
     def getDashboardData(self, joystick: Joystick, auton, controlsConnected, airTank, intakePiston, elevatorSliderPiston, elevatorPivotPiston, elevatorPosition, battery):
         data = [
             self.field_oriented_value,
-            Rotation2d.fromDegrees(self.navx.getFusedHeading()).__mul__(-1).degrees(),
+            self.coolRound(self.navx.getFusedHeading()),
             joystick.type,
             self.auto_turn_value,
             self.slow,
@@ -704,31 +717,33 @@ class DriveTrain():
             controlsConnected,
             "off",
             130,
-            self.front_left_state.speed,
-            self.front_right_state.speed,
-            self.rear_left_state.speed,
-            self.rear_right_state.speed,
-            self.front_left_state.angle.degrees(),
-            self.front_right_state.angle.degrees(),
-            self.rear_left_state.angle.degrees(),
-            self.rear_right_state.angle.degrees(),
-            self.front_left.wheel_motor.getTemperature(),
-            self.front_right.wheel_motor.getTemperature(),
-            self.rear_left.wheel_motor.getTemperature(),
-            self.rear_right.wheel_motor.getTemperature(),
+            self.coolRound(self.front_left_state.speed),
+            self.coolRound(self.front_right_state.speed),
+            self.coolRound(self.rear_left_state.speed),
+            self.coolRound(self.rear_right_state.speed),
+            self.coolRound(self.front_left_state.angle.degrees()),
+            self.coolRound(self.front_right_state.angle.degrees()),
+            self.coolRound(self.rear_left_state.angle.degrees()),
+            self.coolRound(self.rear_right_state.angle.degrees()),
+            self.coolRound(self.front_left.wheel_motor.getTemperature()),
+            self.coolRound(self.front_right.wheel_motor.getTemperature()),
+            self.coolRound(self.rear_left.wheel_motor.getTemperature()),
+            self.coolRound(self.rear_right.wheel_motor.getTemperature()),
             airTank,
             intakePiston,
             elevatorSliderPiston,
             elevatorPivotPiston,
-            elevatorPosition,
-            battery,
+            self.coolRound(elevatorPosition),
+            self.coolRound(battery),
         ]
         for button in joystick.getData()['buttons']:
-            data.append(button)
+            data.append(self.coolRound(button))
         for axis in joystick.getData()['axes']:
-            data.append(axis)
+            data.append(self.coolRound(axis))
         return data
 
+    def coolRound(self, num):
+        return round(num, 2)
 
     def swerveDriveAuton(self, linearX, linearY, angularZ):
         self.ROBOT_MAX_TRANSLATIONAL = self.profile_selector.getSelected()[0]

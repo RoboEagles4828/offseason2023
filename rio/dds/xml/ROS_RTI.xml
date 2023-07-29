@@ -16,7 +16,7 @@ This code contains trade secrets of Real-Time Innovations, Inc.
   <qos_library name="ROS2_QOS">
     <qos_profile name="Default" base_name="BuiltinQosSnippetLib::QosPolicy.Reliability.Reliable"
       is_default_qos="true">
-</qos_profile>
+    </qos_profile>
   </qos_library>
 
 
@@ -147,19 +147,16 @@ This code contains trade secrets of Real-Time Innovations, Inc.
       </subscriber>
     </domain_participant>
 
+    <domain_participant name="dashboard_subscriber" domain_ref="ROS2_DOMAIN_LIB::ROS2_DOMAIN_DASHBOARD">
+      <subscriber name="dashboard_data_subscriber">
+        <data_reader name="dashboard_reader" topic_ref="rt/dashboard_pub" />
+      </subscriber>
+    </domain_participant>
+
 
     <domain_participant name="dashboard" domain_ref="ROS2_DOMAIN_LIB::ROS2_DOMAIN_DASHBOARD">
       <publisher name="dashboard_publisher">
-        <data_writer name="dashboard_writer" topic_ref="rt/dashboard_data">
-          <datawriter_qos>
-              <reliability>
-                <kind>RELIABLE_RELIABILITY_QOS</kind>
-              </reliability>
-              <durability>
-                <kind>VOLATILE_DURABILITY_QOS</kind>
-              </durability>
-          </datawriter_qos>
-        </data_writer>
+        <data_writer name="dashboard_writer" topic_ref="rt/dashboard_data" />
       </publisher>
     </domain_participant>
   </domain_participant_library>

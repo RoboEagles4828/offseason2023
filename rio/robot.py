@@ -6,7 +6,7 @@ from wpilib.shuffleboard import Shuffleboard
 from wpilib.shuffleboard import SuppliedFloatValueWidget
 from auton_selector import AutonSelector
 import time
-from dds.dds import DDS_Publisher
+from dds.dds import DDS_Publisher, DDS_Subscriber
 import os
 import inspect
 import logging
@@ -21,6 +21,7 @@ ENABLE_DASHBOARD = True
 arm_controller : ArmController = None
 drive_train : DriveTrain = None
 dashboard_data_list = list()
+dashboard_data_return = dict()
 frc_stage = "DISABLED"
 fms_attached = False
 stop_threads = False
@@ -63,7 +64,7 @@ def threadLoop(name, dds, action):
     global frc_stage
     try:
         while stop_threads == False:
-            if (frc_stage == 'AUTON' and name != "joystick") or (name in ["encoder", "stage-broadcaster", "dashboard"]) or (frc_stage == 'TELEOP'):
+            if (frc_stage == 'AUTON' and name != "joystick") or (name in ["encoder", "stage-broadcaster", "dashboard", "dashboard_subs"]) or (frc_stage == 'TELEOP'):
                 action(dds)
             time.sleep(20/1000)
     except Exception as e:
@@ -83,6 +84,8 @@ def startThread(name) -> threading.Thread | None:
         thread = threading.Thread(target=stageBroadcasterThread, daemon=True)
     elif name == "dashboard":
         thread = threading.Thread(target=dashboardThread, daemon=True)
+    elif name == "dashboard_sub":
+        thread = threading.Thread(target=dashboardSubThread, daemon=True)
     
     thread.start()
     return thread
@@ -160,6 +163,30 @@ def dashboardAction(publisher : DDS_Publisher):
     publisher.write({ "data": data })
 ############################################
 
+################## DASHBOARD SUB ###############
+DASHBOARD_SUB = "ROS2_PARTICIPANT_LIB::dashboard_subscriber::dashboard_reader"
+DASHBOARD_READER = "dashboard_data_subscriber::dashboard_reader"
+
+def dashboardSubThread():
+    dashboard_subscriber = initDDS(DDS_Subscriber, DASHBOARD_SUB, DASHBOARD_READER)
+    threadLoop('dashboard_sub', dashboard_subscriber, dashboardSubAction)
+    
+def dashboardSubAction(subscriber : DDS_Subscriber):
+    data = subscriber.read()
+    dataArr = data.split("|")
+    auton = dataArr[0]
+    profile = dataArr[1]
+    led = dataArr[2]
+    joystick_type = dataArr[3]
+    
+    global dashboard_data_return
+    dashboard_data_return = {
+        "auton": auton,
+        "profile": profile,
+        "joy_type": joystick_type,
+    }
+############################################   
+
 class Robot(wpilib.TimedRobot):
     def robotInit(self):
         self.use_threading = True
@@ -173,20 +200,26 @@ class Robot(wpilib.TimedRobot):
             stop_threads = False
             if ENABLE_ENCODER: self.threads.append({"name": "encoder", "thread": startThread("encoder") })
             if ENABLE_STAGE_BROADCASTER: self.threads.append({"name": "stage-broadcaster", "thread": startThread("stage-broadcaster") })
-            if ENABLE_DASHBOARD: self.threads.append({"name": "dashboard", "thread": startThread("dashboard") })
+            if ENABLE_DASHBOARD: 
+                self.threads.append({"name": "dashboard", "thread": startThread("dashboard") })
+                self.threads.append({"name": "dashboard_sub", "thread": startThread("dashboard_sub") })
         else:
             self.encoder_publisher = DDS_Publisher(xml_path, ENCODER_PARTICIPANT_NAME, ENCODER_WRITER_NAME)
             self.stage_publisher = DDS_Publisher(xml_path, STAGE_PARTICIPANT_NAME, STAGE_WRITER_NAME)
             self.dashboard_publisher = DDS_Publisher(xml_path, DASHBOARD_PARTICIPANT_NAME, DASHBOARD_WRITER_NAME)
+            self.dashboard_subscriber = DDS_Subscriber(xml_path, DASHBOARD_SUB, DASHBOARD_READER)
         
         self.arm_controller = initArmController()
         self.drive_train = initDriveTrain()
-        self.joystick = Joystick("xbox")
+        self.joystick = Joystick("ps4")
         self.auton_selector = AutonSelector(self.arm_controller, self.drive_train)
         self.joystick_selector = wpilib.SendableChooser()
         self.joystick_selector.setDefaultOption("XBOX", "xbox")
         self.joystick_selector.addOption("PS4", "ps4")
         self.auton_run = False
+        
+        self.profile = None
+        self.auton = None
 
         self.shuffleboard = Shuffleboard.getTab("Main")
         self.shuffleboard.add(title="AUTON", defaultValue=self.auton_selector.autonChooser)
@@ -210,6 +243,11 @@ class Robot(wpilib.TimedRobot):
 
     def robotPeriodic(self):
         self.joystick.type = self.joystick_selector.getSelected()
+        global dashboard_data_return
+        self.profile = dashboard_data_return["profile"]
+        self.auton = dashboard_data_return["auton"]
+        joy_type = dashboard_data_return["joy_type"]
+        self.joystick.type = joy_type
 
 
     # Auton
@@ -234,9 +272,14 @@ class Robot(wpilib.TimedRobot):
             float(self.arm_controller.elevator.getPosition()),
             float(wpilib.RobotController.getBatteryVoltage()),
         )
+        logging.info(dashboard_data_list)
+        
 
     def autonomousPeriodic(self):
-        self.auton_selector.run()
+        if self.auton:
+            self.auton_selector.run(auton=self.auton)
+        else:
+            self.auton_selector.run()
         global fms_attached
         fms_attached = wpilib.DriverStation.isFMSAttached()
         if self.use_threading:
@@ -285,7 +328,10 @@ class Robot(wpilib.TimedRobot):
         )
 
     def teleopPeriodic(self):
-        self.drive_train.swerveDrive(self.joystick)
+        if self.profile:
+            self.drive_train.swerveDrive(self.joystick, profile=self.profile)
+        else:
+            self.drive_train.swerveDrive(self.joystick)
         self.arm_controller.setArm(self.joystick)
         global fms_attached
         fms_attached = wpilib.DriverStation.isFMSAttached()
