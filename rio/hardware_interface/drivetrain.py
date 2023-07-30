@@ -192,9 +192,12 @@ class SwerveModule():
         self.encoderconfig.absoluteSensorRange = ctre.sensors.AbsoluteSensorRange.Unsigned_0_to_360
         self.encoderconfig.initializationStrategy = ctre.sensors.SensorInitializationStrategy.BootToAbsolutePosition
         self.encoder.setStatusFramePeriod(ctre.sensors.CANCoderStatusFrame.SensorData, 10, timeout_ms)
+        
+    def getMotorPosition(self):
+        return getAxleRadians(self.axle_motor.getSelectedSensorPosition(), 'position')
     
     def getEncoderPosition(self):
-        return math.radians(self.encoder.getAbsolutePosition())
+        return math.radians(self.encoder.getPosition())
     
     def getEncoderVelocity(self):
         return math.radians(self.encoder.getVelocity())
@@ -629,10 +632,10 @@ class DriveTrain():
 
         # optimize states
         #This makes the modules take the shortest path to the desired angle
-        # self.front_left_state = SwerveModuleState.optimize(self.front_left_state, Rotation2d(self.front_left.getEncoderPosition()))
-        # self.front_right_state = SwerveModuleState.optimize(self.front_right_state, Rotation2d(self.front_right.getEncoderPosition()))
-        # self.rear_left_state = SwerveModuleState.optimize(self.rear_left_state, Rotation2d(self.rear_left.getEncoderPosition()))
-        # self.rear_right_state = SwerveModuleState.optimize(self.rear_right_state, Rotation2d(self.rear_right.getEncoderPosition()))
+        self.front_left_state = SwerveModuleState.optimize(self.front_left_state, Rotation2d(self.front_left.getEncoderPosition()))
+        self.front_right_state = SwerveModuleState.optimize(self.front_right_state, Rotation2d(self.front_right.getEncoderPosition()))
+        self.rear_left_state = SwerveModuleState.optimize(self.rear_left_state, Rotation2d(self.rear_left.getEncoderPosition()))
+        self.rear_right_state = SwerveModuleState.optimize(self.rear_right_state, Rotation2d(self.rear_right.getEncoderPosition()))
         
         # using custom optimize
         # self.front_left_state = self.customOptimize(self.front_left_state, Rotation2d(self.front_left.getEncoderPosition()))
@@ -661,22 +664,18 @@ class DriveTrain():
             self.print = ""
 
         #logging.info(f"FR: {self.front_left_state.speed}, {self.front_left_state.angle.radians()} | Vel: {self.motor_vels} Pos: {self.motor_pos}")
-        #logging.info(f"{self.print}linX: {round(self.speeds.vx, 2)} linY: {round(self.speeds.vy, 2)} angZ: {round(self.speeds.omega, 2)} AutoTurn: {self.auto_turn_value} Slow: {self.slow}")
+        #logging.info(f"{self.print}linX: {round(self.speeds.vx, 2)} linY: {round(self.speeds.vy, 2)} angZ: {round(self.speeds.omega, 2)} FL: {round(radiansToMeters(getWheelRadians(self.front_left.wheel_motor.getSelectedSensorVelocity(), 'velocity')), 2)}")
         
     def getModuleCommand(self):
         data = dict()
         
         # logging.info(self.front_left.wheel_motor.getSelectedSensorVelocity())
         
-        # m1_val = self.motion_magic_1.calculate(self.front_left.getEncoderPosition())
-        # m2_val = self.motion_magic_2.calculate(self.front_right.getEncoderPosition())
-        # m3_val = self.motion_magic_3.calculate(self.rear_left.getEncoderPosition())
-        # m4_val = self.motion_magic_4.calculate(self.rear_right.getEncoderPosition())
-        
         m1_val = self.new_motion_magic_1.getNextVelocity(self.front_left_state.angle.radians(), self.front_left.getEncoderPosition())
         m2_val = self.new_motion_magic_2.getNextVelocity(self.front_right_state.angle.radians(), self.front_right.getEncoderPosition())
         m3_val = self.new_motion_magic_3.getNextVelocity(self.rear_left_state.angle.radians(), self.rear_left.getEncoderPosition())
         m4_val = self.new_motion_magic_4.getNextVelocity(self.rear_right_state.angle.radians(), self.rear_right.getEncoderPosition())
+            
         
         # m1_val, m2_val, m3_val, m4_val = 0.0, 0.0, 0.0, 0.0
         
@@ -693,7 +692,7 @@ class DriveTrain():
         ]
         data["position"] = [0.0]*8
         
-        print(f"{round(self.linX, 2)} {round(self.linY, 2)} {round(self.angZ, 2)} | {round(self.front_left_state.angle.radians(), 2)} {round(self.front_left_state.speed, 2)} | {round(math.degrees(getAxleRadians(self.front_left.axle_motor.getSelectedSensorPosition(), 'position')), 2)}")
+        print(f"{round(self.linX, 2)} {round(self.linY, 2)} {round(self.angZ, 2)} | {round(self.front_left_state.angle.radians(), 2)} {round(self.front_left_state.speed, 2)} | {round(self.front_left.getEncoderPosition(), 2)} {m1_val}")
         
         return data
 
