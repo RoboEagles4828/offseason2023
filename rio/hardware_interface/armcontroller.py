@@ -232,6 +232,7 @@ class Piston():
     def __init__(self, hub : wpilib.PneumaticHub, ports : "list[int]", min : float = 0.0, max : float = 1.0, reverse : bool = False, name : str = "Piston"):
         self.solenoid = hub.makeDoubleSolenoid(ports[0], ports[1])
         self.state = int(self.solenoid.get() != wpilib.DoubleSolenoid.Value.kForward)
+        self.spoof = False
         self.min = min
         self.max = max
         self.reverse = reverse
@@ -257,9 +258,11 @@ class Piston():
             if abs(position) >= center:
                 logging.info(f"{self.name} first block")
                 self.solenoid.set(forward)
+                self.spoof = True
             elif abs(position) < center:
                 logging.info(f"{self.name} second block")
                 self.solenoid.set(reverse)
+                self.spoof = False
             self.lastCommand = position
         else:
             logging.info(f"{self.name} Position: {position}")

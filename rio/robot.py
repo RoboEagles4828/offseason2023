@@ -164,7 +164,7 @@ def dashboardAction(publisher : DDS_Publisher):
 ############################################
 
 ################## DASHBOARD SUB ###############
-DASHBOARD_SUB = "ROS2_PARTICIPANT_LIB::dashboard_subscriber::dashboard_reader"
+DASHBOARD_SUB = "ROS2_PARTICIPANT_LIB::dashboard_subscriber"
 DASHBOARD_READER = "dashboard_data_subscriber::dashboard_reader"
 
 def dashboardSubThread():
@@ -172,19 +172,23 @@ def dashboardSubThread():
     threadLoop('dashboard_sub', dashboard_subscriber, dashboardSubAction)
     
 def dashboardSubAction(subscriber : DDS_Subscriber):
-    data = subscriber.read()
-    dataArr = data.split("|")
-    auton = dataArr[0]
-    profile = dataArr[1]
-    led = dataArr[2]
-    joystick_type = dataArr[3]
-    
-    global dashboard_data_return
-    dashboard_data_return = {
-        "auton": auton,
-        "profile": profile,
-        "joy_type": joystick_type,
-    }
+    stuff = subscriber.read()
+    if stuff:
+        data = stuff['data']
+        dataArr = data.split("|")
+        
+        if len(dataArr) > 1:
+            auton = dataArr[0]
+            profile = dataArr[1]
+            led = dataArr[2]
+            joystick_type = dataArr[3]
+            
+            global dashboard_data_return
+            dashboard_data_return = {
+                "auton": auton,
+                "profile": profile,
+                "joy_type": joystick_type,
+            }
 ############################################   
 
 class Robot(wpilib.TimedRobot):
@@ -244,10 +248,24 @@ class Robot(wpilib.TimedRobot):
     def robotPeriodic(self):
         self.joystick.type = self.joystick_selector.getSelected()
         global dashboard_data_return
-        self.profile = dashboard_data_return["profile"]
-        self.auton = dashboard_data_return["auton"]
-        joy_type = dashboard_data_return["joy_type"]
-        self.joystick.type = joy_type
+        if dashboard_data_return:
+            self.profile = dashboard_data_return["profile"]
+            self.auton = dashboard_data_return["auton"]
+            joy_type = dashboard_data_return["joy_type"]
+            self.joystick.type = joy_type
+            
+        global dashboard_data_list
+        dashboard_data_list = self.drive_train.getDashboardData(
+            self.joystick,
+            self.auton_selector.autonChooser.getSelected(),
+            self.joystick.joystick.isConnected(),
+            float(self.arm_controller.compressor.getPressure()),
+            f"{bool(self.arm_controller.top_gripper.spoof)}/{self.arm_controller.top_gripper.getPosition()}",
+            f"{bool(self.arm_controller.top_gripper_slider.spoof)}/{self.arm_controller.top_gripper_slider.getPosition()}",
+            f"{bool(self.arm_controller.arm_roller_bar.spoof)}/{self.arm_controller.arm_roller_bar.getPosition()}",
+            float(self.arm_controller.elevator.getPosition()),
+            float(wpilib.RobotController.getBatteryVoltage()),
+        )
 
 
     # Auton
@@ -259,20 +277,6 @@ class Robot(wpilib.TimedRobot):
         logging.info("Entering Auton")
         global frc_stage
         frc_stage = "AUTON"
-        
-        global dashboard_data_list
-        dashboard_data_list = self.drive_train.getDashboardData(
-            self.joystick,
-            self.auton_selector.autonChooser.getSelected(),
-            self.joystick.joystick.isConnected(),
-            float(self.arm_controller.compressor.getPressure()),
-            f"{bool(self.arm_controller.top_gripper.solenoid.get())}/{self.arm_controller.top_gripper.getPosition()}",
-            f"{bool(self.arm_controller.top_gripper_slider.solenoid.get())}/{self.arm_controller.top_gripper_slider.getPosition()}",
-            f"{bool(self.arm_controller.arm_roller_bar.solenoid.get())}/{self.arm_controller.arm_roller_bar.getPosition()}",
-            float(self.arm_controller.elevator.getPosition()),
-            float(wpilib.RobotController.getBatteryVoltage()),
-        )
-        logging.info(dashboard_data_list)
         
 
     def autonomousPeriodic(self):
@@ -287,19 +291,6 @@ class Robot(wpilib.TimedRobot):
         else:
             self.doActions()
             
-        global dashboard_data_list
-        dashboard_data_list = self.drive_train.getDashboardData(
-            self.joystick,
-            self.auton_selector.autonChooser.getSelected(),
-            self.joystick.joystick.isConnected(),
-            float(self.arm_controller.compressor.getPressure()),
-            f"{bool(self.arm_controller.top_gripper.solenoid.get())}/{self.arm_controller.top_gripper.getPosition()}",
-            f"{bool(self.arm_controller.top_gripper_slider.solenoid.get())}/{self.arm_controller.top_gripper_slider.getPosition()}",
-            f"{bool(self.arm_controller.arm_roller_bar.solenoid.get())}/{self.arm_controller.arm_roller_bar.getPosition()}",
-            float(self.arm_controller.elevator.getPosition()),
-            float(wpilib.RobotController.getBatteryVoltage()),
-        )
-            
     def autonomousExit(self):
         logging.info("Exiting Auton")
         global frc_stage
@@ -313,19 +304,6 @@ class Robot(wpilib.TimedRobot):
         logging.info("Entering Teleop")
         global frc_stage
         frc_stage = "TELEOP"
-        
-        global dashboard_data_list
-        dashboard_data_list = self.drive_train.getDashboardData(
-            self.joystick,
-            self.auton_selector.autonChooser.getSelected(),
-            self.joystick.joystick.isConnected(),
-            float(self.arm_controller.compressor.getPressure()),
-            f"{bool(self.arm_controller.top_gripper.solenoid.get())}/{self.arm_controller.top_gripper.getPosition()}",
-            f"{bool(self.arm_controller.top_gripper_slider.solenoid.get())}/{self.arm_controller.top_gripper_slider.getPosition()}",
-            f"{bool(self.arm_controller.arm_roller_bar.solenoid.get())}/{self.arm_controller.arm_roller_bar.getPosition()}",
-            float(self.arm_controller.elevator.getPosition()),
-            float(wpilib.RobotController.getBatteryVoltage()),
-        )
 
     def teleopPeriodic(self):
         if self.profile:
@@ -340,19 +318,6 @@ class Robot(wpilib.TimedRobot):
         else:
             self.doActions()
         
-        global dashboard_data_list
-        dashboard_data_list = self.drive_train.getDashboardData(
-            self.joystick,
-            self.auton_selector.autonChooser.getSelected(),
-            self.joystick.joystick.isConnected(),
-            float(self.arm_controller.compressor.getPressure()),
-            f"{bool(self.arm_controller.top_gripper.solenoid.get())}/{self.arm_controller.top_gripper.getPosition()}",
-            f"{bool(self.arm_controller.top_gripper_slider.solenoid.get())}/{self.arm_controller.top_gripper_slider.getPosition()}",
-            f"{bool(self.arm_controller.arm_roller_bar.solenoid.get())}/{self.arm_controller.arm_roller_bar.getPosition()}",
-            float(self.arm_controller.elevator.getPosition()),
-            float(wpilib.RobotController.getBatteryVoltage()),
-        )
-        
     def manageThreads(self):
         # Check all threads and make sure they are alive
         for thread in self.threads:
@@ -363,6 +328,8 @@ class Robot(wpilib.TimedRobot):
     def doActions(self):
         encoderAction(self.encoder_publisher)
         stageBroadcasterAction(self.stage_publisher)
+        dashboardAction(self.dashboard_publisher)
+        dashboardSubAction(self.dashboard_subscriber)
         
     def stopThreads(self):
         global stop_threads

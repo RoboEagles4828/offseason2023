@@ -456,7 +456,7 @@ class DriveTrain():
         self.auto_turn_value = "off"
 
         self.profile_selector = wpilib.SendableChooser()
-        self.profile_selector.setDefaultOption("Competition", (5.0, 2.5, "Competiton"))
+        self.profile_selector.setDefaultOption("Competition", (5.0, 2.5, "Competition"))
         self.profile_selector.addOption("Workshop", (2.5, 1.25, "Workshop"))
         
         self.comp = [5.0, 2.5]
@@ -671,7 +671,7 @@ class DriveTrain():
             self.print = ""
 
         #logging.info(f"FR: {self.front_left_state.speed}, {self.front_left_state.angle.radians()} | Vel: {self.motor_vels} Pos: {self.motor_pos}")
-        #logging.info(f"{self.print}linX: {round(self.speeds.vx, 2)} linY: {round(self.speeds.vy, 2)} angZ: {round(self.speeds.omega, 2)} AutoTurn: {self.auto_turn_value} Slow: {self.slow}")
+        logging.info(f"{self.print}linX: {round(self.speeds.vx, 2)} linY: {round(self.speeds.vy, 2)} angZ: {round(self.speeds.omega, 2)} AutoTurn: {self.auto_turn_value} Slow: {self.slow} Joy: {joystick.type}")
         
     def getModuleCommand(self):
         data = dict()
@@ -736,10 +736,8 @@ class DriveTrain():
             self.coolRound(elevatorPosition),
             self.coolRound(battery),
         ]
-        for button in joystick.getData()['buttons']:
-            data.append(self.coolRound(button))
-        for axis in joystick.getData()['axes']:
-            data.append(self.coolRound(axis))
+        data.extend(joystick.getData()['buttons'])
+        data.extend(joystick.getData()['axes'])
         return data
 
     def coolRound(self, num):

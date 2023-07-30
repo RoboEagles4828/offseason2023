@@ -92,6 +92,11 @@ This code contains trade secrets of Real-Time Innovations, Inc.
       <register_type name="std_msgs::msg::dds_::String_" type_ref="std_msgs::msg::dds_::String_" />
       <topic name="rt/dashboard_data" register_type_ref="std_msgs::msg::dds_::String_" />
     </domain>
+
+    <domain name="ROS2_DOMAIN_DASHBOARD_SUB" domain_id="0">
+      <register_type name="std_msgs::msg::dds_::String_" type_ref="std_msgs::msg::dds_::String_" />
+      <topic name="rt/dashboard_pub" register_type_ref="std_msgs::msg::dds_::String_" />
+    </domain>
   </domain_library>
 
 
@@ -147,7 +152,7 @@ This code contains trade secrets of Real-Time Innovations, Inc.
       </subscriber>
     </domain_participant>
 
-    <domain_participant name="dashboard_subscriber" domain_ref="ROS2_DOMAIN_LIB::ROS2_DOMAIN_DASHBOARD">
+    <domain_participant name="dashboard_subscriber" domain_ref="ROS2_DOMAIN_LIB::ROS2_DOMAIN_DASHBOARD_SUB">
       <subscriber name="dashboard_data_subscriber">
         <data_reader name="dashboard_reader" topic_ref="rt/dashboard_pub" />
       </subscriber>
