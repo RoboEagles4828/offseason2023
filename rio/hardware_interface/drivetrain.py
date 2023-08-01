@@ -675,10 +675,6 @@ class DriveTrain():
         m2_val = self.new_motion_magic_2.getNextVelocity(self.front_right_state.angle.radians(), self.front_right.getEncoderPosition())
         m3_val = self.new_motion_magic_3.getNextVelocity(self.rear_left_state.angle.radians(), self.rear_left.getEncoderPosition())
         m4_val = self.new_motion_magic_4.getNextVelocity(self.rear_right_state.angle.radians(), self.rear_right.getEncoderPosition())
-            
-        
-        # m1_val, m2_val, m3_val, m4_val = 0.0, 0.0, 0.0, 0.0
-        
         data["name"] = getJointList()
         data["velocity"] = [
             metersToRadians(self.front_left_state.speed) * SCALING_FACTOR_FIX,
@@ -692,7 +688,7 @@ class DriveTrain():
         ]
         data["position"] = [0.0]*8
         
-        print(f"{round(self.linX, 2)} {round(self.linY, 2)} {round(self.angZ, 2)} | {round(self.front_left_state.angle.radians(), 2)} {round(self.front_left_state.speed, 2)} | {round(self.front_left.getEncoderPosition(), 2)} {m1_val}")
+        print(f"{round(self.linX, 2)} {round(self.linY, 2)} {round(self.angZ, 2)} | {round(self.front_left.getEncoderPosition(), 2)} {round(self.front_right.getEncoderPosition(), 2)} {round(self.rear_left.getEncoderPosition(), 2)} {round(self.rear_right.getEncoderPosition(), 2)}")
         
         return data
 
