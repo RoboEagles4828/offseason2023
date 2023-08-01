@@ -151,14 +151,11 @@ def getWheelRadians(ticks, displacementType):
     
 def radiansToMeters(radians):
     wheel_rad = 0.0508
-    wheel_circ = 2 * math.pi * wheel_rad
-    return radians * wheel_circ
+    return radians * wheel_rad
 
 def metersToRadians(meters):
     wheel_rad = 0.0508
-    wheel_circ = 2 * math.pi * wheel_rad
-    
-    return meters/wheel_circ
+    return meters/wheel_rad
 
 
 class SwerveModule():
