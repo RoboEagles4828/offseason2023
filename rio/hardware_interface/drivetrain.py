@@ -359,14 +359,12 @@ class SwerveModule():
         # logging.info('WHEEL MOTOR VEL: ', wheel_vel)
 
     def set(self, state: SwerveModuleState):
-        wheel_radius = 0.0508
-        set_wheel_motor_vel = state.speed / (wheel_radius) / (math.pi * 2)
+        set_wheel_motor_vel = metersToRadians(state.speed)
         set_axle_motor_pos = state.angle.radians()
         self.setMotors(set_wheel_motor_vel, set_axle_motor_pos)
 
     def setVelocity(self, velocity):
-        wheel_radius = 0.0508
-        set_wheel_motor_vel = velocity / (wheel_radius) / (math.pi * 2)
+        set_wheel_motor_vel = metersToRadians(velocity)
         self.wheel_motor.set(ctre.TalonFXControlMode.Velocity, getWheelShaftTicks(set_wheel_motor_vel, "velocity"))
 
     def getEncoderData(self):
