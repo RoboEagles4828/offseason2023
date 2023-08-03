@@ -77,8 +77,8 @@ class ImportBot(BaseSample):
         # add_reference_to_stage(cone, "/World/Cone_6")
         # add_reference_to_stage(cone, "/World/Cone_7")
         # add_reference_to_stage(cone,  "/World/Cone_8")
-        field_1 = GeometryPrim("/World/FE_2023","field_1_view",position=np.array([0.0,0.0,-0.00478]))
-        cone_1 = GeometryPrim("/World/Cone_1","cone_1_view",position=np.array([1.20298,-0.56861,0.0]))
+        field_1 = GeometryPrim("/World/FE_2023","field_1_view",position=np.array([0.0,0.0,0.0]))
+        cone_1 = GeometryPrim("/World/Cone_1","cone_1_view",position=np.array([1.20298,-0.56861,-0.4]))
         cone_2 = GeometryPrim("/World/Cone_2","cone_2_view",position=np.array([1.20298,3.08899,0.0]))
         cone_3 = GeometryPrim("/World/Cone_3","cone_3_view",position=np.array([-1.20298,-0.56861,0.0]))
         cone_4 = GeometryPrim("/World/Cone_4","cone_4_view",position=np.array([-1.20298,3.08899,0.0]))
@@ -116,7 +116,7 @@ class ImportBot(BaseSample):
             return
         
         self._robot_prim = self._world.scene.add(
-            Robot(prim_path=self._robot_prim_path, name=self.robot_name, position=np.array([0.0, 0.0, 0.3]), orientation=np.array([0.0, 0.0, 0.0, 1.0]))
+            Robot(prim_path=self._robot_prim_path, name=self.robot_name, position=np.array([0.0, 0.0, 1.0]), orientation=np.array([0.0, 0.0, 0.0, 1.0]))
         )
         
         self.configure_robot(self._robot_prim_path)
