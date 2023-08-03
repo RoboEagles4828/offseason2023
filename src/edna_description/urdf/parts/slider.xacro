@@ -7,7 +7,7 @@
   <xacro:macro name="slider" params="prefix parent *origin">
 
     <link name = "${prefix}_slider_link">
-        <xacro:inertial_box mass = "1" x = "${slider_block_length}" y = "${slider_block_width}" z = "${slider_block_height}">
+        <xacro:inertial_box mass = "0.90718474" x = "${slider_block_length}" y = "${slider_block_width}" z = "${slider_block_height}">
             <origin xyz = "0 0 0" rpy = "0 0 0"/>
         </xacro:inertial_box>
         <visual>

@@ -69,6 +69,9 @@
 
     <!-- Camera Center -->
     <link name="${prefix}_camera_center">
+      <xacro:inertial_box mass="0.23" x="0.17525" y="0.03025" z="0.0431">
+        <origin xyz="${screw_offset_x} 0 0 0 0" rpy="0 0 0" />
+      </xacro:inertial_box>
       <visual>
         <origin xyz="${screw_offset_x} 0 0" rpy="0 0 0"/>
         <geometry>
