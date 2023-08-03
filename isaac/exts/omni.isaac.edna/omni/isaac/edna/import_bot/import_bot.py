@@ -15,6 +15,8 @@ import os
 import numpy as np
 import math
 import carb
+from omni.isaac.core.materials import PhysicsMaterial
+
 
 NAMESPACE = f"{os.environ.get('ROS_NAMESPACE')}" if 'ROS_NAMESPACE' in os.environ else 'default'
 
@@ -37,35 +39,19 @@ class ImportBot(BaseSample):
 
 
     def set_friction(self, robot_prim_path):
-        mtl_created_list = []
-        # Create a new material using OmniGlass.mdl
-        omni.kit.commands.execute(
-            "CreateAndBindMdlMaterialFromLibrary",
-            mdl_name="OmniPBR.mdl",
-            mtl_name="Rubber",
-            mtl_created_list=mtl_created_list,
-        )
-        # Get reference to created material
         stage = omni.usd.get_context().get_stage()
-        mtl_prim = stage.GetPrimAtPath(mtl_created_list[0])
-
-        friction_material = UsdPhysics.MaterialAPI.Apply(mtl_prim)
-        friction_material.CreateDynamicFrictionAttr(1.0)
-        friction_material.CreateStaticFrictionAttr(1.0)
-
-        front_left_wheel_prim = stage.GetPrimAtPath(f"{robot_prim_path}/front_left_wheel_link/collisions")
-        front_right_wheel_prim = stage.GetPrimAtPath(f"{robot_prim_path}/front_right_wheel_link/collisions")
-        rear_left_wheel_prim = stage.GetPrimAtPath(f"{robot_prim_path}/rear_left_wheel_link/collisions")
-        rear_right_wheel_prim = stage.GetPrimAtPath(f"{robot_prim_path}/rear_right_wheel_link/collisions")
-
-        add_physics_material_to_prim(front_left_wheel_prim, mtl_prim)
-        add_physics_material_to_prim(front_right_wheel_prim, mtl_prim)
-        add_physics_material_to_prim(rear_left_wheel_prim, mtl_prim)
-        add_physics_material_to_prim(rear_right_wheel_prim, mtl_prim)
+        omni.kit.commands.execute('AddRigidBodyMaterialCommand',stage=stage, path='/World/Physics_Materials/Rubber',staticFriction=1.1,dynamicFriction=1.5,restitution=None)
+        omni.kit.commands.execute('BindMaterial',material_path='/World/Physics_Materials/Rubber',prim_path=[f"{robot_prim_path}/front_left_wheel_link"],strength=['weakerThanDescendants'])
+        omni.kit.commands.execute('BindMaterial',material_path='/World/Physics_Materials/Rubber',prim_path=[f"{robot_prim_path}/front_right_wheel_link"],strength=['weakerThanDescendants'])
+        omni.kit.commands.execute('BindMaterial',material_path='/World/Physics_Materials/Rubber',prim_path=[f"{robot_prim_path}/rear_left_wheel_link"],strength=['weakerThanDescendants'])
+        omni.kit.commands.execute('BindMaterial',material_path='/World/Physics_Materials/Rubber',prim_path=[f"{robot_prim_path}/rear_right_wheel_link"],strength=['weakerThanDescendants'])
+        omni.kit.commands.execute('BindMaterial',material_path='/World/Physics_Materials/Rubber',prim_path=[f"/World/FE_2023/FE_2023/FE_2023_01"],strength=['weakerThanDescendants'])
+        omni.kit.commands.execute('BindMaterial',material_path='/World/Physics_Materials/Rubber',prim_path=[f"/World/FE_2023/FE_2023/FE_2023_01_01"],strength=['weakerThanDescendants'])
 
     def setup_scene(self):
         world = self.get_world()
-        world.get_physics_context().enable_gpu_dynamics(False)
+        world.get_physics_context().enable_gpu_dynamics(True)
+        world.set_simulation_dt(1/300.0,1/60.0)
         world.scene.add_default_ground_plane()
         self.setup_field()
         # self.setup_perspective_cam()
@@ -76,13 +62,13 @@ class ImportBot(BaseSample):
         world = self.get_world()
         self.extension_path = os.path.abspath(__file__)
         self.project_root_path = os.path.abspath(os.path.join(self.extension_path, "../../../../../../.."))
-        field = os.path.join(self.project_root_path, "assets/2023_field_cpu/FE-2023.usd")
-        add_reference_to_stage(usd_path=field,prim_path="/World/Field")
+        field = os.path.join(self.project_root_path, "assets/flattened_field/field2.usd")
         cone = os.path.join(self.project_root_path, "assets/2023_field_cpu/parts/GE-23700_JFH.usd")
         cube = os.path.join(self.project_root_path, "assets/2023_field_cpu/parts/GE-23701_JFL.usd")
         chargestation = os.path.join(self.project_root_path, "assets/ChargeStation-Copy/Assembly-1.usd")
         add_reference_to_stage(chargestation, "/World/ChargeStation_1")
-        add_reference_to_stage(chargestation, "/World/ChargeStation_2") 
+        add_reference_to_stage(chargestation, "/World/ChargeStation_2")
+        add_reference_to_stage(field, "/World/FE_2023")
         add_reference_to_stage(cone, "/World/Cone_1")
         add_reference_to_stage(cone, "/World/Cone_2")
         add_reference_to_stage(cone, "/World/Cone_3")
@@ -91,6 +77,7 @@ class ImportBot(BaseSample):
         # add_reference_to_stage(cone, "/World/Cone_6")
         # add_reference_to_stage(cone, "/World/Cone_7")
         # add_reference_to_stage(cone,  "/World/Cone_8")
+        field_1 = GeometryPrim("/World/FE_2023","field_1_view",position=np.array([0.0,0.0,-0.00478]))
         cone_1 = GeometryPrim("/World/Cone_1","cone_1_view",position=np.array([1.20298,-0.56861,0.0]))
         cone_2 = GeometryPrim("/World/Cone_2","cone_2_view",position=np.array([1.20298,3.08899,0.0]))
         cone_3 = GeometryPrim("/World/Cone_3","cone_3_view",position=np.array([-1.20298,-0.56861,0.0]))
