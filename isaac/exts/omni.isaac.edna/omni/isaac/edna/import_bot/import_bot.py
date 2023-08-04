@@ -245,7 +245,6 @@ class ImportBot(BaseSample):
             },
         )
 
-
         self.right_camera = prims.create_prim(
             prim_path=self.depth_right_camera_path,
             prim_type="Camera",
@@ -258,6 +257,17 @@ class ImportBot(BaseSample):
                 "clippingPlanes": np.array([1.0, 0.0, 1.0, 1.0]),
             },
         )
+        # # omni.kit.commands.execute('ChangeProperty',
+        # #         prop_path=Sdf.Path('/edna/zed2i_right_camera_isaac_frame/left_cam.xformOp:orient'),
+        # #         value=Gf.Quatd(0.0, Gf.Vec3d(1.0, 0.0, 0.0)),
+        # #         prev=Gf.Quatd(1.0, Gf.Vec3d(0, 0, 0))
+        # #         )
+
+        # # omni.kit.commands.execute('ChangeProperty',
+        # #         prop_path=Sdf.Path('/edna/zed2i_right_camera_isaac_frame/right_cam.xformOp:orient'),
+        # #         value=Gf.Quatd(0.0, Gf.Vec3d(1.0, 0.0, 0.0)),
+        # #         prev=Gf.Quatd(1.0, Gf.Vec3d(0, 0, 0))
+        #         )
         return
 
     def setup_world_action_graph(self):
@@ -398,7 +408,7 @@ class ImportBot(BaseSample):
                     ("PublishImu.inputs:nodeNamespace", f"/{NAMESPACE}"), 
                     # ("PublishLidar.inputs:frameId", f"{NAMESPACE}/lidar_link"),
                     ("RawOdomTransform.inputs:childFrameId", f"{NAMESPACE}/base_link"),
-                    ("RawOdomTransform.inputs:parentFrameId", f"{NAMESPACE}/zed/odom"),
+                    ("RawOdomTransform.inputs:parentFrameId", f"{NAMESPACE}/odom"),
                     ("PublishOdometry.inputs:chassisFrameId", f"{NAMESPACE}/base_link"),
                     ("PublishOdometry.inputs:odomFrameId", f"{NAMESPACE}/odom"),
                     ("PublishImu.inputs:frameId", f"{NAMESPACE}/zed2i_imu_link"),
