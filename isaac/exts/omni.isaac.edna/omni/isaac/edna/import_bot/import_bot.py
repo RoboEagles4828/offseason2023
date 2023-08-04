@@ -216,7 +216,7 @@ class ImportBot(BaseSample):
         return
 
     def create_imu(self, robot_prim_path):
-        imu_parent = f"{robot_prim_path}/zed2i_imu_link"
+        imu_parent = f"{robot_prim_path}/zed2i_camera_center"
         imu_path = "/imu"
         self.imu_prim_path = imu_parent + imu_path
         result, prim = omni.kit.commands.execute(
@@ -230,8 +230,8 @@ class ImportBot(BaseSample):
         return        
     
     def create_depth_camera(self, robot_prim_path):
-        self.depth_left_camera_path = f"{robot_prim_path}/zed2i_right_camera_isaac_frame/left_cam"
-        self.depth_right_camera_path = f"{robot_prim_path}/zed2i_right_camera_isaac_frame/right_cam"
+        self.depth_left_camera_path = f"{robot_prim_path}/zed2i_right_camera_frame/left_cam"
+        self.depth_right_camera_path = f"{robot_prim_path}/zed2i_right_camera_frame/right_cam"
         self.left_camera = prims.create_prim(
             prim_path=self.depth_left_camera_path,
             prim_type="Camera",
