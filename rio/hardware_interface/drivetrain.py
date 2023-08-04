@@ -454,7 +454,7 @@ class DriveTrain():
         self.auto_turn_value = "off"
 
         self.profile_selector = wpilib.SendableChooser()
-        self.profile_selector.setDefaultOption("Competition", (5.0, 2.5))
+        self.profile_selector.setDefaultOption("Competition", (5.0, 5.0))
         self.profile_selector.addOption("Workshop", (2.5, 1.25))
 
         self.whine_remove_selector = wpilib.SendableChooser()

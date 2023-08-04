@@ -46,7 +46,7 @@
 
     <!-- Left -->
     <link name="${prefix}_gripper_left_arm_link">
-      <xacro:inertial_box mass = "${1.587573295/3}" x = "${gripper_ar_length}" y = "${gripper_ar_width}" z = "${gripper_ar_height}">
+      <xacro:inertial_box mass = "${1.587573295/3}" x = "${gripper_arm_length}" y = "${gripper_arm_width}" z = "${gripper_arm_height}">
         <origin xyz = "0 0 0" rpy = "0 0 0"/>
       </xacro:inertial_box>
       <visual>
@@ -82,7 +82,7 @@
 
     <!-- Right -->
     <link name="${prefix}_gripper_right_arm_link">
-      <xacro:inertial_box mass = "${1.587573295/3}" x = "${gripper_ar_length}" y = "${gripper_ar_width}" z = "${gripper_ar_height}">
+      <xacro:inertial_box mass = "${1.587573295/3}" x = "${gripper_arm_length}" y = "${gripper_arm_width}" z = "${gripper_arm_height}">
         <origin xyz = "0 0 0" rpy = "0 0 0"/>
       </xacro:inertial_box>
       <visual>

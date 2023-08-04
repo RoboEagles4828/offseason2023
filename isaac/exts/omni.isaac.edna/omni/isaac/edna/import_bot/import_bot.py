@@ -166,7 +166,6 @@ class ImportBot(BaseSample):
         top_gripper_left_arm_joint = UsdPhysics.DriveAPI.Get(stage.GetPrimAtPath(f"{robot_prim_path}/top_gripper_bar_link/top_gripper_left_arm_joint"), "angular")
         top_gripper_right_arm_joint = UsdPhysics.DriveAPI.Get(stage.GetPrimAtPath(f"{robot_prim_path}/top_gripper_bar_link/top_gripper_right_arm_joint"), "angular")
         top_slider_joint = UsdPhysics.DriveAPI.Get(stage.GetPrimAtPath(f"{robot_prim_path}/elevator_outer_2_link/top_slider_joint"), "linear")
-        bottom_intake_joint = UsdPhysics.DriveAPI.Get(stage.GetPrimAtPath(f"{robot_prim_path}/arm_elevator_leg_link/bottom_intake_joint"), "angular")
         
         set_drive_params(front_left_axle, 1, 1000, 98.0)
         set_drive_params(front_right_axle, 1, 1000, 98.0)
@@ -183,7 +182,6 @@ class ImportBot(BaseSample):
         set_drive_params(top_gripper_left_arm_joint, 10000000, 100000, 98.0)
         set_drive_params(top_gripper_right_arm_joint, 10000000, 100000, 98.0)
         set_drive_params(top_slider_joint, 10000000, 100000, 98.0)
-        set_drive_params(bottom_intake_joint, 10000000, 100000, 98.0)
         
         # self.create_lidar(robot_prim_path)
         self.create_imu(robot_prim_path)
