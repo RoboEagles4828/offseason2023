@@ -408,9 +408,9 @@ class ImportBot(BaseSample):
                     ("PublishImu.inputs:nodeNamespace", f"/{NAMESPACE}"), 
                     # ("PublishLidar.inputs:frameId", f"{NAMESPACE}/lidar_link"),
                     ("RawOdomTransform.inputs:childFrameId", f"{NAMESPACE}/base_link"),
-                    ("RawOdomTransform.inputs:parentFrameId", f"{NAMESPACE}/odom"),
+                    ("RawOdomTransform.inputs:parentFrameId", f"{NAMESPACE}/zed/odom"),
                     ("PublishOdometry.inputs:chassisFrameId", f"{NAMESPACE}/base_link"),
-                    ("PublishOdometry.inputs:odomFrameId", f"{NAMESPACE}/odom"),
+                    ("PublishOdometry.inputs:odomFrameId", f"{NAMESPACE}/zed/odom"),
                     ("PublishImu.inputs:frameId", f"{NAMESPACE}/zed2i_imu_link"),
                     ("PublishOdometry.inputs:topicName", "zed/odom")
                 ],
