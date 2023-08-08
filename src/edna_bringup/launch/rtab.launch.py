@@ -18,19 +18,19 @@ def generate_launch_description():
         'use_sim_time': use_sim_time,
         # Frames
         'frame_id': f'{NAMESPACE}/base_link',
-        'odom_frame_id': f'{NAMESPACE}/zed/odom',
+        # 'odom_frame_id': f'{NAMESPACE}/zed/odom',
         'map_frame_id': f'{NAMESPACE}/map',
         # Topics
         'rgb_topic': f'/{NAMESPACE}/left/rgb',
         'camera_info_topic': f'/{NAMESPACE}/left/camera_info',
         'depth_topic': f'/{NAMESPACE}/left/depth',
         'imu_topic': f'/{NAMESPACE}/imu',
-        'odom_topic': f'/{NAMESPACE}/zed/odom',
+        # 'odom_topic': f'/{NAMESPACE}/zed/odom',
 
         'approx_sync': 'false',
         'wait_imu_to_init': 'true',
-        'visual_odometry': 'false',
-        'publish_tf_odom': 'false',
+        # 'visual_odometry': 'false',
+        # 'publish_tf_odom': 'false',
         'qos': '1',
         'rviz': 'true',
     }

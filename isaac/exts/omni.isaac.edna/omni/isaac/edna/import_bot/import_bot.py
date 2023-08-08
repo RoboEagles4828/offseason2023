@@ -116,7 +116,7 @@ class ImportBot(BaseSample):
             return
         
         self._robot_prim = self._world.scene.add(
-            Robot(prim_path=self._robot_prim_path, name=self.robot_name, position=np.array([0.0, 0.0, 1.0]), orientation=np.array([0.0, 0.0, 0.0, 1.0]))
+            Robot(prim_path=self._robot_prim_path, name=self.robot_name, position=np.array([0.0, 0.0, 0.5]), orientation=np.array([0.0, 0.0, 0.0, 1.0]))
         )
         
         self.configure_robot(self._robot_prim_path)
@@ -224,7 +224,7 @@ class ImportBot(BaseSample):
             path=imu_path,
             parent=imu_parent,
             translation=Gf.Vec3d(0, 0, 0),
-            orientation=Gf.Quatd(1, 0, 0, 0),
+            orientation=Gf.Quatd(0, 0, 0, 1),
             visualize=False,
         )
         return        
@@ -411,7 +411,8 @@ class ImportBot(BaseSample):
                     ("RawOdomTransform.inputs:parentFrameId", f"{NAMESPACE}/zed/odom"),
                     ("PublishOdometry.inputs:chassisFrameId", f"{NAMESPACE}/base_link"),
                     ("PublishOdometry.inputs:odomFrameId", f"{NAMESPACE}/zed/odom"),
-                    ("PublishImu.inputs:frameId", f"{NAMESPACE}/zed2i_imu_link"),
+                    # ("PublishImu.inputs:frameId", f"{NAMESPACE}/zed2i_imu_link"),
+                    ("PublishImu.inputs:frameId", f"{NAMESPACE}/zed2i_camera_center"),
                     ("PublishOdometry.inputs:topicName", "zed/odom")
                 ],
                 og.Controller.Keys.CONNECT: [

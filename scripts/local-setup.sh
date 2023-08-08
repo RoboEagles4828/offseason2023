@@ -7,9 +7,9 @@ SCRIPT_PATH=$(dirname "$0")
 devenv_path="$SCRIPT_PATH/../.devcontainer/.env"
 
 # Graphics Driver Check
-hasDriver=$(nvidia-smi | grep "Version: 525")
+hasDriver=$(nvidia-smi | grep "Version: 535")
 if [[ -z "$hasDriver" ]]; then
- echo -e "${RED}Please install nvidia driver 525 before this install script${NC}"
+ echo -e "${RED}Please install nvidia driver 535 before this install script${NC}"
  exit 1
 fi
 
