@@ -19,7 +19,7 @@
 
     <xacro:macro name = "elevator" params = "prefix parent *origin">
         <link name = "${prefix}_outer_1_link">
-            <xacro:inertial_box mass = "1" x = "${elevator_outer_length}" y = "${elevator_outer_width}" z = "${elevator_outer_height}">
+            <xacro:inertial_box mass = "0.90718474" x = "${elevator_outer_length}" y = "${elevator_outer_width}" z = "${elevator_outer_height}">
                 <origin xyz = "0 0 ${elevator_outer_height/2}" rpy = "0 0 0"/>
             </xacro:inertial_box>
             <visual>
@@ -63,7 +63,7 @@
 
 
         <link name = "${prefix}_center_link">
-            <xacro:inertial_box mass = "1" x = "${elevator_outer_length}" y = "${elevator_outer_width}" z = "${elevator_outer_height}">
+            <xacro:inertial_box mass = "1.220163475" x = "${elevator_outer_length}" y = "${elevator_outer_width}" z = "${elevator_outer_height}">
                 <origin xyz = "0 0 ${elevator_outer_height/2}" rpy = "0 0 0"/>
             </xacro:inertial_box>
             <visual>
@@ -107,7 +107,7 @@
 
 
         <link name = "${prefix}_outer_2_link">
-            <xacro:inertial_box mass = "1" x = "${elevator_outer_length}" y = "${elevator_outer_width}" z = "${elevator_outer_height}">
+            <xacro:inertial_box mass = "0.90718474" x = "${elevator_outer_length}" y = "${elevator_outer_width}" z = "${elevator_outer_height}">
                 <origin xyz = "0 0 ${elevator_outer_height/2}" rpy = "0 0 0"/>
             </xacro:inertial_box>
             <visual>

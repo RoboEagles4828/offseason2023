@@ -15,6 +15,8 @@ import os
 import numpy as np
 import math
 import carb
+from omni.isaac.core.materials import PhysicsMaterial
+
 
 NAMESPACE = f"{os.environ.get('ROS_NAMESPACE')}" if 'ROS_NAMESPACE' in os.environ else 'default'
 
@@ -37,35 +39,19 @@ class ImportBot(BaseSample):
 
 
     def set_friction(self, robot_prim_path):
-        mtl_created_list = []
-        # Create a new material using OmniGlass.mdl
-        omni.kit.commands.execute(
-            "CreateAndBindMdlMaterialFromLibrary",
-            mdl_name="OmniPBR.mdl",
-            mtl_name="Rubber",
-            mtl_created_list=mtl_created_list,
-        )
-        # Get reference to created material
         stage = omni.usd.get_context().get_stage()
-        mtl_prim = stage.GetPrimAtPath(mtl_created_list[0])
-
-        friction_material = UsdPhysics.MaterialAPI.Apply(mtl_prim)
-        friction_material.CreateDynamicFrictionAttr(1.0)
-        friction_material.CreateStaticFrictionAttr(1.0)
-
-        front_left_wheel_prim = stage.GetPrimAtPath(f"{robot_prim_path}/front_left_wheel_link/collisions")
-        front_right_wheel_prim = stage.GetPrimAtPath(f"{robot_prim_path}/front_right_wheel_link/collisions")
-        rear_left_wheel_prim = stage.GetPrimAtPath(f"{robot_prim_path}/rear_left_wheel_link/collisions")
-        rear_right_wheel_prim = stage.GetPrimAtPath(f"{robot_prim_path}/rear_right_wheel_link/collisions")
-
-        add_physics_material_to_prim(front_left_wheel_prim, mtl_prim)
-        add_physics_material_to_prim(front_right_wheel_prim, mtl_prim)
-        add_physics_material_to_prim(rear_left_wheel_prim, mtl_prim)
-        add_physics_material_to_prim(rear_right_wheel_prim, mtl_prim)
+        omni.kit.commands.execute('AddRigidBodyMaterialCommand',stage=stage, path='/World/Physics_Materials/Rubber',staticFriction=1.1,dynamicFriction=1.5,restitution=None)
+        omni.kit.commands.execute('BindMaterial',material_path='/World/Physics_Materials/Rubber',prim_path=[f"{robot_prim_path}/front_left_wheel_link"],strength=['weakerThanDescendants'])
+        omni.kit.commands.execute('BindMaterial',material_path='/World/Physics_Materials/Rubber',prim_path=[f"{robot_prim_path}/front_right_wheel_link"],strength=['weakerThanDescendants'])
+        omni.kit.commands.execute('BindMaterial',material_path='/World/Physics_Materials/Rubber',prim_path=[f"{robot_prim_path}/rear_left_wheel_link"],strength=['weakerThanDescendants'])
+        omni.kit.commands.execute('BindMaterial',material_path='/World/Physics_Materials/Rubber',prim_path=[f"{robot_prim_path}/rear_right_wheel_link"],strength=['weakerThanDescendants'])
+        omni.kit.commands.execute('BindMaterial',material_path='/World/Physics_Materials/Rubber',prim_path=[f"/World/FE_2023/FE_2023/FE_2023_01"],strength=['weakerThanDescendants'])
+        omni.kit.commands.execute('BindMaterial',material_path='/World/Physics_Materials/Rubber',prim_path=[f"/World/FE_2023/FE_2023/FE_2023_01_01"],strength=['weakerThanDescendants'])
 
     def setup_scene(self):
         world = self.get_world()
-        world.get_physics_context().enable_gpu_dynamics(False)
+        world.get_physics_context().enable_gpu_dynamics(True)
+        world.set_simulation_dt(1/300.0,1/60.0)
         world.scene.add_default_ground_plane()
         self.setup_field()
         # self.setup_perspective_cam()
@@ -76,13 +62,13 @@ class ImportBot(BaseSample):
         world = self.get_world()
         self.extension_path = os.path.abspath(__file__)
         self.project_root_path = os.path.abspath(os.path.join(self.extension_path, "../../../../../../.."))
-        field = os.path.join(self.project_root_path, "assets/2023_field_cpu/FE-2023.usd")
-        add_reference_to_stage(usd_path=field,prim_path="/World/Field")
+        field = os.path.join(self.project_root_path, "assets/flattened_field/field2.usd")
         cone = os.path.join(self.project_root_path, "assets/2023_field_cpu/parts/GE-23700_JFH.usd")
         cube = os.path.join(self.project_root_path, "assets/2023_field_cpu/parts/GE-23701_JFL.usd")
         chargestation = os.path.join(self.project_root_path, "assets/ChargeStation-Copy/Assembly-1.usd")
         add_reference_to_stage(chargestation, "/World/ChargeStation_1")
-        add_reference_to_stage(chargestation, "/World/ChargeStation_2") 
+        add_reference_to_stage(chargestation, "/World/ChargeStation_2")
+        add_reference_to_stage(field, "/World/FE_2023")
         add_reference_to_stage(cone, "/World/Cone_1")
         add_reference_to_stage(cone, "/World/Cone_2")
         add_reference_to_stage(cone, "/World/Cone_3")
@@ -91,7 +77,8 @@ class ImportBot(BaseSample):
         # add_reference_to_stage(cone, "/World/Cone_6")
         # add_reference_to_stage(cone, "/World/Cone_7")
         # add_reference_to_stage(cone,  "/World/Cone_8")
-        cone_1 = GeometryPrim("/World/Cone_1","cone_1_view",position=np.array([1.20298,-0.56861,0.0]))
+        field_1 = GeometryPrim("/World/FE_2023","field_1_view",position=np.array([0.0,0.0,0.0]))
+        cone_1 = GeometryPrim("/World/Cone_1","cone_1_view",position=np.array([1.20298,-0.56861,-0.4]))
         cone_2 = GeometryPrim("/World/Cone_2","cone_2_view",position=np.array([1.20298,3.08899,0.0]))
         cone_3 = GeometryPrim("/World/Cone_3","cone_3_view",position=np.array([-1.20298,-0.56861,0.0]))
         cone_4 = GeometryPrim("/World/Cone_4","cone_4_view",position=np.array([-1.20298,3.08899,0.0]))
@@ -129,7 +116,7 @@ class ImportBot(BaseSample):
             return
         
         self._robot_prim = self._world.scene.add(
-            Robot(prim_path=self._robot_prim_path, name=self.robot_name, position=np.array([0.0, 0.0, 0.3]), orientation=np.array([0.0, 0.0, 0.0, 1.0]))
+            Robot(prim_path=self._robot_prim_path, name=self.robot_name, position=np.array([0.0, 0.0, 0.5]), orientation=np.array([0.0, 0.0, 0.0, 1.0]))
         )
         
         self.configure_robot(self._robot_prim_path)
@@ -179,7 +166,6 @@ class ImportBot(BaseSample):
         top_gripper_left_arm_joint = UsdPhysics.DriveAPI.Get(stage.GetPrimAtPath(f"{robot_prim_path}/top_gripper_bar_link/top_gripper_left_arm_joint"), "angular")
         top_gripper_right_arm_joint = UsdPhysics.DriveAPI.Get(stage.GetPrimAtPath(f"{robot_prim_path}/top_gripper_bar_link/top_gripper_right_arm_joint"), "angular")
         top_slider_joint = UsdPhysics.DriveAPI.Get(stage.GetPrimAtPath(f"{robot_prim_path}/elevator_outer_2_link/top_slider_joint"), "linear")
-        bottom_intake_joint = UsdPhysics.DriveAPI.Get(stage.GetPrimAtPath(f"{robot_prim_path}/arm_elevator_leg_link/bottom_intake_joint"), "angular")
         
         set_drive_params(front_left_axle, 1, 1000, 98.0)
         set_drive_params(front_right_axle, 1, 1000, 98.0)
@@ -196,7 +182,6 @@ class ImportBot(BaseSample):
         set_drive_params(top_gripper_left_arm_joint, 10000000, 100000, 98.0)
         set_drive_params(top_gripper_right_arm_joint, 10000000, 100000, 98.0)
         set_drive_params(top_slider_joint, 10000000, 100000, 98.0)
-        set_drive_params(bottom_intake_joint, 10000000, 100000, 98.0)
         
         # self.create_lidar(robot_prim_path)
         self.create_imu(robot_prim_path)
@@ -231,7 +216,7 @@ class ImportBot(BaseSample):
         return
 
     def create_imu(self, robot_prim_path):
-        imu_parent = f"{robot_prim_path}/zed2i_imu_link"
+        imu_parent = f"{robot_prim_path}/zed2i_camera_center"
         imu_path = "/imu"
         self.imu_prim_path = imu_parent + imu_path
         result, prim = omni.kit.commands.execute(
@@ -239,14 +224,14 @@ class ImportBot(BaseSample):
             path=imu_path,
             parent=imu_parent,
             translation=Gf.Vec3d(0, 0, 0),
-            orientation=Gf.Quatd(1, 0, 0, 0),
+            orientation=Gf.Quatd(0, 0, 0, 1),
             visualize=False,
         )
         return        
     
     def create_depth_camera(self, robot_prim_path):
-        self.depth_left_camera_path = f"{robot_prim_path}/zed2i_right_camera_isaac_frame/left_cam"
-        self.depth_right_camera_path = f"{robot_prim_path}/zed2i_right_camera_isaac_frame/right_cam"
+        self.depth_left_camera_path = f"{robot_prim_path}/zed2i_right_camera_frame/left_cam"
+        self.depth_right_camera_path = f"{robot_prim_path}/zed2i_right_camera_frame/right_cam"
         self.left_camera = prims.create_prim(
             prim_path=self.depth_left_camera_path,
             prim_type="Camera",
@@ -260,7 +245,6 @@ class ImportBot(BaseSample):
             },
         )
 
-
         self.right_camera = prims.create_prim(
             prim_path=self.depth_right_camera_path,
             prim_type="Camera",
@@ -273,6 +257,17 @@ class ImportBot(BaseSample):
                 "clippingPlanes": np.array([1.0, 0.0, 1.0, 1.0]),
             },
         )
+        # # omni.kit.commands.execute('ChangeProperty',
+        # #         prop_path=Sdf.Path('/edna/zed2i_right_camera_isaac_frame/left_cam.xformOp:orient'),
+        # #         value=Gf.Quatd(0.0, Gf.Vec3d(1.0, 0.0, 0.0)),
+        # #         prev=Gf.Quatd(1.0, Gf.Vec3d(0, 0, 0))
+        # #         )
+
+        # # omni.kit.commands.execute('ChangeProperty',
+        # #         prop_path=Sdf.Path('/edna/zed2i_right_camera_isaac_frame/right_cam.xformOp:orient'),
+        # #         value=Gf.Quatd(0.0, Gf.Vec3d(1.0, 0.0, 0.0)),
+        # #         prev=Gf.Quatd(1.0, Gf.Vec3d(0, 0, 0))
+        #         )
         return
 
     def setup_world_action_graph(self):
@@ -297,7 +292,7 @@ class ImportBot(BaseSample):
     def setup_camera_action_graph(self, robot_prim_path):
         camera_graph = "{}/camera_sensor_graph".format(robot_prim_path)
         enable_left_cam = True
-        enable_right_cam = True
+        enable_right_cam = False
         rgbType = "RgbType"
         infoType = "InfoType"
         depthType = "DepthType"
@@ -415,8 +410,9 @@ class ImportBot(BaseSample):
                     ("RawOdomTransform.inputs:childFrameId", f"{NAMESPACE}/base_link"),
                     ("RawOdomTransform.inputs:parentFrameId", f"{NAMESPACE}/zed/odom"),
                     ("PublishOdometry.inputs:chassisFrameId", f"{NAMESPACE}/base_link"),
-                    ("PublishOdometry.inputs:odomFrameId", f"{NAMESPACE}/odom"),
-                    ("PublishImu.inputs:frameId", f"{NAMESPACE}/zed2i_imu_link"),
+                    ("PublishOdometry.inputs:odomFrameId", f"{NAMESPACE}/zed/odom"),
+                    # ("PublishImu.inputs:frameId", f"{NAMESPACE}/zed2i_imu_link"),
+                    ("PublishImu.inputs:frameId", f"{NAMESPACE}/zed2i_camera_center"),
                     ("PublishOdometry.inputs:topicName", "zed/odom")
                 ],
                 og.Controller.Keys.CONNECT: [
@@ -487,6 +483,7 @@ class ImportBot(BaseSample):
                 ],
                 og.Controller.Keys.SET_VALUES: [
                     ("PublishJointState.inputs:topicName", "isaac_joint_states"),
+                    ("SubscribeDriveState.inputs:topicName", "isaac_joint_commands"),
                     ("SubscribeDriveState.inputs:topicName", "isaac_drive_commands"),
                     ("SubscribeArmState.inputs:topicName", "isaac_arm_commands"),
                     ("articulation_controller.inputs:usePath", False),

@@ -12,7 +12,7 @@ class IsaacDriveHardware(Node):
         super().__init__('isaac_drive_hardware')
         self.realtime_isaac_publisher_drive = self.create_publisher(JointState, 'isaac_drive_commands', 10)
         self.realtime_isaac_publisher_arm = self.create_publisher(JointState, 'isaac_arm_commands', 10)
-        self.joint_state_publisher = self.create_publisher(JointState, 'joint_states', 10)
+        # self.joint_state_publisher = self.create_publisher(JointState, 'joint_states', 10)
         
         self.isaac_subscriber = self.create_subscription(JointState, 'isaac_joint_states', self.isaac_callback, 10)
         self.real_subscriber = self.create_subscription(JointState, '/real/real_joint_states', self.real_callback, 10)
@@ -72,7 +72,7 @@ class IsaacDriveHardware(Node):
                     break
                 
         # self.joint_state_command.header.stamp = Time(seconds=self._clock.now().seconds_nanoseconds()[0], nanoseconds=self._clock.now().seconds_nanoseconds()[1])
-        self.joint_state_publisher.publish(self.joint_state_command)
+        # self.joint_state_publisher.publish(self.joint_state_command)
                     
     def write(self):
         self.command_effort = []
@@ -104,6 +104,12 @@ class IsaacDriveHardware(Node):
                     self.arm_joint_names.append("top_gripper_right_arm_joint")
                     self.command_position.append(position)
                 elif i == "elevator_center_joint":
+                    elevator_max = 0.56
+                    elevator_min = 0.0
+                    
+                    #scale position to be between 0 and 1
+                    position = (position - elevator_min)/(elevator_max - elevator_min)
+                    
                     self.command_position.append(position/2.0)
                     self.arm_joint_names.append("elevator_outer_2_joint")
                     self.command_position.append(position/2.0)

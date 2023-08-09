@@ -19,6 +19,9 @@
 
     <!-- BAR -->
     <link name="${prefix}_gripper_bar_link">
+      <xacro:inertial_box mass = "${1.587573295/3}" x = "${gripper_bar_length}" y = "${gripper_bar_width}" z = "${gripper_bar_height}">
+        <origin xyz = "0 0 0" rpy = "0 0 0"/>
+      </xacro:inertial_box>
       <visual>
         <origin xyz="0 0 0" rpy="0 0 0"/>
         <geometry>
@@ -43,6 +46,9 @@
 
     <!-- Left -->
     <link name="${prefix}_gripper_left_arm_link">
+      <xacro:inertial_box mass = "${1.587573295/3}" x = "${gripper_arm_length}" y = "${gripper_arm_width}" z = "${gripper_arm_height}">
+        <origin xyz = "0 0 0" rpy = "0 0 0"/>
+      </xacro:inertial_box>
       <visual>
         <!-- Alignment Values -->
         <origin xyz="0.0826 -0.0064 .015" rpy="0 0 ${pi/2}"/>
@@ -76,6 +82,9 @@
 
     <!-- Right -->
     <link name="${prefix}_gripper_right_arm_link">
+      <xacro:inertial_box mass = "${1.587573295/3}" x = "${gripper_arm_length}" y = "${gripper_arm_width}" z = "${gripper_arm_height}">
+        <origin xyz = "0 0 0" rpy = "0 0 0"/>
+      </xacro:inertial_box>
       <visual>
         <!-- Alignment Values -->
         <origin xyz="0.0826 0.0064 .015" rpy="0 0 ${pi/2}"/>

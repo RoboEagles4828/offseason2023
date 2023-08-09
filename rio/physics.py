@@ -226,15 +226,26 @@ class SwerveModuleSim():
         self.wheel = TalonFxSim(module.wheel_motor, wheelMOI, 1, False)
         self.axle = TalonFxSim(module.axle_motor, axleMOI, AXLE_JOINT_GEAR_RATIO, False)
         self.encoder = CancoderSim(module.encoder, module.encoder_offset, True)
+        self.TICKS_PER_REV = 2048.0
+        self.positionCoefficient = 2.0 * math.pi / self.TICKS_PER_REV / AXLE_JOINT_GEAR_RATIO
+        self.velocityCoefficient = self.positionCoefficient * 10.0
         # There is a bad feedback loop between controller and the rio code
         # It will create oscillations in the simulation when the robot is not being commanded to move
         # The issue is from the controller commanding the axle position to stay at the same position when idle
         # but if the axle is moving during that time it will constantly overshoot the idle position
+        
+    def getAxleRadians(self, ticks, displacementType):
+        if displacementType == "position":
+            return ticks * self.positionCoefficient
+        elif displacementType == "velocity":
+            return ticks * self.velocityCoefficient
+        else:
+            return 0
     
     def update(self, tm_diff, wheel_state, axle_state, use_isaac):
         self.wheel.update(tm_diff, wheel_state[0], wheel_state[1], use_isaac)
         self.axle.update(tm_diff, axle_state[0], axle_state[1], use_isaac)
-        self.encoder.update(tm_diff, axle_state[1])
+        self.encoder.update(tm_diff, axle_state[1], axle_state[0])
     
     # Useful for debugging the simulation or code
     def __str__(self) -> str:
