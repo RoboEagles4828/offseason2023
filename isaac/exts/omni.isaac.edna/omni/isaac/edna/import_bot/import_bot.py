@@ -68,38 +68,38 @@ class ImportBot(BaseSample):
         cone = os.path.join(self.project_root_path, "assets/2023_field_cpu/parts/GE-23700_JFH.usd")
         cube = os.path.join(self.project_root_path, "assets/2023_field_cpu/parts/GE-23701_JFL.usd")
         chargestation = os.path.join(self.project_root_path, "assets/ChargeStation-Copy/Assembly-1.usd")
-        add_reference_to_stage(chargestation, "/World/ChargeStation_1")
-        add_reference_to_stage(chargestation, "/World/ChargeStation_2")
+        # add_reference_to_stage(chargestation, "/World/ChargeStation_1")
+        # add_reference_to_stage(chargestation, "/World/ChargeStation_2")
         add_reference_to_stage(field, "/World/FE_2023")
-        add_reference_to_stage(cone, "/World/Cone_1")
-        add_reference_to_stage(cone, "/World/Cone_2")
-        add_reference_to_stage(cone, "/World/Cone_3")
-        add_reference_to_stage(cone, "/World/Cone_4")
+        # add_reference_to_stage(cone, "/World/Cone_1")
+        # add_reference_to_stage(cone, "/World/Cone_2")
+        # add_reference_to_stage(cone, "/World/Cone_3")
+        # add_reference_to_stage(cone, "/World/Cone_4")
         # add_reference_to_stage(cone, "/World/Cone_5")
         # add_reference_to_stage(cone, "/World/Cone_6")
         # add_reference_to_stage(cone, "/World/Cone_7")
         # add_reference_to_stage(cone,  "/World/Cone_8")
         field_1 = GeometryPrim("/World/FE_2023","field_1_view",position=np.array([0.0,0.0,0.0]))
-        cone_1 = GeometryPrim("/World/Cone_1","cone_1_view",position=np.array([1.20298,-0.56861,-0.4]))
-        cone_2 = GeometryPrim("/World/Cone_2","cone_2_view",position=np.array([1.20298,3.08899,0.0]))
-        cone_3 = GeometryPrim("/World/Cone_3","cone_3_view",position=np.array([-1.20298,-0.56861,0.0]))
-        cone_4 = GeometryPrim("/World/Cone_4","cone_4_view",position=np.array([-1.20298,3.08899,0.0]))
-        chargestation_1 = GeometryPrim("/World/ChargeStation_1","cone_3_view",position=np.array([-4.20298,-0.56861,0.0]))
-        chargestation_2 = GeometryPrim("/World/ChargeStation_2","cone_4_view",position=np.array([4.20298,0.56861,0.0]))
+        # cone_1 = GeometryPrim("/World/Cone_1","cone_1_view",position=np.array([1.20298,-0.56861,-0.4]))
+        # cone_2 = GeometryPrim("/World/Cone_2","cone_2_view",position=np.array([1.20298,3.08899,0.0]))
+        # cone_3 = GeometryPrim("/World/Cone_3","cone_3_view",position=np.array([-1.20298,-0.56861,0.0]))
+        # cone_4 = GeometryPrim("/World/Cone_4","cone_4_view",position=np.array([-1.20298,3.08899,0.0]))
+        # chargestation_1 = GeometryPrim("/World/ChargeStation_1","cone_3_view",position=np.array([-4.20298,-0.56861,0.0]))
+        # chargestation_2 = GeometryPrim("/World/ChargeStation_2","cone_4_view",position=np.array([4.20298,0.56861,0.0]))
         
 
-        add_reference_to_stage(cube, "/World/Cube_1")
-        add_reference_to_stage(cube, "/World/Cube_2")
-        add_reference_to_stage(cube, "/World/Cube_3")
-        add_reference_to_stage(cube, "/World/Cube_4")
+        # add_reference_to_stage(cube, "/World/Cube_1")
+        # add_reference_to_stage(cube, "/World/Cube_2")
+        # add_reference_to_stage(cube, "/World/Cube_3")
+        # add_reference_to_stage(cube, "/World/Cube_4")
         # add_reference_to_stage(cube, "/World/Cube_5")
         # add_reference_to_stage(cube, "/World/Cube_6")
         # add_reference_to_stage(cube, "/World/Cube_7")
-        # add_reference_to_stage(cube, "/World/Cube_8")
-        cube_1 = GeometryPrim("/World/Cube_1","cube_1_view",position=np.array([1.20298,0.65059,0.121]))
-        cube_2 = GeometryPrim("/World/Cube_2","cube_2_view",position=np.array([1.20298,1.86979,0.121]))
-        cube_3 = GeometryPrim("/World/Cube_3","cube_3_view",position=np.array([-1.20298,0.65059,0.121]))
-        cube_4 = GeometryPrim("/World/Cube_4","cube_4_view",position=np.array([-1.20298,1.86979,0.121]))
+        # # add_reference_to_stage(cube, "/World/Cube_8")
+        # cube_1 = GeometryPrim("/World/Cube_1","cube_1_view",position=np.array([1.20298,0.65059,0.121]))
+        # cube_2 = GeometryPrim("/World/Cube_2","cube_2_view",position=np.array([1.20298,1.86979,0.121]))
+        # cube_3 = GeometryPrim("/World/Cube_3","cube_3_view",position=np.array([-1.20298,0.65059,0.121]))
+        # cube_4 = GeometryPrim("/World/Cube_4","cube_4_view",position=np.array([-1.20298,1.86979,0.121]))
 
     async def setup_post_load(self):
         self._world = self.get_world()
@@ -232,8 +232,8 @@ class ImportBot(BaseSample):
         return        
     
     def create_depth_camera(self, robot_prim_path):
-        self.depth_left_camera_path = f"{robot_prim_path}/zed2i_right_camera_frame/left_cam"
-        self.depth_right_camera_path = f"{robot_prim_path}/zed2i_right_camera_frame/right_cam"
+        self.depth_left_camera_path = f"{robot_prim_path}/zed2i_right_camera_optical_frame/left_cam"
+        self.depth_right_camera_path = f"{robot_prim_path}/zed2i_right_camera_optical_frame/right_cam"
         self.left_camera = prims.create_prim(
             prim_path=self.depth_left_camera_path,
             prim_type="Camera",
