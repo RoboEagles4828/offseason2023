@@ -441,9 +441,9 @@ class DriveTrain():
         self.move_scale_y = self.ROBOT_MAX_TRANSLATIONAL
         self.turn_scale = self.ROBOT_MAX_ROTATIONAL
 
-        self.slew_X = SlewRateLimiter(40)
-        self.slew_Y = SlewRateLimiter(40)
-        self.slew_Z = SlewRateLimiter(40)
+        self.slew_X = SlewRateLimiter(1.5)
+        self.slew_Y = SlewRateLimiter(1.5)
+        self.slew_Z = SlewRateLimiter(1.5)
         self.slew_slow_translation = SlewRateLimiter(0.5)
         self.slew_slow_rotation = SlewRateLimiter(0.5)
 
@@ -555,9 +555,9 @@ class DriveTrain():
 
         # slew 
         # gives joystick ramping
-        linearX = math.pow(joystick.getData()["axes"][1], 5) * self.ROBOT_MAX_TRANSLATIONAL / self.move_scale_x
-        linearY = math.pow(joystick.getData()["axes"][0], 5) * -self.ROBOT_MAX_TRANSLATIONAL / self.move_scale_y
-        angularZ = math.pow(joystick.getData()["axes"][3], 5) * self.ROBOT_MAX_ROTATIONAL / self.turn_scale
+        linearX = self.slew_X.calculate(math.pow(joystick.getData()["axes"][1], 5)) * self.ROBOT_MAX_TRANSLATIONAL / self.move_scale_x
+        linearY = self.slew_Y.calculate(math.pow(joystick.getData()["axes"][0], 5)) * -self.ROBOT_MAX_TRANSLATIONAL / self.move_scale_y
+        angularZ = self.slew_Z.calculate(math.pow(joystick.getData()["axes"][3], 5)) * self.ROBOT_MAX_ROTATIONAL / self.turn_scale
 
         self.linX = linearX
         self.linY = linearY
