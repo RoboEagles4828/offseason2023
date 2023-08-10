@@ -303,13 +303,16 @@ class SwerveModule():
         self.wheel_motor.set(ctre.TalonFXControlMode.PercentOutput, 0)
         self.axle_motor.set(ctre.TalonFXControlMode.PercentOutput, 0)
         
+    def neutralize_wheel(self):
+        self.wheel_motor.set(ctre.TalonFXControlMode.PercentOutput, 0)
+        
     def setMotors(self, wheel_motor_vel, axle_position):
         wheel_vel = getWheelShaftTicks(wheel_motor_vel, "velocity")
-        if abs(wheel_motor_vel) < 0.2:
-            self.neutralize_module()
-            return
-        else:
-            self.wheel_motor.set(ctre.TalonFXControlMode.Velocity, wheel_vel)
+        # if abs(wheel_motor_vel) < 0.2:
+        #     self.neutralize_module()
+        #     return
+        # else:
+        self.wheel_motor.set(ctre.TalonFXControlMode.Velocity, wheel_vel)
         self.last_wheel_vel_cmd = wheel_vel
 
         # MOTION MAGIC CONTROL FOR AXLE POSITION
@@ -355,7 +358,7 @@ class SwerveModule():
         # Last, add the current existing loops that the motor has gone through.
         newAxlePosition += axle_motorPosition - axle_absoluteMotorPosition
         self.axle_motor.set(ctre.TalonFXControlMode.MotionMagic, getShaftTicks(newAxlePosition, "position"))
-        # logging.info('AXLE MOTOR POS: ', newAxlePosition)
+        logging.info(f'{self.wheel_joint_name} {newAxlePosition} {wheel_motor_vel}')
         # logging.info('WHEEL MOTOR VEL: ', wheel_vel)
 
     def set(self, state: SwerveModuleState):
@@ -540,8 +543,8 @@ class DriveTrain():
     
     def customOptimize(self, desiredState: SwerveModuleState, currentAngle: Rotation2d):
         delta = desiredState.angle.__sub__(currentAngle)
-        if abs(delta.degrees()) > (90):
-            return SwerveModuleState(desiredState.speed * -1.0, desiredState.angle.rotateBy(Rotation2d.fromDegrees(179.5)))
+        if abs(delta.degrees()) > 90:
+            return SwerveModuleState(desiredState.speed * -1.0, desiredState.angle.rotateBy(Rotation2d.fromDegrees(180)))
         else:
             return SwerveModuleState(desiredState.speed, desiredState.angle)
 
@@ -552,9 +555,9 @@ class DriveTrain():
 
         # slew 
         # gives joystick ramping
-        linearX = joystick.getData()["axes"][1] * self.ROBOT_MAX_TRANSLATIONAL / self.move_scale_x
-        linearY = joystick.getData()["axes"][0] * -self.ROBOT_MAX_TRANSLATIONAL / self.move_scale_y
-        angularZ = joystick.getData()["axes"][3] * self.ROBOT_MAX_ROTATIONAL / self.turn_scale
+        linearX = math.pow(joystick.getData()["axes"][1], 5) * self.ROBOT_MAX_TRANSLATIONAL / self.move_scale_x
+        linearY = math.pow(joystick.getData()["axes"][0], 5) * -self.ROBOT_MAX_TRANSLATIONAL / self.move_scale_y
+        angularZ = math.pow(joystick.getData()["axes"][3], 5) * self.ROBOT_MAX_ROTATIONAL / self.turn_scale
 
         self.linX = linearX
         self.linY = linearY
@@ -586,28 +589,28 @@ class DriveTrain():
         else:
             self.auto_turn_value = "off"
 
-        if self.field_oriented_value and self.auto_turn_value == "none":            
+        if self.field_oriented_value and self.auto_turn_value == "off":            
             # field  oriented
-            self.speeds = ChassisSpeeds.fromFieldRelativeSpeeds(linearX, linearY, angularZ, Rotation2d.fromDegrees(self.navx.getFusedHeading()).__mul__(-1))
+            self.speeds = ChassisSpeeds.fromFieldRelativeSpeeds(linearX, linearY, angularZ, self.navx.getRotation2d().__mul__(-1))
             #if self.last_print != f"NavX: {self.navx.getRotation2d().degrees()*-1} linX: {round(self.speeds.vx, 2)} linY: {round(self.speeds.vy, 2)} angZ: {round(self.speeds.omega, 2)} MoveScaleX: {round(self.move_scale_x, 2)} MoveScaleY: {round(self.move_scale_y, 2)} TurnScale: {round(self.turn_scale, 2)}":
             #logging.info(f"NavX: {self.navx.getRotation2d().degrees()*-1} linX: {round(self.speeds.vx, 2)} linY: {round(self.speeds.vy, 2)} angZ: {round(self.speeds.omega, 2)} MoveScaleX: {round(self.move_scale_x, 2)} MoveScaleY: {round(self.move_scale_y, 2)} TurnScale: {round(self.turn_scale, 2)}")
                 #self.last_print = f"NavX: {self.navx.getRotation2d().degrees()*-1} linX: {round(self.speeds.vx, 2)} linY: {round(self.speeds.vy, 2)} angZ: {round(self.speeds.omega, 2)} MoveScaleX: {round(self.move_scale_x, 2)} MoveScaleY: {round(self.move_scale_y, 2)} TurnScale: {round(self.turn_scale, 2)}"
         elif self.field_oriented_value and self.auto_turn_value == "load":
             # auto turn to 0 degress while moving
             if self.navx.getYaw() > 0.4:
-                self.speeds = ChassisSpeeds.fromFieldRelativeSpeeds(linearX, linearY, self.ROBOT_MAX_ROTATIONAL/self.turn_scale, Rotation2d.fromDegrees(self.navx.getFusedHeading()).__mul__(-1))
+                self.speeds = ChassisSpeeds.fromFieldRelativeSpeeds(linearX, linearY, self.ROBOT_MAX_ROTATIONAL/self.turn_scale, self.navx.getRotation2d().__mul__(-1))
             elif self.navx.getYaw() < -0.4:
-                self.speeds = ChassisSpeeds.fromFieldRelativeSpeeds(linearX, linearY, -self.ROBOT_MAX_ROTATIONAL/self.turn_scale, Rotation2d.fromDegrees(self.navx.getFusedHeading()).__mul__(-1))
+                self.speeds = ChassisSpeeds.fromFieldRelativeSpeeds(linearX, linearY, -self.ROBOT_MAX_ROTATIONAL/self.turn_scale, self.navx.getRotation2d().__mul__(-1))
             else:
-                self.speeds = ChassisSpeeds.fromFieldRelativeSpeeds(linearX, linearY, 0.0, Rotation2d.fromDegrees(self.navx.getFusedHeading()).__mul__(-1))
+                self.speeds = ChassisSpeeds.fromFieldRelativeSpeeds(linearX, linearY, 0.0, self.navx.getRotation2d().__mul__(-1))
         elif self.field_oriented_value and self.auto_turn_value == "score":
             # auto turn to 180 degress while moving
             if self.navx.getYaw() < 179.5 and self.navx.getYaw() >= 0.0:
-                self.speeds = ChassisSpeeds.fromFieldRelativeSpeeds(linearX, linearY, -self.ROBOT_MAX_ROTATIONAL/self.turn_scale, Rotation2d.fromDegrees(self.navx.getFusedHeading()).__mul__(-1))
+                self.speeds = ChassisSpeeds.fromFieldRelativeSpeeds(linearX, linearY, -self.ROBOT_MAX_ROTATIONAL/self.turn_scale, self.navx.getRotation2d().__mul__(-1))
             elif self.navx.getYaw() > -179.5 and self.navx.getYaw() < 0.0:
-                self.speeds = ChassisSpeeds.fromFieldRelativeSpeeds(linearX, linearY, self.ROBOT_MAX_ROTATIONAL/self.turn_scale, Rotation2d.fromDegrees(self.navx.getFusedHeading()).__mul__(-1))
+                self.speeds = ChassisSpeeds.fromFieldRelativeSpeeds(linearX, linearY, self.ROBOT_MAX_ROTATIONAL/self.turn_scale, self.navx.getRotation2d().__mul__(-1))
             else:
-                self.speeds = ChassisSpeeds.fromFieldRelativeSpeeds(linearX, linearY, 0.0, Rotation2d.fromDegrees(self.navx.getFusedHeading()).__mul__(-1))
+                self.speeds = ChassisSpeeds.fromFieldRelativeSpeeds(linearX, linearY, 0.0, self.navx.getRotation2d().__mul__(-1))
         else:
             self.speeds = ChassisSpeeds(linearX, linearY, angularZ)
             #if self.last_print != f"linX: {round(self.speeds.vx, 2)} linY: {round(self.speeds.vy, 2)} angZ: {round(self.speeds.omega, 2)} MoveScaleX: {round(self.move_scale_x, 2)} MoveScaleY: {round(self.move_scale_y, 2)} TurnScale: {round(self.turn_scale, 2)}":
@@ -654,12 +657,12 @@ class DriveTrain():
         self.last_state = self.speeds
         
         if self.field_oriented_value:
-            self.print = f"Navx: {Rotation2d.fromDegrees(self.navx.getFusedHeading()).__mul__(-1)} "
+            self.print = f"Navx: {self.navx.getRotation2d().__mul__(-1)} "
         else:
             self.print = ""
 
-        #logging.info(f"FR: {self.front_left_state.speed}, {self.front_left_state.angle.radians()} | Vel: {self.motor_vels} Pos: {self.motor_pos}")
-        #logging.info(f"{self.print}linX: {round(self.speeds.vx, 2)} linY: {round(self.speeds.vy, 2)} angZ: {round(self.speeds.omega, 2)} FL: {round(radiansToMeters(getWheelRadians(self.front_left.wheel_motor.getSelectedSensorVelocity(), 'velocity')), 2)}")
+        #logging.info(f"FR: {self.front_left_state.speed}, {self.front_left_state.angle.radians()} | Current Angle: {self.front_left.getEncoderPosition()}")
+        # logging.info(f"{self.print}linX: {round(self.speeds.vx, 2)} linY: {round(self.speeds.vy, 2)} angZ: {round(self.speeds.omega, 2)} FL: {round(radiansToMeters(getWheelRadians(self.front_left.wheel_motor.getSelectedSensorVelocity(), 'velocity')), 2)}")
         
     def getModuleCommand(self):
         data = dict()
@@ -683,7 +686,7 @@ class DriveTrain():
         ]
         data["position"] = [0.0]*8
         
-        print(f"{round(self.linX, 2)} {round(self.linY, 2)} {round(self.angZ, 2)} | {round(self.front_left.getEncoderPosition(), 2)} {round(self.front_right.getEncoderPosition(), 2)} {round(self.rear_left.getEncoderPosition(), 2)} {round(self.rear_right.getEncoderPosition(), 2)}")
+        # print(f"{round(self.linX, 2)} {round(self.linY, 2)} {round(self.angZ, 2)} | {round(self.front_left.getEncoderPosition(), 2)} {round(self.front_right.getEncoderPosition(), 2)} {round(self.rear_left.getEncoderPosition(), 2)} {round(self.rear_right.getEncoderPosition(), 2)}")
         
         return data
 
