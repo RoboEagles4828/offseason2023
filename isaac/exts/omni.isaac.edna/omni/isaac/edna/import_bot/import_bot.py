@@ -45,8 +45,10 @@ class ImportBot(BaseSample):
         omni.kit.commands.execute('BindMaterial',material_path='/World/Physics_Materials/Rubber',prim_path=[f"{robot_prim_path}/front_right_wheel_link"],strength=['weakerThanDescendants'])
         omni.kit.commands.execute('BindMaterial',material_path='/World/Physics_Materials/Rubber',prim_path=[f"{robot_prim_path}/rear_left_wheel_link"],strength=['weakerThanDescendants'])
         omni.kit.commands.execute('BindMaterial',material_path='/World/Physics_Materials/Rubber',prim_path=[f"{robot_prim_path}/rear_right_wheel_link"],strength=['weakerThanDescendants'])
-        omni.kit.commands.execute('BindMaterial',material_path='/World/Physics_Materials/Rubber',prim_path=[f"/World/FE_2023/FE_2023/FE_2023_01"],strength=['weakerThanDescendants'])
-        omni.kit.commands.execute('BindMaterial',material_path='/World/Physics_Materials/Rubber',prim_path=[f"/World/FE_2023/FE_2023/FE_2023_01_01"],strength=['weakerThanDescendants'])
+        omni.kit.commands.execute('BindMaterial',material_path='/World/Physics_Materials/Rubber',prim_path=[f"/World/defaultGroundPlane"],strength=['weakerThanDescendants'])
+
+        # omni.kit.commands.execute('BindMaterial',material_path='/World/Physics_Materials/Rubber',prim_path=[f"/World/FE_2023/FE_2023/FE_2023_01"],strength=['weakerThanDescendants'])
+        # omni.kit.commands.execute('BindMaterial',material_path='/World/Physics_Materials/Rubber',prim_path=[f"/World/FE_2023/FE_2023/FE_2023_01_01"],strength=['weakerThanDescendants'])
 
     def setup_scene(self):
         world = self.get_world()
@@ -116,7 +118,7 @@ class ImportBot(BaseSample):
             return
         
         self._robot_prim = self._world.scene.add(
-            Robot(prim_path=self._robot_prim_path, name=self.robot_name, position=np.array([0.0, 0.0, 0.5]), orientation=np.array([0.0, 0.0, 0.0, 1.0]))
+            Robot(prim_path=self._robot_prim_path, name=self.robot_name, position=np.array([0.0, 0.0, 0.5]))
         )
         
         self.configure_robot(self._robot_prim_path)
@@ -224,7 +226,7 @@ class ImportBot(BaseSample):
             path=imu_path,
             parent=imu_parent,
             translation=Gf.Vec3d(0, 0, 0),
-            orientation=Gf.Quatd(0, 0, 0, 1),
+            orientation=Gf.Quatd(1, 0, 0, 0),
             visualize=False,
         )
         return        
