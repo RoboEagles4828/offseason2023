@@ -12,6 +12,7 @@ import inspect
 import logging
 import traceback
 import threading
+from networktables import NetworkTable, NetworkTables
 
 ENABLE_STAGE_BROADCASTER = True
 ENABLE_ENCODER = True
@@ -25,6 +26,7 @@ dashboard_data_return = dict()
 frc_stage = "DISABLED"
 fms_attached = False
 stop_threads = False
+nt : NetworkTable = None
 
 # Logging
 format = "%(asctime)s: %(message)s"
@@ -56,6 +58,14 @@ def initDDS(ddsAction, participantName, actionName):
         dds = ddsAction(xml_path, participantName, actionName)
     return dds
 
+def initNetworkTable():
+    global nt
+    if nt == None:
+        NetworkTables.initialize(server="localhost")
+        nt = NetworkTables.getTable("Dashboard")
+        logging.info("Success: NetworkTable created")
+    return nt
+
 ############################################
 ## Threads
 def threadLoop(name, dds, action):
@@ -64,7 +74,7 @@ def threadLoop(name, dds, action):
     global frc_stage
     try:
         while stop_threads == False:
-            if (frc_stage == 'AUTON' and name != "joystick") or (name in ["encoder", "stage-broadcaster", "dashboard", "dashboard_subs"]) or (frc_stage == 'TELEOP'):
+            if (frc_stage == 'AUTON' and name != "joystick") or (name in ["encoder", "stage-broadcaster", "dashboard", "dashboard_sub", "service"]) or (frc_stage == 'TELEOP'):
                 action(dds)
             time.sleep(20/1000)
     except Exception as e:
@@ -86,6 +96,8 @@ def startThread(name) -> threading.Thread | None:
         thread = threading.Thread(target=dashboardThread, daemon=True)
     elif name == "dashboard_sub":
         thread = threading.Thread(target=dashboardSubThread, daemon=True)
+    elif name == "service":
+        thread = threading.Thread(target=serviceThread, daemon=True)
     
     thread.start()
     return thread
@@ -160,7 +172,8 @@ def dashboardAction(publisher : DDS_Publisher):
     data = ""
     for i in dashboard_data_list:
         data += f"{str(i)}|"
-    publisher.write({ "data": data })
+
+    nt.putString("dashboard", data)
 ############################################
 
 ################## DASHBOARD SUB ###############
@@ -172,9 +185,9 @@ def dashboardSubThread():
     threadLoop('dashboard_sub', dashboard_subscriber, dashboardSubAction)
     
 def dashboardSubAction(subscriber : DDS_Subscriber):
-    stuff = subscriber.read()
+    stuff = nt.getString("dashboard_sub", "str")
     if stuff:
-        data = stuff['data']
+        data = stuff
         dataArr = data.split("|")
         
         if len(dataArr) > 1:
@@ -182,12 +195,14 @@ def dashboardSubAction(subscriber : DDS_Subscriber):
             profile = dataArr[1]
             led = dataArr[2]
             joystick_type = dataArr[3]
+            # service = dataArr[4]
             
             global dashboard_data_return
             dashboard_data_return = {
                 "auton": auton,
                 "profile": profile,
                 "joy_type": joystick_type,
+                # "service": service
             }
 ############################################   
 
@@ -215,6 +230,7 @@ class Robot(wpilib.TimedRobot):
         
         self.arm_controller = initArmController()
         self.drive_train = initDriveTrain()
+        self.nt = initNetworkTable()
         self.joystick = Joystick("ps4")
         self.auton_selector = AutonSelector(self.arm_controller, self.drive_train)
         self.joystick_selector = wpilib.SendableChooser()

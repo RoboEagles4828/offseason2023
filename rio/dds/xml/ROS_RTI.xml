@@ -104,19 +104,9 @@ This code contains trade secrets of Real-Time Innovations, Inc.
   <domain_participant_library name="ROS2_PARTICIPANT_LIB">
     <domain_participant name="joystick" domain_ref="ROS2_DOMAIN_LIB::ROS2_DOMAIN_JOYSTICK">
       <publisher name="joystick_data_publisher">
-        <data_writer name="joystick_data_writer" topic_ref="rt/real/joy">
-          <datawriter_qos>
-            <reliability>
-              <kind>RELIABLE_RELIABILITY_QOS</kind>
-            </reliability>
-            <durability>
-              <kind>VOLATILE_DURABILITY_QOS</kind>
-            </durability>
-          </datawriter_qos>
-        </data_writer>
+        <data_writer name="joystick_data_writer" topic_ref="rt/real/joy" />
       </publisher>
     </domain_participant>
-
 
     <domain_participant name="joint_commands" domain_ref="ROS2_DOMAIN_LIB::ROS2_DOMAIN_JOINT_CMDS">
       <subscriber name="isaac_joint_commands_subscriber">
@@ -124,13 +114,11 @@ This code contains trade secrets of Real-Time Innovations, Inc.
       </subscriber>
     </domain_participant>
 
-
     <domain_participant name="arm_commands" domain_ref="ROS2_DOMAIN_LIB::ROS2_DOMAIN_ARM_CMDS">
       <subscriber name="isaac_arm_commands_subscriber">
         <data_reader name="arm_commands_reader" topic_ref="rt/real/real_arm_commands" />
       </subscriber>
     </domain_participant>
-
 
     <domain_participant name="encoder_info" domain_ref="ROS2_DOMAIN_LIB::ROS2_DOMAIN_ENCODER_INFO">
       <publisher name="encoder_info_publisher">
@@ -138,13 +126,11 @@ This code contains trade secrets of Real-Time Innovations, Inc.
       </publisher>
     </domain_participant>
 
-
     <domain_participant name="stage_broadcaster" domain_ref="ROS2_DOMAIN_LIB::ROS2_DOMAIN_FRC_STAGE">
       <publisher name="stage_publisher">
         <data_writer name="stage_writer" topic_ref="rt/real/frc_stage" />
       </publisher>
     </domain_participant>
-
 
     <domain_participant name="isaac_subscriber" domain_ref="ROS2_DOMAIN_LIB::ROS2_DOMAIN_ISAAC">
       <subscriber name="isaac_joint_states_subscriber">
@@ -157,7 +143,6 @@ This code contains trade secrets of Real-Time Innovations, Inc.
         <data_reader name="dashboard_reader" topic_ref="rt/dashboard_pub" />
       </subscriber>
     </domain_participant>
-
 
     <domain_participant name="dashboard" domain_ref="ROS2_DOMAIN_LIB::ROS2_DOMAIN_DASHBOARD">
       <publisher name="dashboard_publisher">

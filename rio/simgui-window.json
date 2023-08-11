@@ -6,12 +6,35 @@
     "GLOBAL": {
       "fps": "120",
       "height": "1016",
-      "maximized": "0",
+      "maximized": "1",
       "style": "1",
       "userScale": "3",
       "width": "1846",
-      "xpos": "321",
-      "ypos": "1040"
+      "xpos": "74",
+      "ypos": "64"
+    }
+  },
+  "Table": {
+    "0x542B5671,2": {
+      "Column 0  Width": "262",
+      "Column 1  Width": "398",
+      "RefScale": "16"
+    },
+    "0x965B9C9E,2": {
+      "Column 0  Width": "160",
+      "Column 1  Weight": "1.0000",
+      "RefScale": "16"
+    },
+    "0xB17B9C20,2": {
+      "Column 0  Width": "160",
+      "Column 1  Weight": "1.0000",
+      "RefScale": "16"
+    },
+    "0xE56EC1C2,4": {
+      "Column 0  Weight": "1.0000",
+      "Column 1  Weight": "1.0000",
+      "Column 2  Weight": "1.0000",
+      "Column 3  Weight": "1.0000"
     }
   },
   "Window": {
@@ -27,13 +50,18 @@
     },
     "###Joysticks": {
       "Collapsed": "0",
-      "Pos": "682,438",
+      "Pos": "852,431",
       "Size": "976,278"
     },
     "###NetworkTables": {
       "Collapsed": "0",
-      "Pos": "904,59",
-      "Size": "750,32"
+      "Pos": "365,175",
+      "Size": "750,645"
+    },
+    "###NetworkTables Info": {
+      "Collapsed": "0",
+      "Pos": "1143,139",
+      "Size": "679,660"
     },
     "###Other Devices": {
       "Collapsed": "0",
@@ -57,7 +85,7 @@
     },
     "###Timing": {
       "Collapsed": "0",
-      "Pos": "-11,301",
+      "Pos": "170,316",
       "Size": "162,168"
     },
     "Debug##Default": {

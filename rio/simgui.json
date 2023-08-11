@@ -28,6 +28,9 @@
   },
   "NetworkTables": {
     "retained": {
+      "Dashboard": {
+        "open": true
+      },
       "Shuffleboard": {
         "Main": {
           "SendableChooser[0]": {
@@ -43,12 +46,27 @@
         "open": true
       },
       "SmartDashboard": {
-        "Field": {
-          "open": true
-        },
         "open": true
       }
     }
+  },
+  "NetworkTables Info": {
+    "Clients": {
+      "open": true
+    },
+    "Connections": {
+      "open": true
+    },
+    "NT3@127.0.0.1:59714": {
+      "Publishers": {
+        "open": true
+      },
+      "open": true
+    },
+    "Server": {
+      "open": true
+    },
+    "visible": true
   },
   "Plot": {
     "Plot <0>": {
