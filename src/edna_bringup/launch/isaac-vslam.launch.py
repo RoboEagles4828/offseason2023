@@ -23,6 +23,8 @@ def generate_launch_description():
                 bringup_path,'launch','rtab.launch.py'
             )]))
     
+    delay_rtab_layer = TimerAction(period=8.0, actions=[rtab_layer])
+    
     pysim_layer = IncludeLaunchDescription(
             PythonLaunchDescriptionSource([os.path.join(
                 bringup_path,'launch','isaac_pysim.launch.py'
@@ -38,5 +40,5 @@ def generate_launch_description():
         isaac_layer,
         pysim_layer,
         # rviz,
-        rtab_layer,
+        delay_rtab_layer,
     ])
