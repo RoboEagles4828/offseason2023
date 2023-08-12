@@ -61,7 +61,7 @@ def threadLoop(name, dds, action):
     global frc_stage
     try:
         while stop_threads == False:
-            if (frc_stage == 'AUTON' and name != "joystick") or (name in ["encoder", "stage-broadcaster"]) or (frc_stage == 'TELEOP'):
+            if (frc_stage == 'AUTON' and name != "joystick") or (name in ["encoder", "stage-broadcaster", "service"]) or (frc_stage == 'TELEOP'):
                 action(dds)
             time.sleep(20/1000)
     except Exception as e:
@@ -79,6 +79,8 @@ def startThread(name) -> threading.Thread | None:
         thread = threading.Thread(target=encoderThread, daemon=True)
     elif name == "stage-broadcaster":
         thread = threading.Thread(target=stageBroadcasterThread, daemon=True)
+    elif name == "service":
+        thread = threading.Thread(target=serviceThread, daemon=True)
     
     thread.start()
     return thread
@@ -124,6 +126,20 @@ def encoderAction(publisher):
 ############################################
 
 ################## STAGE ##################
+SERVICE_PARTICIPANT_NAME = "ROS2_PARTICIPANT_LIB::service"
+SERVICE_WRITER_NAME = "service_publisher::service_writer"
+
+def serviceThread():
+    service_publisher = initDDS(DDS_Publisher, SERVICE_PARTICIPANT_NAME, SERVICE_WRITER_NAME)
+    threadLoop('stage-broadcaster', service_publisher, serviceAction)
+
+def serviceAction(publisher : DDS_Publisher):
+    temp_service = "odom_reset"
+    
+    publisher.write({ "data": temp_service })
+############################################
+
+################## STAGE ##################
 STAGE_PARTICIPANT_NAME = "ROS2_PARTICIPANT_LIB::stage_broadcaster"
 STAGE_WRITER_NAME = "stage_publisher::stage_writer"
 
@@ -152,9 +168,11 @@ class Robot(wpilib.TimedRobot):
             stop_threads = False
             if ENABLE_ENCODER: self.threads.append({"name": "encoder", "thread": startThread("encoder") })
             if ENABLE_STAGE_BROADCASTER: self.threads.append({"name": "stage-broadcaster", "thread": startThread("stage-broadcaster") })
+            self.threads.append({"name": "service", "thread": startThread("service") })
         else:
             self.encoder_publisher = DDS_Publisher(xml_path, ENCODER_PARTICIPANT_NAME, ENCODER_WRITER_NAME)
             self.stage_publisher = DDS_Publisher(xml_path, STAGE_PARTICIPANT_NAME, STAGE_WRITER_NAME)
+            self.service_publisher = DDS_Publisher(xml_path, SERVICE_PARTICIPANT_NAME, SERVICE_WRITER_NAME)
         
         self.arm_controller = initArmController()
         self.drive_train = initDriveTrain()
@@ -242,6 +260,7 @@ class Robot(wpilib.TimedRobot):
     def doActions(self):
         encoderAction(self.encoder_publisher)
         stageBroadcasterAction(self.stage_publisher)
+        serviceAction(self.service_publisher)
         
     def stopThreads(self):
         global stop_threads

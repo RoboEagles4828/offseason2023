@@ -74,6 +74,10 @@ This code contains trade secrets of Real-Time Innovations, Inc.
           <register_type name="sensor_msgs::msg::dds_::JointState_" type_ref="sensor_msgs::msg::dds_::JointState_" />
           <topic name="rt/saranga/isaac_joint_states" register_type_ref="sensor_msgs::msg::dds_::JointState_"/>
         </domain>
+        <domain name="ROS2_DOMAIN_SERVICE" domain_id="0">
+          <register_type name="std_msgs::msg::dds_::String_" type_ref="std_msgs::msg::dds_::String_" />
+          <topic name="rt/real/service_call" register_type_ref="std_msgs::msg::dds_::String_"/>
+        </domain>
     </domain_library>
 
     <!-- Participant library -->
@@ -120,6 +124,11 @@ This code contains trade secrets of Real-Time Innovations, Inc.
         <subscriber name="isaac_joint_states_subscriber">
             <data_reader name="isaac_joint_states_reader" topic_ref="rt/saranga/isaac_joint_states" />
         </subscriber>
+      </domain_participant>
+      <domain_participant name="service" domain_ref="ROS2_DOMAIN_LIB::ROS2_DOMAIN_SERVICE">
+          <publisher name="service_publisher">
+            <data_writer name="service_writer" topic_ref="rt/real/service_call" />
+          </publisher>
       </domain_participant>
     </domain_participant_library>
 </dds>
