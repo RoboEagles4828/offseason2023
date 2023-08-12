@@ -96,11 +96,17 @@ axle_pid_constants = {
     "kIzone": 0,
     "kPeakOutput": 1.0
 }
+# wheel_pid_constants = {
+#     "kF": 1023.0/20660.0,
+#     "kP": 0.1,
+#     "kI": 0.001,
+#     "kD": 5
+# }
 wheel_pid_constants = {
-        "kF": 1023.0/20660.0,
-        "kP": 0.1,
-        "kI": 0.001,
-        "kD": 5
+    "kF": 1023.0/20660.0,
+    "kP": 0.1,
+    "kI": 0,
+    "kD": 0
 }
 slot_idx = 0
 pid_loop_idx = 0
@@ -179,6 +185,8 @@ class SwerveModule():
         self.last_axle_vel_cmd = None
         self.reset_iterations = 0
         
+        self.neutralize_count = 0
+        
         self.setupEncoder()
         self.setupWheelMotor()
         self.setupAxleMotor()
@@ -244,7 +252,6 @@ class SwerveModule():
 
         # Velocity Ramp
         self.wheel_motor.configClosedloopRamp(0)
-        self.wheel_motor.configOpenloopRamp(0)
 
     
     def setupAxleMotor(self):
@@ -283,7 +290,6 @@ class SwerveModule():
 
         # Velocity Ramp Removed
         self.axle_motor.configClosedloopRamp(0)
-        self.axle_motor.configOpenloopRamp(0)
 
         # Supply Current Limit
         supply_current_limit = 20
@@ -309,9 +315,15 @@ class SwerveModule():
     def setMotors(self, wheel_motor_vel, axle_position):
         wheel_vel = getWheelShaftTicks(wheel_motor_vel, "velocity")
         # if abs(wheel_motor_vel) < 0.2:
-        #     self.neutralize_module()
-        #     return
-        # else:
+        #     # if self.neutralize_count > 5:
+        #     #     self.neutralize_count = 0
+        #     #     self.neutralize_module()
+        #     # else:
+        #     #     self.wheel_motor.set(ctre.TalonFXControlMode.Velocity, wheel_vel)
+        #     #     self.neutralize_count += 1
+        #     # return
+        #     self.wheel_motor.set(ctre.T)
+        # else:                                                                                                 
         self.wheel_motor.set(ctre.TalonFXControlMode.Velocity, wheel_vel)
         self.last_wheel_vel_cmd = wheel_vel
 
@@ -358,7 +370,7 @@ class SwerveModule():
         # Last, add the current existing loops that the motor has gone through.
         newAxlePosition += axle_motorPosition - axle_absoluteMotorPosition
         self.axle_motor.set(ctre.TalonFXControlMode.MotionMagic, getShaftTicks(newAxlePosition, "position"))
-        logging.info(f'{self.wheel_joint_name} {newAxlePosition} {wheel_motor_vel}')
+        #logging.info(f'{self.wheel_joint_name} {newAxlePosition} {wheel_motor_vel}')
         # logging.info('WHEEL MOTOR VEL: ', wheel_vel)
 
     def set(self, state: SwerveModuleState):
@@ -441,9 +453,9 @@ class DriveTrain():
         self.move_scale_y = self.ROBOT_MAX_TRANSLATIONAL
         self.turn_scale = self.ROBOT_MAX_ROTATIONAL
 
-        self.slew_X = SlewRateLimiter(1.5)
-        self.slew_Y = SlewRateLimiter(1.5)
-        self.slew_Z = SlewRateLimiter(1.5)
+        self.slew_X = SlewRateLimiter(2)
+        self.slew_Y = SlewRateLimiter(2)
+        self.slew_Z = SlewRateLimiter(2)
         self.slew_slow_translation = SlewRateLimiter(0.5)
         self.slew_slow_rotation = SlewRateLimiter(0.5)
 
@@ -555,9 +567,13 @@ class DriveTrain():
 
         # slew 
         # gives joystick ramping
-        linearX = self.slew_X.calculate(math.pow(joystick.getData()["axes"][1], 5)) * self.ROBOT_MAX_TRANSLATIONAL / self.move_scale_x
-        linearY = self.slew_Y.calculate(math.pow(joystick.getData()["axes"][0], 5)) * -self.ROBOT_MAX_TRANSLATIONAL / self.move_scale_y
-        angularZ = self.slew_Z.calculate(math.pow(joystick.getData()["axes"][3], 5)) * self.ROBOT_MAX_ROTATIONAL / self.turn_scale
+        # linearX = self.slew_X.calculate(math.pow(joystick.getData()["axes"][1], 5)) * self.ROBOT_MAX_TRANSLATIONAL / self.move_scale_x
+        # linearY = self.slew_Y.calculate(math.pow(joystick.getData()["axes"][0], 5)) * -self.ROBOT_MAX_TRANSLATIONAL / self.move_scale_y
+        # angularZ = self.slew_Z.calculate(math.pow(joystick.getData()["axes"][3], 5)) * self.ROBOT_MAX_ROTATIONAL / self.turn_scale
+        
+        linearX = math.pow(joystick.getData()["axes"][1], 5) * self.ROBOT_MAX_TRANSLATIONAL / self.move_scale_x
+        linearY = math.pow(joystick.getData()["axes"][0], 5) * -self.ROBOT_MAX_TRANSLATIONAL / self.move_scale_y
+        angularZ = math.pow(joystick.getData()["axes"][3], 5) * self.ROBOT_MAX_ROTATIONAL / self.turn_scale
 
         self.linX = linearX
         self.linY = linearY
@@ -573,14 +589,14 @@ class DriveTrain():
 
         if joystick.getData()["axes"][5] == 1.0:
             self.slow = True
-            self.move_scale_x = 2.0
-            self.move_scale_y = 2.0
-            self.turn_scale = 2.0
-        else:            
-            self.slow = False
             self.move_scale_x = 1.0
             self.move_scale_y = 1.0
             self.turn_scale = 1.0
+        else:            
+            self.slow = False
+            self.move_scale_x = 2.0
+            self.move_scale_y = 2.0
+            self.turn_scale = 2.0
 
         if joystick.getData()["axes"][6] == 1.0:
             self.auto_turn_value = "load"
