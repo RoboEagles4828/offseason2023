@@ -15,7 +15,7 @@ def generate_launch_description():
     
     rtab_layer = IncludeLaunchDescription(
             PythonLaunchDescriptionSource([os.path.join(
-                bringup_path,'launch','rtab.launch.py'
+                bringup_path,'launch','rtab-real.launch.py'
             )]))
     
     rviz = IncludeLaunchDescription(
