@@ -491,11 +491,6 @@ class DriveTrain():
         self.motor_vels = []
         self.motor_pos = []
         
-        self.motion_magic_1 = ProfiledPIDControllerRadians(axle_pid_constants["kP"], axle_pid_constants["kI"], axle_pid_constants["kD"], TrapezoidProfileRadians.Constraints(2.0 / velocityConstant / velocityCoefficient, (8.0 - 2.0) / accelerationConstant / velocityCoefficient))
-        self.motion_magic_2 = ProfiledPIDControllerRadians(axle_pid_constants["kP"], axle_pid_constants["kI"], axle_pid_constants["kD"], TrapezoidProfileRadians.Constraints(2.0 / velocityConstant / velocityCoefficient, (8.0 - 2.0) / accelerationConstant / velocityCoefficient))
-        self.motion_magic_3 = ProfiledPIDControllerRadians(axle_pid_constants["kP"], axle_pid_constants["kI"], axle_pid_constants["kD"], TrapezoidProfileRadians.Constraints(2.0 / velocityConstant / velocityCoefficient, (8.0 - 2.0) / accelerationConstant / velocityCoefficient))
-        self.motion_magic_4 = ProfiledPIDControllerRadians(axle_pid_constants["kP"], axle_pid_constants["kI"], axle_pid_constants["kD"], TrapezoidProfileRadians.Constraints(2.0 / velocityConstant / velocityCoefficient, (8.0 - 2.0) / accelerationConstant / velocityCoefficient))
-        
         self.new_motion_magic_1 = MotionMagic((8.0 - 2.0) / accelerationConstant / velocityCoefficient, 2.0 / velocityConstant / velocityCoefficient)
         self.new_motion_magic_2 = MotionMagic((8.0 - 2.0) / accelerationConstant / velocityCoefficient, 2.0 / velocityConstant / velocityCoefficient)
         self.new_motion_magic_3 = MotionMagic((8.0 - 2.0) / accelerationConstant / velocityCoefficient, 2.0 / velocityConstant / velocityCoefficient)
@@ -678,10 +673,10 @@ class DriveTrain():
         
         # logging.info(self.front_left.wheel_motor.getSelectedSensorVelocity())
         
-        m1_val = self.new_motion_magic_1.getNextVelocity(self.front_left_state.angle.radians(), self.front_left.getEncoderPosition())
-        m2_val = self.new_motion_magic_2.getNextVelocity(self.front_right_state.angle.radians(), self.front_right.getEncoderPosition())
-        m3_val = self.new_motion_magic_3.getNextVelocity(self.rear_left_state.angle.radians(), self.rear_left.getEncoderPosition())
-        m4_val = self.new_motion_magic_4.getNextVelocity(self.rear_right_state.angle.radians(), self.rear_right.getEncoderPosition())
+        m1_val = self.new_motion_magic_1.getNextVelocity(self.front_left_state.angle.radians(), self.front_left.getMotorPosition())
+        m2_val = self.new_motion_magic_2.getNextVelocity(self.front_right_state.angle.radians(), self.front_right.getMotorPosition())
+        m3_val = self.new_motion_magic_3.getNextVelocity(self.rear_left_state.angle.radians(), self.rear_left.getMotorPosition())
+        m4_val = self.new_motion_magic_4.getNextVelocity(self.rear_right_state.angle.radians(), self.rear_right.getMotorPosition())
         data["name"] = getJointList()
         data["velocity"] = [
             metersToRadians(self.front_left_state.speed) * SCALING_FACTOR_FIX,
@@ -695,7 +690,7 @@ class DriveTrain():
         ]
         data["position"] = [0.0]*8
         
-        # print(f"{round(self.linX, 2)} {round(self.linY, 2)} {round(self.angZ, 2)} | {round(self.front_left.getEncoderPosition(), 2)} {round(self.front_right.getEncoderPosition(), 2)} {round(self.rear_left.getEncoderPosition(), 2)} {round(self.rear_right.getEncoderPosition(), 2)}")
+        print(f"{round(self.linX, 2)} {round(self.linY, 2)} {round(self.angZ, 2)} | {round(math.degrees(self.front_left.getMotorPosition()), 2)} {round(math.degrees(self.front_left.getMotorPosition()), 2)} {round(math.degrees(self.front_left.getMotorPosition()), 2)} {round(math.degrees(self.front_left.getMotorPosition()), 2)}")
         
         return data
 

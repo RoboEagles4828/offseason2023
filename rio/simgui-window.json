@@ -36,9 +36,9 @@
       "Size": "750,32"
     },
     "###Other Devices": {
-      "Collapsed": "0",
-      "Pos": "203,-54",
-      "Size": "409,997"
+      "Collapsed": "1",
+      "Pos": "312,31",
+      "Size": "279,997"
     },
     "###Plot <0>": {
       "Collapsed": "0",
@@ -57,7 +57,7 @@
     },
     "###Timing": {
       "Collapsed": "0",
-      "Pos": "204,465",
+      "Pos": "87,290",
       "Size": "162,168"
     },
     "Debug##Default": {
