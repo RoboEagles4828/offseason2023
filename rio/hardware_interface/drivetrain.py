@@ -491,10 +491,13 @@ class DriveTrain():
         self.motor_vels = []
         self.motor_pos = []
         
-        self.new_motion_magic_1 = MotionMagic((8.0 - 2.0) / accelerationConstant / velocityCoefficient, 2.0 / velocityConstant / velocityCoefficient)
-        self.new_motion_magic_2 = MotionMagic((8.0 - 2.0) / accelerationConstant / velocityCoefficient, 2.0 / velocityConstant / velocityCoefficient)
-        self.new_motion_magic_3 = MotionMagic((8.0 - 2.0) / accelerationConstant / velocityCoefficient, 2.0 / velocityConstant / velocityCoefficient)
-        self.new_motion_magic_4 = MotionMagic((8.0 - 2.0) / accelerationConstant / velocityCoefficient, 2.0 / velocityConstant / velocityCoefficient)
+        real_mm_accel = (8.0 - 2.0) / accelerationConstant / velocityCoefficient
+        real_mm_vel = 2.0 / velocityConstant / velocityCoefficient
+        
+        self.new_motion_magic_1 = MotionMagic(getAxleRadians(real_mm_accel, "velocity") * 10, getAxleRadians(real_mm_vel, "velocity"))
+        self.new_motion_magic_2 = MotionMagic(getAxleRadians(real_mm_accel, "velocity") * 10, getAxleRadians(real_mm_vel, "velocity"))
+        self.new_motion_magic_3 = MotionMagic(getAxleRadians(real_mm_accel, "velocity") * 10, getAxleRadians(real_mm_vel, "velocity"))
+        self.new_motion_magic_4 = MotionMagic(getAxleRadians(real_mm_accel, "velocity") * 10, getAxleRadians(real_mm_vel, "velocity"))
         
         self.front_left_state = SwerveModuleState(0, Rotation2d(0))
         self.front_right_state = SwerveModuleState(0, Rotation2d(0))
@@ -690,7 +693,7 @@ class DriveTrain():
         ]
         data["position"] = [0.0]*8
         
-        print(f"{round(self.linX, 2)} {round(self.linY, 2)} {round(self.angZ, 2)} | {round(math.degrees(self.front_left.getMotorPosition()), 2)} {round(math.degrees(self.front_left.getMotorPosition()), 2)} {round(math.degrees(self.front_left.getMotorPosition()), 2)} {round(math.degrees(self.front_left.getMotorPosition()), 2)}")
+        print(f"{round(self.linX, 2)} {round(self.linY, 2)} {round(self.angZ, 2)} | {round(self.front_left.getMotorPosition(), 2)} {round(self.front_left.getMotorPosition(), 2)} {round(self.front_left.getMotorPosition(), 2)} {round(self.front_left.getMotorPosition(), 2)}")
         
         return data
 

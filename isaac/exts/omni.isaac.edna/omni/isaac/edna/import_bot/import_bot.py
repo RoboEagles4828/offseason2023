@@ -52,7 +52,9 @@ class ImportBot(BaseSample):
 
     def setup_scene(self):
         world = self.get_world()
-        world.get_physics_context().enable_gpu_dynamics(True)
+        
+        # world.get_physics_context().enable_gpu_dynamics(True)
+        
         world.set_simulation_dt(1/300.0,1/60.0)
         world.scene.add_default_ground_plane()
         self.setup_field()
@@ -169,14 +171,16 @@ class ImportBot(BaseSample):
         top_gripper_right_arm_joint = UsdPhysics.DriveAPI.Get(stage.GetPrimAtPath(f"{robot_prim_path}/top_gripper_bar_link/top_gripper_right_arm_joint"), "angular")
         top_slider_joint = UsdPhysics.DriveAPI.Get(stage.GetPrimAtPath(f"{robot_prim_path}/elevator_outer_2_link/top_slider_joint"), "linear")
         
-        set_drive_params(front_left_axle, 1, 1000, 98.0)
-        set_drive_params(front_right_axle, 1, 1000, 98.0)
-        set_drive_params(rear_left_axle, 1, 1000, 98.0)
-        set_drive_params(rear_right_axle, 1, 1000, 98.0)       
-        set_drive_params(front_left_wheel, 1, 1000, 98.0)
-        set_drive_params(front_right_wheel, 1, 1000, 98.0)
-        set_drive_params(rear_left_wheel, 1, 1000, 98.0)
-        set_drive_params(rear_right_wheel, 1, 1000, 98.0)
+        set_drive_params(front_left_axle, 1, 1000, 0)
+        set_drive_params(front_right_axle, 1, 1000, 0)
+        set_drive_params(rear_left_axle, 1, 1000, 0)
+        set_drive_params(rear_right_axle, 1, 1000, 0)
+               
+        set_drive_params(front_left_wheel, 1, 100000000, 0)
+        set_drive_params(front_right_wheel, 1, 100000000, 0)
+        set_drive_params(rear_left_wheel, 1, 100000000, 0)
+        set_drive_params(rear_right_wheel, 1, 100000000, 0)
+        
         set_drive_params(arm_roller_bar_joint, 10000000, 100000, 98.0)
         set_drive_params(elevator_center_joint, 10000000, 100000, 98.0)
         set_drive_params(elevator_outer_1_joint, 10000000, 100000, 2000.0)

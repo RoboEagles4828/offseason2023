@@ -7,9 +7,9 @@ class MotionMagic():
         
         self.prevTargetPosition = 0
         self.totalDistance = 0
-        self.tolerance = 0.01
+        self.tolerance = 0.05
         
-        self.velocityInRampWindow1 = 0.1
+        self.velocityInRampWindow1 = 0.5
         self.velocityInRampWindow2 = 2.0
         self.velocityInCruiseWindow = 3.0
         self.rampWindow1 = 0.3
