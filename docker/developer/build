@@ -1,5 +1,5 @@
 #!/bin/bash
-VERSION=7 # Increment manually for now
+VERSION=8 # Increment manually for now
 PREV_VERSION="$((VERSION-1))"
 GITHUB_REGISTRY="ghcr.io/roboeagles4828"
 IMAGE_NAME="developer-environment"
