@@ -89,10 +89,10 @@ encoder_reset_velocity = math.radians(0.5)
 encoder_reset_iterations = 500
 
 axle_pid_constants = {
-    "kP": 0.2,
+    "kP": 0.3,
     "kI": 0.0,
-    "kD": 0.1,
-    "kF": 0.2,
+    "kD": 0.0,
+    "kF": 0.0,
     "kIzone": 0,
     "kPeakOutput": 1.0
 }
@@ -252,6 +252,7 @@ class SwerveModule():
 
         # Velocity Ramp
         self.wheel_motor.configClosedloopRamp(0)
+        self.wheel_motor.configOpenloopRamp(0)
 
     
     def setupAxleMotor(self):
@@ -290,6 +291,7 @@ class SwerveModule():
 
         # Velocity Ramp Removed
         self.axle_motor.configClosedloopRamp(0)
+        self.axle_motor.configOpenloopRamp(0)
 
         # Supply Current Limit
         supply_current_limit = 20
@@ -313,17 +315,8 @@ class SwerveModule():
         self.wheel_motor.set(ctre.TalonFXControlMode.PercentOutput, 0)
         
     def setMotors(self, wheel_motor_vel, axle_position):
-        wheel_vel = getWheelShaftTicks(wheel_motor_vel, "velocity")
-        # if abs(wheel_motor_vel) < 0.2:
-        #     # if self.neutralize_count > 5:
-        #     #     self.neutralize_count = 0
-        #     #     self.neutralize_module()
-        #     # else:
-        #     #     self.wheel_motor.set(ctre.TalonFXControlMode.Velocity, wheel_vel)
-        #     #     self.neutralize_count += 1
-        #     # return
-        #     self.wheel_motor.set(ctre.T)
-        # else:                                                                                                 
+        # WHEEL VELOCITY CONTROL
+        wheel_vel = getWheelShaftTicks(wheel_motor_vel, "velocity")                                                                                            
         self.wheel_motor.set(ctre.TalonFXControlMode.Velocity, wheel_vel)
         self.last_wheel_vel_cmd = wheel_vel
 

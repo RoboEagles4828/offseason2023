@@ -17,6 +17,9 @@ class IsaacDriveHardware(Node):
         self.isaac_subscriber = self.create_subscription(JointState, 'isaac_joint_states', self.isaac_callback, 10)
         self.real_subscriber = self.create_subscription(JointState, '/real/real_joint_states', self.real_callback, 10)
         
+        self.OKGREEN = '\033[92m'
+        self.ENDC = '\033[0m'
+        
         self.joint_names: list[str] = []
         self.joint_state: JointState = None
         self.joint_names2: list[str] = []
@@ -34,6 +37,8 @@ class IsaacDriveHardware(Node):
         
         self.header = Header()
         
+        self.get_logger().info(self.OKGREEN + "Configured and Activated Isaac Drive Hardware" + self.ENDC)
+        
 
     def real_callback(self, joint_state: JointState):
         self.joint_names = list(joint_state.name)
@@ -43,7 +48,10 @@ class IsaacDriveHardware(Node):
     def isaac_callback(self, joint_state: JointState):
         self.joint_names2 = list(joint_state.name)
         self.joint_state2 = joint_state
-        self.read()
+        if self.joint_state2 == None:
+            self.get_logger().warn("Velocity message recieved was null")
+        else:
+            self.read()
         
     def convertToRosPosition(self, isaac_position: float):
         if isaac_position > math.pi:
@@ -54,10 +62,6 @@ class IsaacDriveHardware(Node):
         
     def read(self):
         self.joint_state_command.effort = []
-        if self.joint_state2 == None:
-            self._logger.warn("Velocity message recieved was null")
-            return
-        
         names = self.joint_state2.name
         positions = self.joint_state2.position
         velocities = self.joint_state2.velocity
@@ -69,8 +73,7 @@ class IsaacDriveHardware(Node):
                     self.joint_state_command.position.append(self.convertToRosPosition(positions[j]))
                     self.joint_state_command.velocity.append(velocities[j])
                     self.joint_state_command.effort.append(efforts[j])
-                    break
-                
+                    break              
         # self.joint_state_command.header.stamp = Time(seconds=self._clock.now().seconds_nanoseconds()[0], nanoseconds=self._clock.now().seconds_nanoseconds()[1])
         # self.joint_state_publisher.publish(self.joint_state_command)
                     
