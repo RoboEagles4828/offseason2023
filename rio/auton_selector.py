@@ -149,8 +149,9 @@ class AutonSelector():
 
         self.command_group = SequentialCommandGroup(
             WaitCommand(0.5),
-            DriveTimeAutoCommand(self.drive_subsystem, 5.0, (-0.8, 0, 0))
+            DriveTimeAutoCommand(self.drive_subsystem, 3.0, (-0.8, 0, 0))
         )
+        self.command_group.schedule()
 
     def charge_auton(self):
         pitch = self.drive_train.navx.getPitch()

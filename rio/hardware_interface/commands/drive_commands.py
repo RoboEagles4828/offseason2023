@@ -25,9 +25,10 @@ class DriveTimeAutoCommand(CommandBase):
 
     def execute(self):
         self.drive.swerve_drive(self.x, self.y, self.z, True)
-        print(f"DriveTimeAuton Runtime: {self.timer.get()}")
+        # print(f"DriveTimeAuton Runtime: {self.timer.get()}")
         
     def end(self, interuppted):
+        self.drive.swerve_drive(0, 0, 0, True)
         self.drive.stop()
         
     def isFinished(self):
