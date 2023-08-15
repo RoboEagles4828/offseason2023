@@ -2,9 +2,9 @@ import rclpy
 from rclpy.context import Context
 from rclpy.node import Node
 from rclpy.parameter import Parameter
-from sensor_msgs.msg import JointState
+from sensor_msgs.msg import JointState, Imu
 from rclpy.time import Time, Duration
-from std_msgs.msg import Header
+from std_msgs.msg import Header, String
 import math
 
 class IsaacDriveHardware(Node):
@@ -12,10 +12,12 @@ class IsaacDriveHardware(Node):
         super().__init__('isaac_drive_hardware')
         self.realtime_isaac_publisher_drive = self.create_publisher(JointState, 'isaac_drive_commands', 10)
         self.realtime_isaac_publisher_arm = self.create_publisher(JointState, 'isaac_arm_commands', 10)
+        self.real_imu_publisher = self.create_publisher(String, 'real_imu', 10)
         # self.joint_state_publisher = self.create_publisher(JointState, 'joint_states', 10)
         
         self.isaac_subscriber = self.create_subscription(JointState, 'isaac_joint_states', self.isaac_callback, 10)
         self.real_subscriber = self.create_subscription(JointState, '/real/real_joint_states', self.real_callback, 10)
+        self.imu_subscriber = self.create_subscription(Imu, 'imu', self.imu_callback, 10)
         
         self.OKGREEN = '\033[92m'
         self.ENDC = '\033[0m'
@@ -39,7 +41,14 @@ class IsaacDriveHardware(Node):
         
         self.get_logger().info(self.OKGREEN + "Configured and Activated Isaac Drive Hardware" + self.ENDC)
         
-
+    def imu_callback(self, imu: Imu):
+        if imu == None:
+            self.get_logger().warn("Imu message recieved was null")
+        imu_string = String()
+        data = f"{imu.orientation.w}|{imu.orientation.x}|{imu.orientation.y}|{imu.orientation.z}|{imu.angular_velocity.x}|{imu.angular_velocity.y}|{imu.angular_velocity.z}|{imu.linear_acceleration.x}|{imu.linear_acceleration.y}|{imu.linear_acceleration.z}"
+        imu_string.data = data
+        self.real_imu_publisher.publish(imu_string)
+        
     def real_callback(self, joint_state: JointState):
         self.joint_names = list(joint_state.name)
         self.joint_state = joint_state

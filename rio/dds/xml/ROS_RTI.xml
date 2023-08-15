@@ -93,6 +93,10 @@ This code contains trade secrets of Real-Time Innovations, Inc.
             <register_type name="std_srvs::srv::dds_::SetBool_Response_" type_ref="std_srvs::srv::dds_::SetBool_Response_" />
             <topic name="rr/boolReply" register_type_ref="std_srvs::srv::dds_::SetBool_Response_"/>
         </domain>
+        <domain name="ROS2_DOMAIN_IMU" domain_id="0">
+            <register_type name="std_msgs::msg::dds_::String_" type_ref="std_msgs::msg::dds_::String_" />
+            <topic name="rt/saranga/real_imu" register_type_ref="std_msgs::msg::dds_::String_"/>
+        </domain>
     </domain_library>
 
     <!-- Participant library -->
@@ -140,13 +144,18 @@ This code contains trade secrets of Real-Time Innovations, Inc.
             <data_reader name="isaac_joint_states_reader" topic_ref="rt/saranga/isaac_joint_states" />
         </subscriber>
       </domain_participant>
-        <domain_participant name="service" domain_ref="ROS2_DOMAIN_LIB::ROS2_DOMAIN_SERVICE">
-            <publisher name="service_pub">
-                <data_writer name="service_writer" topic_ref="rq/boolRequest" />
-            </publisher>
-            <subscriber name="service_sub">
-                <data_reader name="service_reader" topic_ref="rr/boolReply" />
-            </subscriber>
-        </domain_participant>
+      <domain_participant name="service" domain_ref="ROS2_DOMAIN_LIB::ROS2_DOMAIN_SERVICE">
+        <publisher name="service_pub">
+            <data_writer name="service_writer" topic_ref="rq/boolRequest" />
+        </publisher>
+        <subscriber name="service_sub">
+            <data_reader name="service_reader" topic_ref="rr/boolReply" />
+        </subscriber>
+      </domain_participant>
+      <domain_participant name="imu" domain_ref="ROS2_DOMAIN_LIB::ROS2_DOMAIN_IMU">
+        <subscriber name="imu_subscriber">
+            <data_reader name="imu_reader" topic_ref="rt/saranga/real_imu" />
+        </subscriber>
+      </domain_participant>
     </domain_participant_library>
 </dds>

@@ -13,6 +13,7 @@ from wpimath.filter import SlewRateLimiter
 from hardware_interface.joystick import Joystick
 import navx
 from hardware_interface.toggle import ToggleButton
+from sim.navxSim import NavxSim
 
 
 NAMESPACE = 'real'
@@ -433,6 +434,7 @@ class DriveTrain():
         self.rear_right_location = MODULE_CONFIG["rear_right"]["location"]
         self.kinematics = SwerveDrive4Kinematics(self.front_left_location, self.front_right_location, self.rear_left_location, self.rear_right_location)
         self.navx = navx.AHRS.create_spi()
+        self.navx_sim = NavxSim()
         self.navx.calibrate()
         self.speeds = ChassisSpeeds(0, 0, 0)
         self.wheel_radius = 0.0508
@@ -503,6 +505,8 @@ class DriveTrain():
         self.front_right_state = SwerveModuleState(0, Rotation2d(0))
         self.rear_left_state = SwerveModuleState(0, Rotation2d(0))
         self.rear_right_state = SwerveModuleState(0, Rotation2d(0))
+        
+        self.is_sim = False
         
     def reset_slew(self):
         self.slew_X.reset(0)
@@ -577,6 +581,8 @@ class DriveTrain():
 
         if joystick.getData()["buttons"][6] == 1.0:
             self.navx.zeroYaw()
+            if self.is_sim:
+                self.navx_sim.zeroYaw()
 
         if joystick.getData()["axes"][5] == 1.0:
             self.slow = True
@@ -673,8 +679,28 @@ class DriveTrain():
         
     def getModuleCommand(self):
         data = dict()
-        
-        # logging.info(self.front_left.wheel_motor.getSelectedSensorVelocity())
+
+        if self.is_sim:
+            self.speeds = ChassisSpeeds.fromFieldRelativeSpeeds(self.linX, self.linY, self.angZ, self.navx_sim.getRotation2d().__mul__(-1))
+            #print(self.navx_sim.getRotation2d())
+            
+            self.module_state = self.kinematics.toSwerveModuleStates(self.speeds)
+            
+            # normalize speeds
+            # if the speeds are greater than the max speed, scale them down
+            self.kinematics.desaturateWheelSpeeds(self.module_state, self.ROBOT_MAX_TRANSLATIONAL)
+
+            self.front_left_state: SwerveModuleState = self.module_state[0]
+            self.front_right_state: SwerveModuleState = self.module_state[1]
+            self.rear_left_state: SwerveModuleState = self.module_state[2]
+            self.rear_right_state: SwerveModuleState = self.module_state[3]
+
+            # optimize states
+            #This makes the modules take the shortest path to the desired angle
+            self.front_left_state = SwerveModuleState.optimize(self.front_left_state, Rotation2d(self.front_left.getEncoderPosition()))
+            self.front_right_state = SwerveModuleState.optimize(self.front_right_state, Rotation2d(self.front_right.getEncoderPosition()))
+            self.rear_left_state = SwerveModuleState.optimize(self.rear_left_state, Rotation2d(self.rear_left.getEncoderPosition()))
+            self.rear_right_state = SwerveModuleState.optimize(self.rear_right_state, Rotation2d(self.rear_right.getEncoderPosition()))            
         
         m1_val = self.new_motion_magic_1.getNextVelocity(self.front_left_state.angle.radians(), self.front_left.getMotorPosition())
         m2_val = self.new_motion_magic_2.getNextVelocity(self.front_right_state.angle.radians(), self.front_right.getMotorPosition())
@@ -693,7 +719,7 @@ class DriveTrain():
         ]
         data["position"] = [0.0]*8
         
-        print(f"{round(self.linX, 2)} {round(self.linY, 2)} {round(self.angZ, 2)} | {round(self.front_left.getMotorPosition(), 2)} {round(self.front_left.getMotorPosition(), 2)} {round(self.front_left.getMotorPosition(), 2)} {round(self.front_left.getMotorPosition(), 2)}")
+        #print(f"{round(self.linX, 2)} {round(self.linY, 2)} {round(self.angZ, 2)} | {round(self.front_left.getMotorPosition(), 2)} {round(self.front_left.getMotorPosition(), 2)} {round(self.front_left.getMotorPosition(), 2)} {round(self.front_left.getMotorPosition(), 2)}")
         
         return data
 

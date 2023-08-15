@@ -6,7 +6,7 @@ from wpilib.shuffleboard import Shuffleboard
 from wpilib.shuffleboard import SuppliedFloatValueWidget
 from auton_selector import AutonSelector
 import time
-from dds.dds import DDS_Publisher
+from dds.dds import DDS_Publisher, DDS_Subscriber
 import os
 import inspect
 import logging
@@ -19,6 +19,7 @@ ENABLE_ENCODER = True
 # Global Variables
 arm_controller : ArmController = None
 drive_train : DriveTrain = None
+navx_sim_data : list = None
 frc_stage = "DISABLED"
 fms_attached = False
 stop_threads = False
@@ -61,7 +62,7 @@ def threadLoop(name, dds, action):
     global frc_stage
     try:
         while stop_threads == False:
-            if (frc_stage == 'AUTON' and name != "joystick") or (name in ["encoder", "stage-broadcaster", "service"]) or (frc_stage == 'TELEOP'):
+            if (frc_stage == 'AUTON' and name != "joystick") or (name in ["encoder", "stage-broadcaster", "service", "imu"]) or (frc_stage == 'TELEOP'):
                 action(dds)
             time.sleep(20/1000)
     except Exception as e:
@@ -81,6 +82,8 @@ def startThread(name) -> threading.Thread | None:
         thread = threading.Thread(target=stageBroadcasterThread, daemon=True)
     elif name == "service":
         thread = threading.Thread(target=serviceThread, daemon=True)
+    elif name == "imu":
+        thread = threading.Thread(target=imuThread, daemon=True)
     
     thread.start()
     return thread
@@ -155,6 +158,37 @@ def stageBroadcasterAction(publisher : DDS_Publisher):
     publisher.write({ "data": f"{frc_stage}|{fms_attached}|{is_disabled}" })
 ############################################
 
+################## IMU #####################   
+IMU_PARTICIPANT_NAME = "ROS2_PARTICIPANT_LIB::imu"
+IMU_READER_NAME = "imu_subscriber::imu_reader"
+
+def imuThread():
+    imu_subscriber = initDDS(DDS_Subscriber, IMU_PARTICIPANT_NAME, IMU_READER_NAME)
+    threadLoop("imu", imu_subscriber, imuAction)
+    
+def imuAction(subscriber):
+    data: dict = subscriber.read()
+    if data is not None:
+        
+        arr = data["data"].split("|")
+        w = float(arr[0])
+        x = float(arr[1])
+        y = float(arr[2])
+        z = float(arr[3])
+        angular_velocity_x = float(arr[4])
+        angular_velocity_y = float(arr[5])
+        angular_velocity_z = float(arr[6])
+        linear_acceleration_x = float(arr[7])
+        linear_acceleration_y = float(arr[8])
+        linear_acceleration_z = float(arr[9])
+        global navx_sim_data
+        navx_sim_data = [
+            w, x, y, z, 
+            angular_velocity_x, angular_velocity_y, angular_velocity_z, 
+            linear_acceleration_x, linear_acceleration_y, linear_acceleration_z
+        ]
+############################################
+
 class Robot(wpilib.TimedRobot):
     def robotInit(self):
         self.use_threading = True
@@ -169,13 +203,16 @@ class Robot(wpilib.TimedRobot):
             if ENABLE_ENCODER: self.threads.append({"name": "encoder", "thread": startThread("encoder") })
             if ENABLE_STAGE_BROADCASTER: self.threads.append({"name": "stage-broadcaster", "thread": startThread("stage-broadcaster") })
             self.threads.append({"name": "service", "thread": startThread("service") })
+            self.threads.append({"name": "imu", "thread": startThread("imu") })
         else:
             self.encoder_publisher = DDS_Publisher(xml_path, ENCODER_PARTICIPANT_NAME, ENCODER_WRITER_NAME)
             self.stage_publisher = DDS_Publisher(xml_path, STAGE_PARTICIPANT_NAME, STAGE_WRITER_NAME)
             self.service_publisher = DDS_Publisher(xml_path, SERVICE_PARTICIPANT_NAME, SERVICE_WRITER_NAME)
+            self.imu_subscriber = DDS_Subscriber(xml_path, IMU_PARTICIPANT_NAME, IMU_READER_NAME)
         
         self.arm_controller = initArmController()
         self.drive_train = initDriveTrain()
+        self.drive_train.is_sim = self.isSimulation()
         self.joystick = Joystick("xbox")
         self.auton_selector = AutonSelector(self.arm_controller, self.drive_train)
         self.joystick_selector = wpilib.SendableChooser()
@@ -205,6 +242,8 @@ class Robot(wpilib.TimedRobot):
 
     def robotPeriodic(self):
         self.joystick.type = self.joystick_selector.getSelected()
+        if navx_sim_data is not None:
+            self.drive_train.navx_sim.update(*navx_sim_data)
 
 
     # Auton
@@ -261,6 +300,7 @@ class Robot(wpilib.TimedRobot):
         encoderAction(self.encoder_publisher)
         stageBroadcasterAction(self.stage_publisher)
         serviceAction(self.service_publisher)
+        imuAction(self.imu_subscriber)
         
     def stopThreads(self):
         global stop_threads
