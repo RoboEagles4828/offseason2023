@@ -1,6 +1,7 @@
 from hardware_interface.drivetrain import DriveTrain
 from hardware_interface.joystick import Joystick
 from hardware_interface.armcontroller import ArmController
+from commands2 import *
 import wpilib
 from wpilib.shuffleboard import Shuffleboard
 from wpilib.shuffleboard import SuppliedFloatValueWidget
@@ -213,12 +214,13 @@ class Robot(wpilib.TimedRobot):
         self.auton_selector.set_start_time(self.auton_selector.timer.getFPGATimestamp())
         self.arm_controller.top_gripper_control_on()
         self.drive_train.navx.zeroYaw()
+        self.auton_selector.run()
         logging.info("Entering Auton")
         global frc_stage
         frc_stage = "AUTON"
 
     def autonomousPeriodic(self):
-        self.auton_selector.run()
+        CommandScheduler.getInstance().run()
         global fms_attached
         fms_attached = wpilib.DriverStation.isFMSAttached()
         if self.use_threading:

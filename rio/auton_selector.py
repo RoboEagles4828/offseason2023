@@ -1,6 +1,9 @@
 import wpilib
 from hardware_interface.armcontroller import ArmController
 from hardware_interface.drivetrain import DriveTrain
+from hardware_interface.subsystems.drive_subsystem import DriveSubsystem
+from hardware_interface.subsystems.arm_subsystem import ArmSubsystem
+from hardware_interface.commands.drive_commands import *
 import time
 from wpilib import Timer
 
@@ -16,8 +19,8 @@ class AutonSelector():
         self.MID_TAXI = "Mid Taxi Auton"
         self.CUBE_HIGH_TAXI = "Cube High Taxi Auton"
         self.autonChooser = wpilib.SendableChooser()
-        self.autonChooser.addOption("Taxi Auton", self.TAXI)
-        self.autonChooser.setDefaultOption("High Place Auton", self.HIGH_PLACE)
+        self.autonChooser.setDefaultOption("Taxi Auton", self.TAXI)
+        self.autonChooser.addOption("High Place Auton", self.HIGH_PLACE)
         self.autonChooser.addOption("High Taxi Auton", self.HIGH_TAXI)
         self.autonChooser.addOption("Cube High Taxi Auton", self.CUBE_HIGH_TAXI)
         self.autonChooser.addOption("Mid Taxi Auton", self.MID_TAXI)
@@ -28,6 +31,9 @@ class AutonSelector():
         self.start = 0
         self.turn_done = False
         self.first_pitch = False
+        
+        self.drive_subsystem = DriveSubsystem(self.drive_train)
+        self.arm_subsystem = ArmSubsystem(self.arm_controller)
 
     def run(self):
         self.timer.start()
@@ -134,18 +140,17 @@ class AutonSelector():
 
 
     def taxi_auton(self):
-        # if not self.turn_done:
-        #     print(f"Taxi Turn {self.timer.getFPGATimestamp() - self.start}")
-        #     self.drive_train.swerveDriveAuton(0, 0, 0.6)
-        #     if self.drive_train.navx.getRotation2d().__mul__(-1).degrees() >= 180:
-        #         self.turn_done = True
-        #         self.drive_train.stop()
-        if self.timer.getFPGATimestamp() - self.start < 1.5:
-            print(f"Taxi Auton {self.timer.getFPGATimestamp() - self.start}")
-            self.drive_train.swerveDriveAuton(-0.8, 0, 0)
-        elif self.timer.getFPGATimestamp() - self.start >= 1.5:
-            print("Taxi Auton Stop")
-            self.drive_train.stop()
+        # if self.timer.getFPGATimestamp() - self.start < 1.5:
+        #     print(f"Taxi Auton {self.timer.getFPGATimestamp() - self.start}")
+        #     self.drive_train.swerveDriveAuton(-0.8, 0, 0)
+        # elif self.timer.getFPGATimestamp() - self.start >= 1.5:
+        #     print("Taxi Auton Stop")
+        #     self.drive_train.stop()
+
+        self.command_group = SequentialCommandGroup(
+            WaitCommand(0.5),
+            DriveTimeAutoCommand(self.drive_subsystem, 5.0, (-0.8, 0, 0))
+        )
 
     def charge_auton(self):
         pitch = self.drive_train.navx.getPitch()

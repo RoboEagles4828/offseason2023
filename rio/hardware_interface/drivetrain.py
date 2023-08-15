@@ -693,7 +693,7 @@ class DriveTrain():
         ]
         data["position"] = [0.0]*8
         
-        print(f"{round(self.linX, 2)} {round(self.linY, 2)} {round(self.angZ, 2)} | {round(self.front_left.getMotorPosition(), 2)} {round(self.front_left.getMotorPosition(), 2)} {round(self.front_left.getMotorPosition(), 2)} {round(self.front_left.getMotorPosition(), 2)}")
+        #print(f"{round(self.linX, 2)} {round(self.linY, 2)} {round(self.angZ, 2)} | {round(self.front_left.getMotorPosition(), 2)} {round(self.front_left.getMotorPosition(), 2)} {round(self.front_left.getMotorPosition(), 2)} {round(self.front_left.getMotorPosition(), 2)}")
         
         return data
 
@@ -702,6 +702,37 @@ class DriveTrain():
         self.ROBOT_MAX_ROTATIONAL = self.profile_selector.getSelected()[1] * math.pi
         self.MODULE_MAX_SPEED = self.profile_selector.getSelected()[0]
         self.speeds = ChassisSpeeds(linearX*self.ROBOT_MAX_TRANSLATIONAL, linearY*self.ROBOT_MAX_TRANSLATIONAL, angularZ*self.ROBOT_MAX_ROTATIONAL)
+
+        self.module_state = self.kinematics.toSwerveModuleStates(self.speeds)
+        self.kinematics.desaturateWheelSpeeds(self.module_state, self.speeds, self.MODULE_MAX_SPEED, self.ROBOT_MAX_TRANSLATIONAL, self.ROBOT_MAX_ROTATIONAL)
+
+        self.front_left_state: SwerveModuleState = self.module_state[0]
+        self.front_right_state: SwerveModuleState = self.module_state[1]
+        self.rear_left_state: SwerveModuleState = self.module_state[2]
+        self.rear_right_state: SwerveModuleState = self.module_state[3]
+
+        # optimize states
+        self.front_left_state = SwerveModuleState.optimize(self.front_left_state, Rotation2d(self.front_left.getEncoderPosition()))
+        self.front_right_state = SwerveModuleState.optimize(self.front_right_state, Rotation2d(self.front_right.getEncoderPosition()))
+        self.rear_left_state = SwerveModuleState.optimize(self.rear_left_state, Rotation2d(self.rear_left.getEncoderPosition()))
+        self.rear_right_state = SwerveModuleState.optimize(self.rear_right_state, Rotation2d(self.rear_right.getEncoderPosition()))
+        
+        # using custom optimize
+        # self.front_left_state = self.customOptimize(self.front_left_state, Rotation2d(self.front_left.getEncoderPosition()))
+        # self.front_right_state = self.customOptimize(self.front_right_state, Rotation2d(self.front_right.getEncoderPosition()))
+        # self.rear_left_state = self.customOptimize(self.rear_left_state, Rotation2d(self.rear_left.getEncoderPosition()))
+        # self.rear_right_state = self.customOptimize(self.rear_right_state, Rotation2d(self.rear_right.getEncoderPosition()))
+
+        self.front_left.set(self.front_left_state)
+        self.front_right.set(self.front_right_state)
+        self.rear_left.set(self.rear_left_state)
+        self.rear_right.set(self.rear_right_state)
+        
+    def swerveDriveAutonFieldOriented(self, linearX, linearY, angularZ):
+        self.ROBOT_MAX_TRANSLATIONAL = self.profile_selector.getSelected()[0]
+        self.ROBOT_MAX_ROTATIONAL = self.profile_selector.getSelected()[1] * math.pi
+        self.MODULE_MAX_SPEED = self.profile_selector.getSelected()[0]
+        self.speeds = ChassisSpeeds.fromFieldRelativeSpeeds(linearX*self.ROBOT_MAX_TRANSLATIONAL, linearY*self.ROBOT_MAX_TRANSLATIONAL, angularZ*self.ROBOT_MAX_ROTATIONAL, self.navx.getRotation2d().__mul__(-1))
 
         self.module_state = self.kinematics.toSwerveModuleStates(self.speeds)
         self.kinematics.desaturateWheelSpeeds(self.module_state, self.speeds, self.MODULE_MAX_SPEED, self.ROBOT_MAX_TRANSLATIONAL, self.ROBOT_MAX_ROTATIONAL)
