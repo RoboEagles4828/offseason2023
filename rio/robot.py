@@ -125,16 +125,16 @@ def encoderAction(publisher):
     publisher.write(data)
 ############################################
 
-################## STAGE ##################
+################## SERVICE ##################
 SERVICE_PARTICIPANT_NAME = "ROS2_PARTICIPANT_LIB::service"
-SERVICE_WRITER_NAME = "service_publisher::service_writer"
+SERVICE_WRITER_NAME = "service_pub::service_writer"
 
 def serviceThread():
     service_publisher = initDDS(DDS_Publisher, SERVICE_PARTICIPANT_NAME, SERVICE_WRITER_NAME)
-    threadLoop('stage-broadcaster', service_publisher, serviceAction)
+    threadLoop('service', service_publisher, serviceAction)
 
 def serviceAction(publisher : DDS_Publisher):
-    temp_service = "odom_reset"
+    temp_service = True
     
     publisher.write({ "data": temp_service })
 ############################################
