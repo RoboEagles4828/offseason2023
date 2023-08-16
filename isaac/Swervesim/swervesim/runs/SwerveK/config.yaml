@@ -162,11 +162,11 @@ device_id: 0
 rl_device: cuda:0
 num_threads: 4
 solver_type: 1
-test: true
-checkpoint: /home/nitin/Documents/2023RobotROS/Swervesim/swervesim/runs/SwerveK/nn/Best_SwerveK.pth
+test: false
+checkpoint: ''
 headless: false
 wandb_activate: false
 wandb_group: ''
 wandb_name: ${train.params.config.name}
 wandb_entity: ''
-wandb_project: omniisaacgymenv
+wandb_project: swervesim

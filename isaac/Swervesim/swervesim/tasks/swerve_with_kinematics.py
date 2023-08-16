@@ -30,9 +30,8 @@ from swervesim.tasks.base.rl_task import RLTask
 from swervesim.robots.articulations.swerve import Swerve
 from swervesim.robots.articulations.views.swerve_view import SwerveView
 from swervesim.tasks.utils.usd_utils import set_drive
-from swervesim.tasks.utils.usd_utils import set_arm
 from swervesim.inverse_kinematics.inverse_kinematics import InverseKinematics
-from omni.isaac.core.objects import DynamicCube
+from omni.isaac.core.objects import DynamicSphere
 
 
 from omni.isaac.core.utils.prims import get_prim_at_path
@@ -75,7 +74,7 @@ class Swerve_Kinematics_Task(RLTask):
         self._swerve_translation = torch.tensor([0.0, 0.0, 0.0])
         self._env_spacing = self._task_cfg["env"]["envSpacing"]
         # Number of data points the policy is recieving
-        self._num_observations = 29
+        self._num_observations = 13
         # Number of data points the policy is producing
         self._num_actions = 8
         # starting position of the swerve module
@@ -129,7 +128,7 @@ class Swerve_Kinematics_Task(RLTask):
         # Adds a red ball as target
         radius = 0.1  # meters
         color = torch.tensor([0, 0, 1])
-        ball = DynamicCube(
+        ball = DynamicSphere(
             prim_path=self.default_zero_env_path + "/cube",
             translation=self._ball_position,
             name="target_0",
@@ -238,9 +237,9 @@ class Swerve_Kinematics_Task(RLTask):
 
         #   Set Wheel Positions
         #   Has a 1 degree tolerance. Turns clockwise if less than, counter clockwise if greater than
-            if (i == 1):
-                print(f"front_left_position:{front_left_position}")
-                print(f"rear_left_position:{rear_left_position}")
+            # if (i == 1):
+            #     print(f"front_left_position:{front_left_position}")
+            #     print(f"rear_left_position:{rear_left_position}")
             # action.append(calculate_turn_velocity(front_left_current_pos, front_left_position))
             # action.append(calculate_turn_velocity(front_right_current_pos, front_right_position))
             # action.append(calculate_turn_velocity(rear_left_current_pos, rear_left_position))
@@ -266,6 +265,13 @@ class Swerve_Kinematics_Task(RLTask):
             action.append(front_right_velocity)
             action.append(rear_left_velocity)
             action.append(rear_right_velocity)
+            action.append(0.0)
+            action.append(0.0)
+            action.append(0.0)
+            action.append(0.0)
+            action.append(0.0)
+            action.append(0.0)
+            action.append(0.0)
             # print(len(action))
             actionlist.append(action)
         # Sets robots velocities
@@ -324,7 +330,7 @@ class Swerve_Kinematics_Task(RLTask):
             self._num_envs, self.num_actions, dtype=torch.float, device=self._device, requires_grad=False
         )
         self.last_dof_vel = torch.zeros(
-            (self._num_envs, 12), dtype=torch.float, device=self._device, requires_grad=False)
+            (self._num_envs, 8), dtype=torch.float, device=self._device, requires_grad=False)
         self.last_actions = torch.zeros(
             self._num_envs, self.num_actions, dtype=torch.float, device=self._device, requires_grad=False)
 
@@ -357,10 +363,6 @@ class Swerve_Kinematics_Task(RLTask):
             self.target_positions - root_positions).sum(-1))
 
         pos_reward = 1.0 / (1.0 + (1/0.5)*(target_dist-0.5))
-        if pos_reward < 0.0:
-            pos_reward = 0.0
-        elif pos_reward > 1.0:
-            pos_reward = 1.0
         self.target_dist = target_dist
         self.root_positions = root_positions
         self.root_position_reward = self.rew_buf

@@ -1,6 +1,6 @@
 from wpimath.kinematics import SwerveDrive4Kinematics, ChassisSpeeds, SwerveModuleState
-from wpimath.geometry import Translation2d
-from inverse_kinematics.motion_magic_control import MotionMagic
+from wpimath.geometry import Translation2d, Rotation2d
+from swervesim.inverse_kinematics.motion_magic_control import MotionMagic
 import math
 
 class InverseKinematics():
@@ -63,7 +63,7 @@ class InverseKinematics():
         self.real_mm_accel = (8.0 - 2.0) / self.accelerationConstant / self.velocityCoefficient
         self.real_mm_vel = 2.0 / self.velocityConstant / self.velocityCoefficient
         
-        self.motion_magic = MotionMagic(self.ticksToRadians(self.MAX_ACCEL), self.ticksToRadians(self.MAX_VEL))
+        self.motion_magic = MotionMagic(self.ticksToRadians(self.MAX_ACCEL, "velocity") * 10, self.ticksToRadians(self.MAX_VEL, "velocity"))
         
         self.new_motion_magic_1 = MotionMagic(self.ticksToRadians(self.real_mm_accel, "velocity") * 10, self.ticksToRadians(self.real_mm_vel, "velocity"))
         self.new_motion_magic_2 = MotionMagic(self.ticksToRadians(self.real_mm_accel, "velocity") * 10, self.ticksToRadians(self.real_mm_vel, "velocity"))
@@ -82,7 +82,7 @@ class InverseKinematics():
         else:
             return 0
     
-    def getDriveJointStates(self, x, y, z, module_angles: list[float, float, float, float]):
+    def getDriveJointStates(self, x, y, z, module_angles: list):
         self.speeds = ChassisSpeeds(x, y, z)
         module_states = self.kinematics.toSwerveModuleStates(self.speeds)      
         self.kinematics.desaturateWheelSpeeds(module_states, self.ROBOT_MAX_TRANSLATIONAL)
@@ -92,10 +92,10 @@ class InverseKinematics():
         rear_left_state = module_states[2]
         rear_right_state = module_states[3]
         
-        front_left_state = SwerveModuleState.optimize(front_left_state, module_angles[0])
-        front_right_state = SwerveModuleState.optimize(front_right_state, module_angles[1])
-        rear_left_state = SwerveModuleState.optimize(rear_left_state, module_angles[2])
-        rear_right_state = SwerveModuleState.optimize(rear_right_state, module_angles[3])
+        front_left_state = SwerveModuleState.optimize(front_left_state, Rotation2d(module_angles[0]))
+        front_right_state = SwerveModuleState.optimize(front_right_state, Rotation2d(module_angles[1]))
+        rear_left_state = SwerveModuleState.optimize(rear_left_state, Rotation2d(module_angles[2]))
+        rear_right_state = SwerveModuleState.optimize(rear_right_state, Rotation2d(module_angles[3]))
         
         front_left_speed = self.metersToRadians(front_left_state.speed)
         front_right_speed = self.metersToRadians(front_right_state.speed)
