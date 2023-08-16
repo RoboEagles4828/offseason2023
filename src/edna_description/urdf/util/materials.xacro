@@ -8,6 +8,10 @@
     <color rgba="${35/255} ${110/255} ${150/255} 1.0" />
   </material>
 
+  <material name="dark-blue">
+    <color rgba="${0/255} ${0/255} ${139/255} 1.0" />
+  </material>
+
   <material name="green">
     <color rgba="0.0 0.8 0.0 1.0" />
   </material>
