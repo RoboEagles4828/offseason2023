@@ -5,6 +5,7 @@ from commands2 import *
 import wpilib
 from wpilib.shuffleboard import Shuffleboard
 from wpilib.shuffleboard import SuppliedFloatValueWidget
+from hardware_interface.commands.drive_commands import *
 from auton_selector import AutonSelector
 import time
 from dds.dds import DDS_Publisher, DDS_Subscriber
@@ -278,6 +279,7 @@ class Robot(wpilib.TimedRobot):
     def teleopInit(self):
         self.arm_controller.setToggleButtons()
         self.drive_train.reset_slew()
+        CommandScheduler.getInstance().cancelAll()
         logging.info("Entering Teleop")
         global frc_stage
         frc_stage = "TELEOP"
@@ -285,6 +287,16 @@ class Robot(wpilib.TimedRobot):
     def teleopPeriodic(self):
         self.drive_train.swerveDrive(self.joystick)
         self.arm_controller.setArm(self.joystick)
+        load_cmd = TurnToAngleCommand(self.auton_selector.drive_subsystem, 0, False, (self.drive_train.linX, self.drive_train.linY))
+        score_cmd = TurnToAngleCommand(self.auton_selector.drive_subsystem, 180, False, (self.drive_train.linX, self.drive_train.linY))
+        if self.drive_train.field_oriented_value and self.drive_train.auto_turn_value == "load":
+            load_cmd.schedule()
+            CommandScheduler.getInstance().run()
+        elif self.drive_train.field_oriented_value and self.drive_train.auto_turn_value == "score":
+            score_cmd.schedule()
+            CommandScheduler.getInstance().run()
+        else:
+            CommandScheduler.getInstance().cancelAll()
         global fms_attached
         fms_attached = wpilib.DriverStation.isFMSAttached()
         if self.use_threading:
