@@ -1,0 +1,2 @@
+#!/usr/bin/bash
+cd /workspaces/offseason2023/rio && python3 robot.py sim
