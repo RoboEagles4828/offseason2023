@@ -73,7 +73,7 @@ class AutonSelector():
     def cube_high_taxi_auton(self):
         cube_high_taxi_auton = SequentialCommandGroup(
             ScoreCommand(self.arm_subsystem, ElevatorState.HIGH, "cube"),
-            TaxiAutoCommand(self.drive_subsystem)
+            TurnToAngleCommand(self.drive_subsystem, 90),
         )
         cube_high_taxi_auton.schedule()
 
