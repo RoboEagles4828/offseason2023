@@ -13,6 +13,8 @@ class DriveSubsystem(SubsystemBase):
             self.drivetrain.swerveDriveAuton(x, y, z)
     
     def resetGyro(self):
+        if self.drivetrain.is_sim:
+            self.drivetrain.navx_sim.zeroYaw()
         self.drivetrain.navx.zeroYaw()
         
     def getEncoderData(self):
@@ -22,6 +24,17 @@ class DriveSubsystem(SubsystemBase):
         if self.drivetrain.is_sim:
             return self.drivetrain.navx_sim.getYawDegrees()
         return self.drivetrain.navx.getYaw()
+    
+    def getGyroPitch180(self):
+        if self.drivetrain.is_sim:
+            return self.drivetrain.navx_sim.getPitchDegrees()
+        return self.drivetrain.navx.getPitch()
+    
+    def lockDrive(self):
+        self.drivetrain.lockDrive()
+        
+    def unlockDrive(self):
+        self.drivetrain.unlockDrive()
         
     def stop(self):
         self.drivetrain.stop()

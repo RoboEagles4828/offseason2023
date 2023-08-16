@@ -3,6 +3,7 @@ from wpilib import Timer
 import wpimath
 from wpimath.controller import PIDController
 from hardware_interface.subsystems.arm_subsystem import ArmSubsystem, ElevatorState, PivotState, GrabberState
+from hardware_interface.commands.do_nothing_command import DoNothingCommand
 import logging
 
 class ElevatorPivotCommand(CommandBase):
@@ -81,7 +82,7 @@ class ScoreCommand(SequentialCommandGroup):
         self.addCommands(
             ConditionalCommand(
                 ElevatorPivotCommand(arm, PivotState.UP),
-                WaitCommand(0),
+                DoNothingCommand(),
                 lambda: state == ElevatorState.HIGH and gamepiece == "cone"
             ),
             ElevatorPresetCommand(arm, state),

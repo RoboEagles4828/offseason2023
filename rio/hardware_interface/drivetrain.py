@@ -507,6 +507,7 @@ class DriveTrain():
         self.rear_right_state = SwerveModuleState(0, Rotation2d(0))
         
         self.is_sim = False
+        self.locked = False
         
     def reset_slew(self):
         self.slew_X.reset(0)
@@ -575,9 +576,9 @@ class DriveTrain():
         self.angZ = angularZ
 
         if joystick.getData()["buttons"][7] == 1.0:
-            self.field_oriented_value = self.field_oriented_button.toggle(joystick.getData()["buttons"])
+            self.field_oriented_value = not self.field_oriented_button.toggle(joystick.getData()["buttons"])
         else:
-            self.field_oriented_value = self.field_oriented_button.toggle(joystick.getData()["buttons"])
+            self.field_oriented_value = not self.field_oriented_button.toggle(joystick.getData()["buttons"])
 
         if joystick.getData()["buttons"][6] == 1.0:
             self.navx.zeroYaw()
@@ -691,18 +692,20 @@ class DriveTrain():
             # normalize speeds
             # if the speeds are greater than the max speed, scale them down
             self.kinematics.desaturateWheelSpeeds(self.module_state, self.ROBOT_MAX_TRANSLATIONAL)
+            
+            if not self.locked:
 
-            self.front_left_state: SwerveModuleState = self.module_state[0]
-            self.front_right_state: SwerveModuleState = self.module_state[1]
-            self.rear_left_state: SwerveModuleState = self.module_state[2]
-            self.rear_right_state: SwerveModuleState = self.module_state[3]
+                self.front_left_state: SwerveModuleState = self.module_state[0]
+                self.front_right_state: SwerveModuleState = self.module_state[1]
+                self.rear_left_state: SwerveModuleState = self.module_state[2]
+                self.rear_right_state: SwerveModuleState = self.module_state[3]
 
-            # optimize states
-            #This makes the modules take the shortest path to the desired angle
-            self.front_left_state = SwerveModuleState.optimize(self.front_left_state, Rotation2d(self.front_left.getEncoderPosition()))
-            self.front_right_state = SwerveModuleState.optimize(self.front_right_state, Rotation2d(self.front_right.getEncoderPosition()))
-            self.rear_left_state = SwerveModuleState.optimize(self.rear_left_state, Rotation2d(self.rear_left.getEncoderPosition()))
-            self.rear_right_state = SwerveModuleState.optimize(self.rear_right_state, Rotation2d(self.rear_right.getEncoderPosition()))            
+                # optimize states
+                #This makes the modules take the shortest path to the desired angle
+                self.front_left_state = SwerveModuleState.optimize(self.front_left_state, Rotation2d(self.front_left.getEncoderPosition()))
+                self.front_right_state = SwerveModuleState.optimize(self.front_right_state, Rotation2d(self.front_right.getEncoderPosition()))
+                self.rear_left_state = SwerveModuleState.optimize(self.rear_left_state, Rotation2d(self.rear_left.getEncoderPosition()))
+                self.rear_right_state = SwerveModuleState.optimize(self.rear_right_state, Rotation2d(self.rear_right.getEncoderPosition()))            
         
         m1_val = self.new_motion_magic_1.getNextVelocity(self.front_left_state.angle.radians(), self.front_left.getMotorPosition())
         m2_val = self.new_motion_magic_2.getNextVelocity(self.front_right_state.angle.radians(), self.front_right.getMotorPosition())
@@ -792,6 +795,21 @@ class DriveTrain():
         self.front_right.set(self.front_right_state)
         self.rear_left.set(self.rear_left_state)
         self.rear_right.set(self.rear_right_state)
+        
+    def lockDrive(self):
+        self.locked = True
+        self.front_left_state = SwerveModuleState(0, Rotation2d.fromDegrees(-45))
+        self.front_right_state = SwerveModuleState(0, Rotation2d.fromDegrees(45))
+        self.rear_left_state = SwerveModuleState(0, Rotation2d.fromDegrees(45))
+        self.rear_right_state = SwerveModuleState(0, Rotation2d.fromDegrees(-45))
+        
+    def unlockDrive(self):
+        self.locked = False
+        self.front_left_state = SwerveModuleState(0, Rotation2d.fromDegrees(0))
+        self.front_right_state = SwerveModuleState(0, Rotation2d.fromDegrees(0))
+        self.rear_left_state = SwerveModuleState(0, Rotation2d.fromDegrees(0))
+        self.rear_right_state = SwerveModuleState(0, Rotation2d.fromDegrees(0))
+        
 
 
 

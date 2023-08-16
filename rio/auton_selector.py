@@ -6,7 +6,7 @@ from hardware_interface.subsystems.arm_subsystem import ArmSubsystem
 from hardware_interface.commands.drive_commands import *
 from hardware_interface.commands.arm_commands import *
 import time
-from wpilib import Timer
+
 
 class AutonSelector():
     def __init__(self, arm_controller: ArmController, drive_train: DriveTrain):
@@ -19,113 +19,123 @@ class AutonSelector():
         self.HIGH_CHARGE = "High Charge Auton"
         self.MID_TAXI = "Mid Taxi Auton"
         self.CUBE_HIGH_TAXI = "Cube High Taxi Auton"
+        self.CUBE_HIGH_PLACE = "Cube High Place Auton"
+        self.MID_PLACE = "Mid Place Auton"
+        self.MID_CHARGE = "Mid Charge Auton"
         self.autonChooser = wpilib.SendableChooser()
         self.autonChooser.addOption("Taxi Auton", self.TAXI)
         self.autonChooser.addOption("High Place Auton", self.HIGH_PLACE)
-        self.autonChooser.addOption("High Taxi Auton", self.HIGH_TAXI)
-        self.autonChooser.setDefaultOption("Cube High Taxi Auton", self.CUBE_HIGH_TAXI)
+        self.autonChooser.setDefaultOption("High Taxi Auton", self.HIGH_TAXI)
+        self.autonChooser.addOption("Cube High Taxi Auton", self.CUBE_HIGH_TAXI)
         self.autonChooser.addOption("Mid Taxi Auton", self.MID_TAXI)
+        self.autonChooser.addOption("Charge Auton", self.CHARGE)
+        self.autonChooser.addOption("High Charge Auton", self.HIGH_CHARGE)
+        self.autonChooser.addOption("Cube High Place Auton", self.CUBE_HIGH_PLACE)
+        self.autonChooser.addOption("Mid Place Auton", self.MID_PLACE)
+        self.autonChooser.addOption("Mid Charge Auton", self.MID_CHARGE)
 
         self.selected = self.autonChooser.getSelected()
 
-        self.timer = Timer()
         self.start = 0
         self.turn_done = False
         self.first_pitch = False
+        
+        self.command = DoNothingCommand()
         
         self.drive_subsystem = DriveSubsystem(self.drive_train)
         self.arm_subsystem = ArmSubsystem(self.arm_controller)
 
     def run(self):
-        self.timer.start()
         self.selected = self.autonChooser.getSelected()
         if self.selected == self.TAXI:
-            self.taxi_auton()
-            self.timer.stop()
+            self.command = self.taxi_auton()
         elif self.selected == self.HIGH_PLACE: 
-            self.timer.start()
-            self.high_place_auton()
-            self.timer.stop()
+            self.command = self.high_place_auton()
         elif self.selected == self.HIGH_TAXI:
-            self.timer.start()
-            self.high_taxi_auton()
-            self.timer.stop()
+            self.command = self.high_taxi_auton()
         elif self.selected == self.CHARGE:
-            self.timer.reset()
-            self.charge_auton()
-            self.set_start_time(self.timer.getFPGATimestamp())
-            self.post_charge_auton()
-            self.timer.stop()
+            self.command = self.charge_auton()
         elif self.selected == self.CUBE_HIGH_TAXI:
-            self.cube_high_taxi_auton()
+            self.command = self.cube_high_taxi_auton()
         elif self.selected == self.HIGH_CHARGE:
-            self.timer.reset()
-            self.high_place_auton()
-            self.charge_auton()
-            self.post_charge_auton()
-            self.timer.stop()
+            self.command = self.high_charge_auton()
         elif self.selected == self.MID_TAXI:
-            self.mid_taxi_auton()
-
-    def set_start_time(self, time):
-        self.start = time
-
+            self.command = self.mid_taxi_auton()
+        elif self.selected == self.CUBE_HIGH_PLACE:
+            self.command = self.cube_high_place_auton()
+        elif self.selected == self.MID_PLACE:
+            self.command = self.mid_place_auton()
+        elif self.selected == self.MID_CHARGE:
+            self.command = self.mid_charge_auton()
+            
+        auton = SequentialCommandGroup(
+            self.command,
+            PostAutonCommand(self.drive_subsystem)
+        )
+        auton.schedule()
+            
     def cube_high_taxi_auton(self):
         cube_high_taxi_auton = SequentialCommandGroup(
             ScoreCommand(self.arm_subsystem, ElevatorState.HIGH, "cube"),
             TaxiAutoCommand(self.drive_subsystem)
         )
-        cube_high_taxi_auton.schedule()
+        return cube_high_taxi_auton
+        
+    def cube_high_place_auton(self):
+        cube_high_place_auton = ScoreCommand(self.arm_subsystem, ElevatorState.HIGH, "cube")
+        return cube_high_place_auton
 
     def high_place_auton(self):
         high_place_auton = ScoreCommand(self.arm_subsystem, ElevatorState.HIGH, "cone")
-        high_place_auton.schedule()
+        return high_place_auton
+        
+    def mid_place_auton(self):
+        mid_place_auton = ScoreCommand(self.arm_subsystem, ElevatorState.MID, "cone")
+        return mid_place_auton
 
     def mid_taxi_auton(self):
         mid_taxi_auton = SequentialCommandGroup(
             ScoreCommand(self.arm_subsystem, ElevatorState.MID, "cone"),
             TaxiAutoCommand(self.drive_subsystem)
         )
-        mid_taxi_auton.schedule()
-        
+        return mid_taxi_auton
 
     def high_taxi_auton(self):
         high_taxi_auton = SequentialCommandGroup(
             ScoreCommand(self.arm_subsystem, ElevatorState.HIGH, "cone"),
             TaxiAutoCommand(self.drive_subsystem)
         )
-        high_taxi_auton.schedule()
-
+        return high_taxi_auton
 
     def taxi_auton(self):
         taxiAuton = TaxiAutoCommand(self.drive_subsystem)
-        taxiAuton.schedule()
-
+        return taxiAuton    
+    
     def charge_auton(self):
-        pitch = self.drive_train.navx.getPitch()
-        print(pitch)
-        if not self.first_pitch:
-            self.drive_train.swerveDriveAuton(-1.0, 0.0, 0.0)
-            if pitch > 7:
-                self.first_pitch = True
-        else:
-            if abs(pitch) < 5:
-                self.drive_train.swerveDriveAuton(0, 0, 0)
-                if pitch > 1:
-                    self.drive_train.swerveDriveAuton(0.3, 0, 0)
-                elif pitch < -1:
-                    self.drive_train.swerveDriveAuton(-0.3, 0, 0)
-            
+        chargeAuton = SequentialCommandGroup(
+            DriveToChargeStationCommand(self.drive_subsystem, 10),
+            BalanceOnChargeStationCommand(self.drive_subsystem, 0)
+        )
+        return chargeAuton
+        
+    def high_charge_auton(self):
+        high_charge_auton = SequentialCommandGroup(
+            ScoreCommand(self.arm_subsystem, ElevatorState.HIGH, "cone"),
+            DriveToChargeStationCommand(self.drive_subsystem, 10),
+            BalanceOnChargeStationCommand(self.drive_subsystem, 0)
+        )
+        return high_charge_auton
 
-    def post_charge_auton(self):
-        if self.timer.getFPGATimestamp() - self.start < 2:
-            self.drive_train.swerveDriveAuton(-0.3, 0, 0)
-        else:
-            self.drive_train.stop()
+    def mid_charge_auton(self):
+        mid_charge_auton = SequentialCommandGroup(
+            ScoreCommand(self.arm_subsystem, ElevatorState.MID, "cone"),
+            DriveToChargeStationCommand(self.drive_subsystem, 10),
+            BalanceOnChargeStationCommand(self.drive_subsystem, 0)
+        )
+        return mid_charge_auton
 
 
-    def timer_reset(self):
-        self.timer.reset()
+        
     
 
 

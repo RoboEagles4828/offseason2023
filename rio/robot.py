@@ -250,8 +250,6 @@ class Robot(wpilib.TimedRobot):
 
     # Auton
     def autonomousInit(self):
-        self.auton_selector.timer_reset()
-        self.auton_selector.set_start_time(self.auton_selector.timer.getFPGATimestamp())
         if not self.isSimulation():
             self.arm_controller.top_gripper_control_on()
         self.drive_train.navx.zeroYaw()
@@ -279,6 +277,7 @@ class Robot(wpilib.TimedRobot):
     def teleopInit(self):
         self.arm_controller.setToggleButtons()
         self.drive_train.reset_slew()
+        self.drive_train.unlockDrive()
         CommandScheduler.getInstance().cancelAll()
         logging.info("Entering Teleop")
         global frc_stage
