@@ -1,6 +1,20 @@
 from commands2 import SubsystemBase
 from hardware_interface.armcontroller import ArmController
 
+class ElevatorState():
+    HIGH = "high"
+    MID = "mid"
+    LOADING_STATION = "load"
+    HOME = "home"
+    
+class PivotState():
+    UP = True
+    DOWN = False
+    
+class GrabberState():
+    OPEN = True
+    CLOSED = False
+
 class ArmSubsystem(SubsystemBase):
     def __init__(self, armcontroller: ArmController):
         super().__init__()
@@ -22,6 +36,12 @@ class ArmSubsystem(SubsystemBase):
             self.armcontroller.elevator_pivot_control_on()
         else:
             self.armcontroller.elevator_pivot_control_off()
+            
+    def setGrabber(self, preset : bool):
+        if preset:
+            self.armcontroller.top_gripper_control_on()
+        else:
+            self.armcontroller.top_gripper_control_off()
         
     def getEncoderData(self):
         return self.armcontroller.getEncoderData()

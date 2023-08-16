@@ -3,7 +3,6 @@ from wpilib import Timer
 import wpimath
 from wpimath.controller import PIDController
 from hardware_interface.subsystems.drive_subsystem import DriveSubsystem
-from hardware_interface.subsystems.arm_subsystem import ArmSubsystem
 import logging
 
 # Drive time command
@@ -27,7 +26,7 @@ class DriveTimeAutoCommand(CommandBase):
         self.drive.swerve_drive(self.x, self.y, self.z, True)
         # print(f"DriveTimeAuton Runtime: {self.timer.get()}")
         
-    def end(self, interuppted):
+    def end(self, interrupted):
         self.drive.swerve_drive(0, 0, 0, True)
         self.drive.stop()
         
@@ -56,5 +55,23 @@ class TurnToAngleCommand(CommandBase):
     def execute(self):
         current_angle = self.drive.getGyroAngle180()
         self.drive.swerve_drive(0, 0, self.turn_pid.calculate(current_angle, self.target), True)
+        
+    def end(self, interrupted):
+        self.drive.swerve_drive(0, 0, 0, True)
+        self.drive.stop()
+        
+    def isFinished(self):
+        return self.turn_pid.atSetpoint()
+    
+class TaxiAutoCommand(SequentialCommandGroup):
+    def __init__(self, drive: DriveSubsystem):
+        super().__init__()
+        self.drive = drive
+        self.addRequirements(self.drive)
+        self.addCommands(
+            WaitCommand(0.5),
+            DriveTimeAutoCommand(self.drive, 3.0, (-3.5, 0, 0))
+        )
+        
     
     

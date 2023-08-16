@@ -4,6 +4,7 @@ from hardware_interface.drivetrain import DriveTrain
 from hardware_interface.subsystems.drive_subsystem import DriveSubsystem
 from hardware_interface.subsystems.arm_subsystem import ArmSubsystem
 from hardware_interface.commands.drive_commands import *
+from hardware_interface.commands.arm_commands import *
 import time
 from wpilib import Timer
 
@@ -19,9 +20,9 @@ class AutonSelector():
         self.MID_TAXI = "Mid Taxi Auton"
         self.CUBE_HIGH_TAXI = "Cube High Taxi Auton"
         self.autonChooser = wpilib.SendableChooser()
-        self.autonChooser.setDefaultOption("Taxi Auton", self.TAXI)
+        self.autonChooser.addOption("Taxi Auton", self.TAXI)
         self.autonChooser.addOption("High Place Auton", self.HIGH_PLACE)
-        self.autonChooser.addOption("High Taxi Auton", self.HIGH_TAXI)
+        self.autonChooser.setDefaultOption("High Taxi Auton", self.HIGH_TAXI)
         self.autonChooser.addOption("Cube High Taxi Auton", self.CUBE_HIGH_TAXI)
         self.autonChooser.addOption("Mid Taxi Auton", self.MID_TAXI)
 
@@ -70,88 +71,35 @@ class AutonSelector():
         self.start = time
 
     def cube_high_taxi_auton(self):
-        if 0 <= self.timer.getFPGATimestamp() - self.start < 4:
-            print(f"elevator high {self.timer.getFPGATimestamp() - self.start}")
-            self.arm_controller.elevator_high_level_on()
-        elif 4 <= self.timer.getFPGATimestamp() - self.start < 6:
-            print(f"release {self.timer.getFPGATimestamp() - self.start}")
-            self.arm_controller.top_gripper_control_off()
-        elif 6 <= self.timer.getFPGATimestamp() - self.start < 9:
-            print(f"elevator reset {self.timer.getFPGATimestamp() - self.start}")
-            self.arm_controller.elevator_high_level_off()
-        elif 9 <= self.timer.getFPGATimestamp() - self.start < 9+1.5:
-            print(f"Taxi Auton {self.timer.getFPGATimestamp() - self.start}")
-            self.drive_train.swerveDriveAuton(-0.8, 0, 0)
-        elif self.timer.getFPGATimestamp() - self.start >= 9+1.5:
-            self.drive_train.stop()
+        cube_high_taxi_auton = SequentialCommandGroup(
+            ScoreCommand(self.arm_subsystem, ElevatorState.HIGH, "cube"),
+            TaxiAutoCommand(self.drive_subsystem)
+        )
+        cube_high_taxi_auton.schedule()
 
     def high_place_auton(self):
-        if  0 <= self.timer.getFPGATimestamp() - self.start < 1:
-            print(f"roller up {self.timer.getFPGATimestamp() - self.start}")
-            self.arm_controller.arm_roller_bar.setPosition(self.arm_controller.arm_roller_bar.max)
-        elif 1 <= self.timer.getFPGATimestamp() - self.start < 5:
-            print(f"elevator high {self.timer.getFPGATimestamp() - self.start}")
-            self.arm_controller.elevator_high_level_on()
-        elif 5 <= self.timer.getFPGATimestamp() - self.start < 7:
-            print(f"release {self.timer.getFPGATimestamp() - self.start}")
-            self.arm_controller.top_gripper_control_off()
-        elif 7 <= self.timer.getFPGATimestamp() - self.start < 10:
-            print(f"elevator reset {self.timer.getFPGATimestamp() - self.start}")
-            self.arm_controller.elevator_high_level_off()
-        elif 10 <= self.timer.getFPGATimestamp() - self.start < 10.5:
-            print(f"roller down {self.timer.getFPGATimestamp() - self.start}")
-            self.arm_controller.elevator_pivot_control_off()
+        high_place_auton = ScoreCommand(self.arm_subsystem, ElevatorState.HIGH, "cone")
+        high_place_auton.schedule()
 
     def mid_taxi_auton(self):
-        if  0 <= self.timer.getFPGATimestamp() - self.start < 3:
-            self.arm_controller.elevator_mid_level_on()
-        elif 3 <= self.timer.getFPGATimestamp() - self.start < 4:
-            self.arm_controller.top_gripper_control_off()
-        elif 4 <= self.timer.getFPGATimestamp() - self.start < 7:
-            self.arm_controller.elevator_mid_level_off()
-        elif 7 <= self.timer.getFPGATimestamp() - self.start < 7+1.5:
-            print(f"Taxi Auton {self.timer.getFPGATimestamp() - self.start}")
-            self.drive_train.swerveDriveAuton(-0.8, 0, 0)
-        elif self.timer.getFPGATimestamp() - self.start >= 7+1.5:
-            self.drive_train.stop()
+        mid_taxi_auton = SequentialCommandGroup(
+            ScoreCommand(self.arm_subsystem, ElevatorState.MID, "cone"),
+            TaxiAutoCommand(self.drive_subsystem)
+        )
+        mid_taxi_auton.schedule()
         
 
     def high_taxi_auton(self):
-        if  0 <= self.timer.getFPGATimestamp() - self.start < 1:
-            print(f"roller up {self.timer.getFPGATimestamp() - self.start}")
-            self.arm_controller.arm_roller_bar.setPosition(self.arm_controller.arm_roller_bar.max)
-        elif 1 <= self.timer.getFPGATimestamp() - self.start < 5:
-            print(f"elevator high {self.timer.getFPGATimestamp() - self.start}")
-            self.arm_controller.elevator_high_level_on()
-        elif 5 <= self.timer.getFPGATimestamp() - self.start < 7:
-            print(f"release {self.timer.getFPGATimestamp() - self.start}")
-            self.arm_controller.top_gripper_control_off()
-        elif 7 <= self.timer.getFPGATimestamp() - self.start < 10:
-            print(f"elevator reset {self.timer.getFPGATimestamp() - self.start}")
-            self.arm_controller.elevator_high_level_off()
-        elif 10 <= self.timer.getFPGATimestamp() - self.start < 10.5:
-            print(f"roller down {self.timer.getFPGATimestamp() - self.start}")
-            self.arm_controller.elevator_pivot_control_off()
-        elif 10.5 <= self.timer.getFPGATimestamp() - self.start < 10.5+1.5:
-            print(f"Taxi Auton {self.timer.getFPGATimestamp() - self.start}")
-            self.drive_train.swerveDriveAuton(-0.8, 0, 0)
-        elif self.timer.getFPGATimestamp() - self.start >= 10.5+1.5:
-            self.drive_train.stop()
+        high_taxi_auton = SequentialCommandGroup(
+            ScoreCommand(self.arm_subsystem, ElevatorState.HIGH, "cone"),
+            TaxiAutoCommand(self.drive_subsystem)
+        )
+        high_taxi_auton.schedule()
 
 
     def taxi_auton(self):
-        # if self.timer.getFPGATimestamp() - self.start < 1.5:
-        #     print(f"Taxi Auton {self.timer.getFPGATimestamp() - self.start}")
-        #     self.drive_train.swerveDriveAuton(-0.8, 0, 0)
-        # elif self.timer.getFPGATimestamp() - self.start >= 1.5:
-        #     print("Taxi Auton Stop")
-        #     self.drive_train.stop()
-
-        self.command_group = SequentialCommandGroup(
-            WaitCommand(0.5),
-            DriveTimeAutoCommand(self.drive_subsystem, 3.0, (-0.8, 0, 0))
-        )
-        self.command_group.schedule()
+        taxiAuton = TaxiAutoCommand(self.drive_subsystem)
+        taxiAuton.schedule()
 
     def charge_auton(self):
         pitch = self.drive_train.navx.getPitch()

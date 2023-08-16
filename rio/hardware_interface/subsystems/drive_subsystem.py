@@ -8,9 +8,9 @@ class DriveSubsystem(SubsystemBase):
         
     def swerve_drive(self, x, y, z, field_oriented):
         if field_oriented:
-            self.drivetrain.swerveDriveAutonFieldOriented(x, y, z)
+            self.drivetrain.swerveDriveAutonFieldOriented(x/self.drivetrain.ROBOT_MAX_TRANSLATIONAL, y/self.drivetrain.ROBOT_MAX_TRANSLATIONAL, z/self.drivetrain.ROBOT_MAX_ROTATIONAL)
         else:
-            self.drivetrain.swerveDriveAuton(x, y, z)
+            self.drivetrain.swerveDriveAuton(x/self.drivetrain.ROBOT_MAX_TRANSLATIONAL, y/self.drivetrain.ROBOT_MAX_TRANSLATIONAL, z/self.drivetrain.ROBOT_MAX_ROTATIONAL)
     
     def resetGyro(self):
         self.drivetrain.navx.zeroYaw()
