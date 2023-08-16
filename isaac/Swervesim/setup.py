@@ -18,8 +18,9 @@ INSTALL_REQUIRES = [
     "redis==3.5.3", # needed by Ray on Windows
     "rl-games==1.5.2",
     "shapely",
-    "robotpy",
-    "wpilib"
+    "squaternion",
+    "robotpy==2022.4.8",
+    "wpilib==2022.4.1.6"
 ]
 
 # Installation operation

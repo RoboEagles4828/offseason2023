@@ -57,7 +57,18 @@ class InverseKinematics():
         self.MAX_VEL = 18000
         self.MAX_ACCEL = 14000
         
+        self.velocityConstant = 0.5
+        self.accelerationConstant = 0.25
+        
+        self.real_mm_accel = (8.0 - 2.0) / self.accelerationConstant / self.velocityCoefficient
+        self.real_mm_vel = 2.0 / self.velocityConstant / self.velocityCoefficient
+        
         self.motion_magic = MotionMagic(self.ticksToRadians(self.MAX_ACCEL), self.ticksToRadians(self.MAX_VEL))
+        
+        self.new_motion_magic_1 = MotionMagic(self.ticksToRadians(self.real_mm_accel, "velocity") * 10, self.ticksToRadians(self.real_mm_vel, "velocity"))
+        self.new_motion_magic_2 = MotionMagic(self.ticksToRadians(self.real_mm_accel, "velocity") * 10, self.ticksToRadians(self.real_mm_vel, "velocity"))
+        self.new_motion_magic_3 = MotionMagic(self.ticksToRadians(self.real_mm_accel, "velocity") * 10, self.ticksToRadians(self.real_mm_vel, "velocity"))
+        self.new_motion_magic_4 = MotionMagic(self.ticksToRadians(self.real_mm_accel, "velocity") * 10, self.ticksToRadians(self.real_mm_vel, "velocity"))
     
     def metersToRadians(self, meters):
         wheel_rad = 0.0508
@@ -86,7 +97,26 @@ class InverseKinematics():
         rear_left_state = SwerveModuleState.optimize(rear_left_state, module_angles[2])
         rear_right_state = SwerveModuleState.optimize(rear_right_state, module_angles[3])
         
-        return [self.metersToRadians(front_left_state.speed), self.metersToRadians(front_right_state.speed), self.metersToRadians(rear_left_state.speed), self.metersToRadians(rear_right_state.speed), front_left_state.angle.radians(), front_right_state.angle.radians(), rear_left_state.angle.radians(), rear_right_state.angle.radians()]
+        front_left_speed = self.metersToRadians(front_left_state.speed)
+        front_right_speed = self.metersToRadians(front_right_state.speed)
+        rear_left_speed = self.metersToRadians(rear_left_state.speed)
+        rear_right_speed = self.metersToRadians(rear_right_state.speed)
+        
+        front_left_angle = self.new_motion_magic_1.getNextVelocity(front_left_state.angle.radians(), module_angles[0])
+        front_right_angle = self.new_motion_magic_2.getNextVelocity(front_right_state.angle.radians(), module_angles[1])
+        rear_left_angle = self.new_motion_magic_3.getNextVelocity(rear_left_state.angle.radians(), module_angles[2])
+        rear_right_angle = self.new_motion_magic_4.getNextVelocity(rear_right_state.angle.radians(), module_angles[3])
+        
+        return [
+            front_left_speed,
+            front_right_speed,
+            rear_left_speed,
+            rear_right_speed,
+            front_left_angle,
+            front_right_angle,
+            rear_left_angle,
+            rear_right_angle
+        ]
     
     def getArmJointStates(self, names: list, target_positions: list, current_positions: list):
         vel = [0.0]*len(names)
