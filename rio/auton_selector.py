@@ -22,8 +22,8 @@ class AutonSelector():
         self.autonChooser = wpilib.SendableChooser()
         self.autonChooser.addOption("Taxi Auton", self.TAXI)
         self.autonChooser.addOption("High Place Auton", self.HIGH_PLACE)
-        self.autonChooser.setDefaultOption("High Taxi Auton", self.HIGH_TAXI)
-        self.autonChooser.addOption("Cube High Taxi Auton", self.CUBE_HIGH_TAXI)
+        self.autonChooser.addOption("High Taxi Auton", self.HIGH_TAXI)
+        self.autonChooser.setDefaultOption("Cube High Taxi Auton", self.CUBE_HIGH_TAXI)
         self.autonChooser.addOption("Mid Taxi Auton", self.MID_TAXI)
 
         self.selected = self.autonChooser.getSelected()
@@ -73,7 +73,7 @@ class AutonSelector():
     def cube_high_taxi_auton(self):
         cube_high_taxi_auton = SequentialCommandGroup(
             ScoreCommand(self.arm_subsystem, ElevatorState.HIGH, "cube"),
-            TurnToAngleCommand(self.drive_subsystem, 90),
+            TaxiAutoCommand(self.drive_subsystem)
         )
         cube_high_taxi_auton.schedule()
 
