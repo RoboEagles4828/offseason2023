@@ -470,6 +470,12 @@ class DriveTrain():
         self.whine_remove_selector = wpilib.SendableChooser()
         self.whine_remove_selector.setDefaultOption("OFF", False)
         self.whine_remove_selector.addOption("ON", True)
+        
+        self.angle_source_selector = wpilib.SendableChooser()
+        self.angle_source_selector.addOption("Angle", "angle")
+        self.angle_source_selector.addOption("Yaw", "yaw")
+        self.angle_source_selector.setDefaultOption("Normal", "normal")
+        
 
         self.slow = False
 
@@ -557,6 +563,7 @@ class DriveTrain():
             return SwerveModuleState(desiredState.speed, desiredState.angle)
 
     def swerveDrive(self, joystick: Joystick):
+        angle_source = self.angle_source_selector.getSelected()
         self.ROBOT_MAX_TRANSLATIONAL = self.profile_selector.getSelected()[0]
         self.ROBOT_MAX_ROTATIONAL = self.profile_selector.getSelected()[1]
         self.MODULE_MAX_SPEED = self.profile_selector.getSelected()[0]
@@ -605,7 +612,14 @@ class DriveTrain():
 
         if self.field_oriented_value and self.auto_turn_value == "off":            
             # field  oriented
-            self.speeds = ChassisSpeeds.fromFieldRelativeSpeeds(linearX, linearY, angularZ, self.navx.getRotation2d().__mul__(-1))
+            navx_value = Rotation2d()
+            if angle_source == "angle":
+                navx_value = Rotation2d.fromDegrees(self.navx.getAngle()).__mul__(-1)
+            elif angle_source == "yaw":
+                navx_value = Rotation2d.fromDegrees(self.navx.getYaw()).__mul__(-1)
+            elif angle_source == "normal":
+                navx_value = self.navx.getRotation2d().__mul__(-1)
+            self.speeds = ChassisSpeeds.fromFieldRelativeSpeeds(linearX, linearY, angularZ, navx_value)
             #if self.last_print != f"NavX: {self.navx.getRotation2d().degrees()*-1} linX: {round(self.speeds.vx, 2)} linY: {round(self.speeds.vy, 2)} angZ: {round(self.speeds.omega, 2)} MoveScaleX: {round(self.move_scale_x, 2)} MoveScaleY: {round(self.move_scale_y, 2)} TurnScale: {round(self.turn_scale, 2)}":
             #logging.info(f"NavX: {self.navx.getRotation2d().degrees()*-1} linX: {round(self.speeds.vx, 2)} linY: {round(self.speeds.vy, 2)} angZ: {round(self.speeds.omega, 2)} MoveScaleX: {round(self.move_scale_x, 2)} MoveScaleY: {round(self.move_scale_y, 2)} TurnScale: {round(self.turn_scale, 2)}")
                 #self.last_print = f"NavX: {self.navx.getRotation2d().degrees()*-1} linX: {round(self.speeds.vx, 2)} linY: {round(self.speeds.vy, 2)} angZ: {round(self.speeds.omega, 2)} MoveScaleX: {round(self.move_scale_x, 2)} MoveScaleY: {round(self.move_scale_y, 2)} TurnScale: {round(self.turn_scale, 2)}"
