@@ -28,6 +28,9 @@
 
 
 def initialize_task(config, env, init_sim=True):
+    # from swervesim.tasks.swerve import Swerve_Task
+    from .config_utils.sim_config import SimConfig
+    sim_config = SimConfig(config)
     from swervesim.tasks.swerve import Swerve_Task
     from swervesim.tasks.swerve_with_kinematics import Swerve_Kinematics_Task
     from swervesim.tasks.swerve_field import Swerve_Field_Task
@@ -43,9 +46,6 @@ def initialize_task(config, env, init_sim=True):
         "SwerveCS": Swerve_Charge_Station_Task,
 
     }
-
-    from .config_utils.sim_config import SimConfig
-    sim_config = SimConfig(config)
 
     cfg = sim_config.config
     task = task_map[cfg["task_name"]](

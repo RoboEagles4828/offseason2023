@@ -30,7 +30,7 @@ from typing import Optional
 import numpy as np
 import torch
 import omni.kit.commands
-from omni.isaac.urdf import _urdf
+# from omni.isaac.urdf import _urdf
 from omni.isaac.core.prims import RigidPrimView
 from omni.isaac.core.robots.robot import Robot
 from omni.isaac.core.utils.nucleus import get_assets_root_path

@@ -121,6 +121,7 @@ train:
       device: ${....rl_device}
       device_name: ${....rl_device}
       env_name: rlgpu
+      multi_gpu: ${....multi_gpu}
       ppo: true
       mixed_precision: false
       normalize_input: true
@@ -160,11 +161,14 @@ pipeline: gpu
 sim_device: gpu
 device_id: 0
 rl_device: cuda:0
+multi_gpu: false
 num_threads: 4
 solver_type: 1
 test: false
 checkpoint: ''
-headless: false
+headless: true
+enable_livestream: false
+mt_timeout: 30
 wandb_activate: false
 wandb_group: ''
 wandb_name: ${train.params.config.name}
