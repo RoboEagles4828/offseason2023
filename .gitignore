@@ -10,3 +10,5 @@ view_tmp.rviz
 src/edna_description/urdf/edna.urdf
 .env
 .rsyncmetadataisaac/Swervesim/swervesim/runs/SwerveK/summaries
+add
+isaac/Swervesim/swervesim/runs/SwerveK/summaries/
