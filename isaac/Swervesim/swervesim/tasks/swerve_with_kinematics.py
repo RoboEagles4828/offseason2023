@@ -30,6 +30,7 @@ from swervesim.tasks.base.rl_task import RLTask
 from swervesim.robots.articulations.swerve import Swerve
 from swervesim.robots.articulations.views.swerve_view import SwerveView
 from swervesim.tasks.utils.usd_utils import set_drive
+from swervesim.inverse_kinematics.inverse_kinematics import InverseKinematics
 from omni.isaac.core.objects import DynamicSphere
 
 
@@ -73,7 +74,7 @@ class Swerve_Kinematics_Task(RLTask):
         self._swerve_translation = torch.tensor([0.0, 0.0, 0.0])
         self._env_spacing = self._task_cfg["env"]["envSpacing"]
         # Number of data points the policy is recieving
-        self._num_observations = 29
+        self._num_observations = 13
         # Number of data points the policy is producing
         self._num_actions = 8
         # starting position of the swerve module
@@ -86,6 +87,8 @@ class Swerve_Kinematics_Task(RLTask):
         self.target_positions = torch.zeros(
             (self._num_envs, 3), device=self._device, dtype=torch.float32)  # xyx of target position
         self.target_positions[:, 1] = 1
+        
+        self.inverse_kinematics = InverseKinematics()
 
         return
 
@@ -98,10 +101,10 @@ class Swerve_Kinematics_Task(RLTask):
         super().set_up_scene(scene)
         # Sets up articluation controller for swerve
         self._swerve = SwerveView(
-            prim_paths_expr="/World/envs/.*/swerve", name="swerveview")
+            prim_paths_expr="/World/envs/.*/edna", name="swerveview")
         # Allows for position tracking of targets
         self._balls = RigidPrimView(
-            prim_paths_expr="/World/envs/.*/ball", name="targets_view", reset_xform_properties=False)
+            prim_paths_expr="/World/envs/.*/cube", name="targets_view", reset_xform_properties=False)
         # Adds everything to the scene
         scene.add(self._swerve)
         for axle in self._swerve._axle:
@@ -116,25 +119,25 @@ class Swerve_Kinematics_Task(RLTask):
 
     def get_swerve(self):
         # Adds swerve to env_0 and adds articulation controller
-        swerve = Swerve(self.default_zero_env_path + "/swerve",
-                        "swerve", self._swerve_translation)
-        self._sim_config.apply_articulation_settings("swerve", get_prim_at_path(
-            swerve.prim_path), self._sim_config.parse_actor_config("swerve"))
+        swerve = Swerve(self.default_zero_env_path + "/edna",
+                        "edna", self._swerve_translation)
+        self._sim_config.apply_articulation_settings("edna", get_prim_at_path(
+            swerve.prim_path), self._sim_config.parse_actor_config("edna"))
 
     def get_target(self):
         # Adds a red ball as target
         radius = 0.1  # meters
         color = torch.tensor([0, 0, 1])
         ball = DynamicSphere(
-            prim_path=self.default_zero_env_path + "/ball",
+            prim_path=self.default_zero_env_path + "/cube",
             translation=self._ball_position,
             name="target_0",
             radius=radius,
             color=color,
         )
-        self._sim_config.apply_articulation_settings("ball", get_prim_at_path(
-            ball.prim_path), self._sim_config.parse_actor_config("ball"))
-        ball.set_collision_enabled(False)
+        self._sim_config.apply_articulation_settings("cube", get_prim_at_path(
+            ball.prim_path), self._sim_config.parse_actor_config("cube"))
+        ball.set_collision_enabled(True)
 
     def get_observations(self) -> dict:
         # Gets various positions and velocties to observations
@@ -151,8 +154,6 @@ class Swerve_Kinematics_Task(RLTask):
         self.obs_buf[..., 3:7] = root_quats
         self.obs_buf[..., 7:10] = root_linvels / 2
         self.obs_buf[..., 10:13] = root_angvels / math.pi
-        self.obs_buf[..., 13:21] = self.joint_velocities
-        self.obs_buf[..., 21:29] = self.joint_positions
         # Should not exceed observation ssize declared earlier
         # An observation is created for each swerve in each environment
         observations = {
@@ -189,13 +190,13 @@ class Swerve_Kinematics_Task(RLTask):
             action = []
 
         #    Compute Wheel Velocities and Positions
-            a = linear_x_cmd[i] - angular_cmd[i] * x_offset / 2
+            # a = linear_x_cmd[i] - angular_cmd[i] * x_offset / 2
 
-            b = linear_x_cmd[i] + angular_cmd[i] * x_offset / 2
+            # b = linear_x_cmd[i] + angular_cmd[i] * x_offset / 2
 
-            c = linear_y_cmd[i] - angular_cmd[i] * x_offset / 2
+            # c = linear_y_cmd[i] - angular_cmd[i] * x_offset / 2
 
-            d = linear_y_cmd[i] + angular_cmd[i] * x_offset / 2
+            # d = linear_y_cmd[i] + angular_cmd[i] * x_offset / 2
 
         #   get current wheel positions
             
@@ -207,55 +208,70 @@ class Swerve_Kinematics_Task(RLTask):
                 (self._swerve.get_joint_positions()[i][2]))
             rear_right_current_pos = (
                 (self._swerve.get_joint_positions()[i][3]))
+            
+            module_angles = [front_left_current_pos, front_right_current_pos, rear_left_current_pos, rear_right_current_pos]
+            
+            velocity_cmds = self.inverse_kinematics.getDriveJointStates(linear_x_cmd[i], linear_y_cmd[i], angular_cmd[i], module_angles)
  
-            front_left_velocity = (
-                math.sqrt(math.pow(b, 2) + math.pow(d, 2)))*(1/(radius*math.pi))
-            front_right_velocity = (
-                math.sqrt(math.pow(b, 2) + math.pow(c, 2)))*(1/(radius*math.pi))
-            rear_left_velocity = (
-                math.sqrt(math.pow(a, 2) + math.pow(d, 2)))*(1/(radius*math.pi))
-            rear_right_velocity = (
-                math.sqrt(math.pow(a, 2) + math.pow(c, 2)))*(1/(radius*math.pi))
+            front_left_velocity = velocity_cmds[0]
+            front_right_velocity = velocity_cmds[1]
+            rear_left_velocity = velocity_cmds[2]
+            rear_right_velocity = velocity_cmds[3]
 
-            front_left_position = math.atan2(b, d)
-            front_right_position = math.atan2(b, c)
-            rear_left_position = math.atan2(a, d)
-            rear_right_position = math.atan2(a, c)
+            front_left_position = velocity_cmds[4]
+            front_right_position = velocity_cmds[5]
+            rear_left_position = velocity_cmds[6]
+            rear_right_position = velocity_cmds[7]
 
 
         #   optimization
             
-            front_left_position, front_left_velocity = simplifiy_angle(
-                front_left_current_pos, front_left_position, front_left_velocity)
-            front_right_position, front_right_velocity = simplifiy_angle(
-                front_right_current_pos, front_right_position, front_right_velocity)
-            rear_left_position, rear_left_velocity = simplifiy_angle(
-                rear_left_current_pos, rear_left_position, rear_left_velocity)
-            rear_right_position, rear_right_velocity = simplifiy_angle(
-                rear_right_current_pos, rear_right_position, rear_right_velocity)
+            # front_left_position, front_left_velocity = simplifiy_angle(
+            #     front_left_current_pos, front_left_position, front_left_velocity)
+            # front_right_position, front_right_velocity = simplifiy_angle(
+            #     front_right_current_pos, front_right_position, front_right_velocity)
+            # rear_left_position, rear_left_velocity = simplifiy_angle(
+            #     rear_left_current_pos, rear_left_position, rear_left_velocity)
+            # rear_right_position, rear_right_velocity = simplifiy_angle(
+            #     rear_right_current_pos, rear_right_position, rear_right_velocity)
 
         #   Set Wheel Positions
         #   Has a 1 degree tolerance. Turns clockwise if less than, counter clockwise if greater than
-            if (i == 1):
-                print(f"front_left_position:{front_left_position}")
-                print(f"rear_left_position:{rear_left_position}")
-            action.append(calculate_turn_velocity(front_left_current_pos, front_left_position))
-            action.append(calculate_turn_velocity(front_right_current_pos, front_right_position))
-            action.append(calculate_turn_velocity(rear_left_current_pos, rear_left_position))
-            action.append(calculate_turn_velocity(rear_right_current_pos, rear_right_position))
+            # if (i == 1):
+            #     print(f"front_left_position:{front_left_position}")
+            #     print(f"rear_left_position:{rear_left_position}")
+            # action.append(calculate_turn_velocity(front_left_current_pos, front_left_position))
+            # action.append(calculate_turn_velocity(front_right_current_pos, front_right_position))
+            # action.append(calculate_turn_velocity(rear_left_current_pos, rear_left_position))
+            # action.append(calculate_turn_velocity(rear_right_current_pos, rear_right_position))
+            action.append(front_left_position)
+            action.append(front_right_position)
+            action.append(rear_left_position)
+            action.append(rear_right_position)
             
-            sortlist=[front_left_velocity, front_right_velocity, rear_left_velocity, rear_right_velocity]
-            maxs = abs(max(sortlist, key=abs))
-            if (maxs < 0.5):
-                for num in sortlist:
-                    action.append(0.0)
-            else:
-                for num in sortlist:
-                    if (maxs != 0 and abs(maxs) > 10):
-                        # scales down velocty to max of 10 radians
-                        num = (num/abs(maxs))*10
-                        # print(num)
-                    action.append(num)
+            # sortlist=[front_left_velocity, front_right_velocity, rear_left_velocity, rear_right_velocity]
+            # maxs = abs(max(sortlist, key=abs))
+            # if (maxs < 0.5):
+            #     for num in sortlist:
+            #         action.append(0.0)
+            # else:
+            #     for num in sortlist:
+            #         if (maxs != 0 and abs(maxs) > 10):
+            #             # scales down velocty to max of 10 radians
+            #             num = (num/abs(maxs))*10
+            #             # print(num)
+            #         action.append(num)
+            action.append(front_left_velocity)
+            action.append(front_right_velocity)
+            action.append(rear_left_velocity)
+            action.append(rear_right_velocity)
+            action.append(0.0)
+            action.append(0.0)
+            action.append(0.0)
+            action.append(0.0)
+            action.append(0.0)
+            action.append(0.0)
+            action.append(0.0)
             # print(len(action))
             actionlist.append(action)
         # Sets robots velocities
@@ -314,7 +330,7 @@ class Swerve_Kinematics_Task(RLTask):
             self._num_envs, self.num_actions, dtype=torch.float, device=self._device, requires_grad=False
         )
         self.last_dof_vel = torch.zeros(
-            (self._num_envs, 12), dtype=torch.float, device=self._device, requires_grad=False)
+            (self._num_envs, 8), dtype=torch.float, device=self._device, requires_grad=False)
         self.last_actions = torch.zeros(
             self._num_envs, self.num_actions, dtype=torch.float, device=self._device, requires_grad=False)
 
@@ -346,7 +362,7 @@ class Swerve_Kinematics_Task(RLTask):
         target_dist = torch.sqrt(torch.square(
             self.target_positions - root_positions).sum(-1))
 
-        pos_reward = 1.0 / (1.0 + 2.5 * target_dist * target_dist)
+        pos_reward = 1.0 / (1.0 + (1/0.5)*(target_dist-0.5))
         self.target_dist = target_dist
         self.root_positions = root_positions
         self.root_position_reward = self.rew_buf
@@ -362,6 +378,7 @@ class Swerve_Kinematics_Task(RLTask):
         ones = torch.ones_like(self.reset_buf)
         die = torch.zeros_like(self.reset_buf)
         die = torch.where(self.target_dist > 20.0, ones, die)
+        # die = torch.where(self.target_dist < 0.5, ones, die)
         die = torch.where(self.root_positions[..., 2] > 0.5, ones, die)
 
         # resets due to episode length

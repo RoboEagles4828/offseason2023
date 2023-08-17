@@ -146,6 +146,15 @@ class BaseSampleExtension(omni.ext.IExt):
                         }
                         self._buttons["Clear"] = btn_builder(**dict)
                         self._buttons["Clear"].enabled = True
+                        dict = {
+                            "label": "Load Game Piece",
+                            "type": "button",
+                            "text": "Game Piece",
+                            "tooltip": "Populate the substation with game pieces",
+                            "on_clicked_fn": self._on_load_game_piece,
+                        }
+                        self._buttons["Load Game Piece"] = btn_builder(**dict)
+                        self._buttons["Load Game Piece"].enabled = True
         return
 
     def _set_button_tooltip(self, button_name, tool_tip):
@@ -165,6 +174,18 @@ class BaseSampleExtension(omni.ext.IExt):
         asyncio.ensure_future(_on_load_world_async())
         return
 
+
+    def _on_load_game_piece(self):
+        async def _on_load_game_piece_async():
+            await self._sample.load_game_piece_async()
+            await omni.kit.app.get_app().next_update_async()
+            # self._sample._world.add_stage_callback("stage_event_2", self.on_stage_event)
+            # self.post_load_game_piece_button_event()
+            # self._sample._world.add_timeline_callback("stop_reset_event_2", self._reset_on_stop_event)
+
+        asyncio.ensure_future(_on_load_game_piece_async())
+        return
+
     def _on_reset(self):
         async def _on_reset_async():
             await self._sample.reset_async()
@@ -182,6 +203,10 @@ class BaseSampleExtension(omni.ext.IExt):
             self._buttons["Load World"].enabled = True
 
         asyncio.ensure_future(_on_clear_async())
+        return
+    
+    @abstractmethod
+    def post_load_game_piece_button_event(self):
         return
 
     @abstractmethod

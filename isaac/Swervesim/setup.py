@@ -12,12 +12,15 @@ compileall.compile_dir('swervesim')
 
 # Minimum dependencies required prior to installation
 INSTALL_REQUIRES = [
-    "protobuf==3.20.1",
+    "protobuf==3.20.2",
     "omegaconf==2.1.1",
     "hydra-core==1.1.1",
     "redis==3.5.3", # needed by Ray on Windows
-    "rl-games==1.5.2",
-    "shapely"
+    "rl-games==1.6.0",
+    "shapely",
+    "squaternion",
+    "robotpy==2022.4.8",
+    "wpilib==2022.4.1.6"
 ]
 
 # Installation operation

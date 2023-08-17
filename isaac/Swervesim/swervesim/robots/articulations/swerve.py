@@ -30,7 +30,7 @@ from typing import Optional
 import numpy as np
 import torch
 import omni.kit.commands
-from omni.isaac.urdf import _urdf
+# from omni.isaac.urdf import _urdf
 from omni.isaac.core.prims import RigidPrimView
 from omni.isaac.core.robots.robot import Robot
 from omni.isaac.core.utils.nucleus import get_assets_root_path
@@ -49,7 +49,7 @@ class Swerve(Robot):
         #self.prim_path = prim_path
         file_path = os.path.abspath(__file__)
         project_root_path = os.path.abspath(os.path.join(file_path, "../../../../../../"))
-        root_path= os.path.join(project_root_path, "isaac/assets/swerve/swerve.usd")
+        root_path= os.path.join(project_root_path, "isaac/assets/edna/edna.usd")
         print(str(root_path))
         print(prim_path)
         self._usd_path = root_path 

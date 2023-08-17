@@ -48,7 +48,8 @@
             <collision>
                 <origin xyz="0 0 0" rpy="${pi / 2} 0 0"/>
                 <geometry>
-                    <cylinder  length="${wheel_length}" radius="${wheel_radius}"/>
+                    <cylinder length="${wheel_length}" radius="${wheel_radius}"/>
+                    <!-- <mesh filename="package://edna_description/meshes/SwerveWheel.stl" scale="0.001 0.001 0.001" /> -->
                 </geometry>
             </collision>
             <xacro:inertial_cylinder mass="${wheel_mass}" radius="${wheel_radius}" length="${wheel_length}" >

@@ -98,7 +98,12 @@ robotpy[ctre] \
 robotpy[all] \
 robotpy[commands2] \
 robotpy[navx] \
-wpilib==2023.4.2.0  
+wpilib==2023.4.2.0 
+
+######################
+# Install Git Extras #
+######################
+RUN sudo apt-get update && sudo apt-get install -y git-extras && rm -rf /var/lib/apt/lists/* && apt-get clean
 
 ######################
 # Docker Permissions #

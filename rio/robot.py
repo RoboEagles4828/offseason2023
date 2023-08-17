@@ -1,9 +1,11 @@
 from hardware_interface.drivetrain import DriveTrain
 from hardware_interface.joystick import Joystick
 from hardware_interface.armcontroller import ArmController
+from commands2 import *
 import wpilib
 from wpilib.shuffleboard import Shuffleboard
 from wpilib.shuffleboard import SuppliedFloatValueWidget
+from hardware_interface.commands.drive_commands import *
 from auton_selector import AutonSelector
 import time
 from dds.dds import DDS_Publisher, DDS_Subscriber
@@ -23,6 +25,7 @@ arm_controller : ArmController = None
 drive_train : DriveTrain = None
 dashboard_data_list = list()
 dashboard_data_return = dict()
+navx_sim_data : list = None
 frc_stage = "DISABLED"
 fms_attached = False
 stop_threads = False
@@ -74,7 +77,7 @@ def threadLoop(name, dds, action):
     global frc_stage
     try:
         while stop_threads == False:
-            if (frc_stage == 'AUTON' and name != "joystick") or (name in ["encoder", "stage-broadcaster", "dashboard", "dashboard_sub", "service"]) or (frc_stage == 'TELEOP'):
+            if (frc_stage == 'AUTON' and name != "joystick") or (name in ["encoder", "stage-broadcaster", "dashboard", "dashboard_sub", "service", "imu"]) or (frc_stage == 'TELEOP'):
                 action(dds)
             time.sleep(20/1000)
     except Exception as e:
@@ -98,6 +101,8 @@ def startThread(name) -> threading.Thread | None:
         thread = threading.Thread(target=dashboardSubThread, daemon=True)
     elif name == "service":
         thread = threading.Thread(target=serviceThread, daemon=True)
+    elif name == "imu":
+        thread = threading.Thread(target=imuThread, daemon=True)
     
     thread.start()
     return thread
@@ -140,6 +145,20 @@ def encoderAction(publisher):
         data['velocity'] += arm_data['velocity']
 
     publisher.write(data)
+############################################
+
+################## SERVICE ##################
+SERVICE_PARTICIPANT_NAME = "ROS2_PARTICIPANT_LIB::service"
+SERVICE_WRITER_NAME = "service_pub::service_writer"
+
+def serviceThread():
+    service_publisher = initDDS(DDS_Publisher, SERVICE_PARTICIPANT_NAME, SERVICE_WRITER_NAME)
+    threadLoop('service', service_publisher, serviceAction)
+
+def serviceAction(publisher : DDS_Publisher):
+    temp_service = True
+    
+    publisher.write({ "data": temp_service })
 ############################################
 
 ################## STAGE ##################
@@ -206,6 +225,37 @@ def dashboardSubAction(subscriber : DDS_Subscriber):
             }
 ############################################   
 
+################## IMU #####################   
+IMU_PARTICIPANT_NAME = "ROS2_PARTICIPANT_LIB::imu"
+IMU_READER_NAME = "imu_subscriber::imu_reader"
+
+def imuThread():
+    imu_subscriber = initDDS(DDS_Subscriber, IMU_PARTICIPANT_NAME, IMU_READER_NAME)
+    threadLoop("imu", imu_subscriber, imuAction)
+    
+def imuAction(subscriber):
+    data: dict = subscriber.read()
+    if data is not None:
+        
+        arr = data["data"].split("|")
+        w = float(arr[0])
+        x = float(arr[1])
+        y = float(arr[2])
+        z = float(arr[3])
+        angular_velocity_x = float(arr[4])
+        angular_velocity_y = float(arr[5])
+        angular_velocity_z = float(arr[6])
+        linear_acceleration_x = float(arr[7])
+        linear_acceleration_y = float(arr[8])
+        linear_acceleration_z = float(arr[9])
+        global navx_sim_data
+        navx_sim_data = [
+            w, x, y, z, 
+            angular_velocity_x, angular_velocity_y, angular_velocity_z, 
+            linear_acceleration_x, linear_acceleration_y, linear_acceleration_z
+        ]
+############################################
+
 class Robot(wpilib.TimedRobot):
     def robotInit(self):
         self.use_threading = True
@@ -219,19 +269,25 @@ class Robot(wpilib.TimedRobot):
             stop_threads = False
             if ENABLE_ENCODER: self.threads.append({"name": "encoder", "thread": startThread("encoder") })
             if ENABLE_STAGE_BROADCASTER: self.threads.append({"name": "stage-broadcaster", "thread": startThread("stage-broadcaster") })
-            if ENABLE_DASHBOARD: 
+            if ENABLE_DASHBOARD:
                 self.threads.append({"name": "dashboard", "thread": startThread("dashboard") })
-                self.threads.append({"name": "dashboard_sub", "thread": startThread("dashboard_sub") })
+                self.threads.append({"name": "dashboard_sub", "thread": startThread("dashboard_sub") })            
+            self.threads.append({"name": "service", "thread": startThread("service") })
+            self.threads.append({"name": "imu", "thread": startThread("imu") })
+            
         else:
             self.encoder_publisher = DDS_Publisher(xml_path, ENCODER_PARTICIPANT_NAME, ENCODER_WRITER_NAME)
             self.stage_publisher = DDS_Publisher(xml_path, STAGE_PARTICIPANT_NAME, STAGE_WRITER_NAME)
             self.dashboard_publisher = DDS_Publisher(xml_path, DASHBOARD_PARTICIPANT_NAME, DASHBOARD_WRITER_NAME)
             self.dashboard_subscriber = DDS_Subscriber(xml_path, DASHBOARD_SUB, DASHBOARD_READER)
+            self.service_publisher = DDS_Publisher(xml_path, SERVICE_PARTICIPANT_NAME, SERVICE_WRITER_NAME)
+            self.imu_subscriber = DDS_Subscriber(xml_path, IMU_PARTICIPANT_NAME, IMU_READER_NAME)
         
         self.arm_controller = initArmController()
         self.drive_train = initDriveTrain()
         self.nt = initNetworkTable()
-        self.joystick = Joystick("ps4")
+        self.drive_train.is_sim = self.isSimulation()
+        self.joystick = Joystick("xbox")
         self.auton_selector = AutonSelector(self.arm_controller, self.drive_train)
         self.joystick_selector = wpilib.SendableChooser()
         self.joystick_selector.setDefaultOption("XBOX", "xbox")
@@ -282,24 +338,23 @@ class Robot(wpilib.TimedRobot):
             float(self.arm_controller.elevator.getPosition()),
             float(wpilib.RobotController.getBatteryVoltage()),
         )
+        if navx_sim_data is not None:
+            self.drive_train.navx_sim.update(*navx_sim_data)
 
 
     # Auton
     def autonomousInit(self):
-        self.auton_selector.timer_reset()
-        self.auton_selector.set_start_time(self.auton_selector.timer.getFPGATimestamp())
-        self.arm_controller.top_gripper_control_on()
+        if not self.isSimulation():
+            self.arm_controller.top_gripper_control_on()
         self.drive_train.navx.zeroYaw()
+        self.auton_selector.run()
         logging.info("Entering Auton")
         global frc_stage
         frc_stage = "AUTON"
         
 
     def autonomousPeriodic(self):
-        if self.auton:
-            self.auton_selector.run(auton=self.auton)
-        else:
-            self.auton_selector.run()
+        CommandScheduler.getInstance().run()
         global fms_attached
         fms_attached = wpilib.DriverStation.isFMSAttached()
         if self.use_threading:
@@ -317,6 +372,8 @@ class Robot(wpilib.TimedRobot):
     def teleopInit(self):
         self.arm_controller.setToggleButtons()
         self.drive_train.reset_slew()
+        self.drive_train.unlockDrive()
+        CommandScheduler.getInstance().cancelAll()
         logging.info("Entering Teleop")
         global frc_stage
         frc_stage = "TELEOP"
@@ -327,6 +384,16 @@ class Robot(wpilib.TimedRobot):
         else:
             self.drive_train.swerveDrive(self.joystick)
         self.arm_controller.setArm(self.joystick)
+        load_cmd = TurnToAngleCommand(self.auton_selector.drive_subsystem, 0, False, (self.drive_train.linX, self.drive_train.linY))
+        score_cmd = TurnToAngleCommand(self.auton_selector.drive_subsystem, 180, False, (self.drive_train.linX, self.drive_train.linY))
+        if self.drive_train.field_oriented_value and self.drive_train.auto_turn_value == "load":
+            load_cmd.schedule()
+            CommandScheduler.getInstance().run()
+        elif self.drive_train.field_oriented_value and self.drive_train.auto_turn_value == "score":
+            score_cmd.schedule()
+            CommandScheduler.getInstance().run()
+        else:
+            CommandScheduler.getInstance().cancelAll()
         global fms_attached
         fms_attached = wpilib.DriverStation.isFMSAttached()
         if self.use_threading:
@@ -346,6 +413,8 @@ class Robot(wpilib.TimedRobot):
         stageBroadcasterAction(self.stage_publisher)
         dashboardAction(self.dashboard_publisher)
         dashboardSubAction(self.dashboard_subscriber)
+        serviceAction(self.service_publisher)
+        imuAction(self.imu_subscriber)
         
     def stopThreads(self):
         global stop_threads
