@@ -49,6 +49,8 @@ class InverseKinematics():
         self.rear_left_location = self.module_config["rear_left"]["location"]
         self.rear_right_location = self.module_config["rear_right"]["location"]
         self.ROBOT_MAX_TRANSLATIONAL = 5.0
+        self.ROBOT_MAX_ROTATIONAL = 5.0
+        self.MODULE_MAX_SPEED = 5.0
         self.kinematics = SwerveDrive4Kinematics(self.front_left_location, self.front_right_location, self.rear_left_location, self.rear_right_location)
         
         self.positionCoefficient = 2.0 * math.pi / 2048.0
@@ -85,7 +87,7 @@ class InverseKinematics():
     def getDriveJointStates(self, x, y, z, module_angles: list):
         self.speeds = ChassisSpeeds(x, y, z)
         module_states = self.kinematics.toSwerveModuleStates(self.speeds)      
-        self.kinematics.desaturateWheelSpeeds(module_states, self.ROBOT_MAX_TRANSLATIONAL)
+        self.kinematics.desaturateWheelSpeeds(module_states, self.speeds, self.MODULE_MAX_SPEED, self.ROBOT_MAX_TRANSLATIONAL, self.ROBOT_MAX_ROTATIONAL)
         
         front_left_state = module_states[0]
         front_right_state = module_states[1]
