@@ -58,7 +58,7 @@ class Swerve_Kinematics_Task(RLTask):
         self._task_cfg = sim_config.task_config
 
         # limits max velocity of wheels and axles
-        self.velocity_limit = 10
+        self.velocity_limit = 0.5
 
         self.dt = 1 / 60
         self.max_episode_length_s = self._task_cfg["env"]["episodeLength_s"]
@@ -76,7 +76,7 @@ class Swerve_Kinematics_Task(RLTask):
         # Number of data points the policy is recieving
         self._num_observations = 13
         # Number of data points the policy is producing
-        self._num_actions = 8
+        self._num_actions = 10
         # starting position of the swerve module
         self.swerve_position = torch.tensor([0, 0, 0])
         # starting position of the target
@@ -141,10 +141,13 @@ class Swerve_Kinematics_Task(RLTask):
 
     def get_observations(self) -> dict:
         # Gets various positions and velocties to observations
+        
         self.root_pos, self.root_rot = self._swerve.get_world_poses(
             clone=False)
         self.joint_velocities = self._swerve.get_joint_velocities()
+        # print(self.joint_velocities)
         self.joint_positions = self._swerve.get_joint_positions()
+        # print(self.joint_positions)
         self.root_velocities = self._swerve.get_velocities(clone=False)
         root_positions = self.root_pos - self._env_pos
         root_quats = self.root_rot
@@ -199,15 +202,20 @@ class Swerve_Kinematics_Task(RLTask):
             # d = linear_y_cmd[i] + angular_cmd[i] * x_offset / 2
 
         #   get current wheel positions
-            
+            ### DOF ORDER
+            ###['elevator_outer_1_joint',
+            ### 'front_left_axle_joint',
+            ### 'front_right_axle_joint',
+            ### 'rear_left_axle_joint',
+            ### 'rear_right_axle_joint',
             front_left_current_pos = (
-                (self._swerve.get_joint_positions()[i][0]))
-            front_right_current_pos = (
                 (self._swerve.get_joint_positions()[i][1]))
-            rear_left_current_pos = (
+            front_right_current_pos = (
                 (self._swerve.get_joint_positions()[i][2]))
-            rear_right_current_pos = (
+            rear_left_current_pos = (
                 (self._swerve.get_joint_positions()[i][3]))
+            rear_right_current_pos = (
+                (self._swerve.get_joint_positions()[i][4]))
             
             module_angles = [front_left_current_pos, front_right_current_pos, rear_left_current_pos, rear_right_current_pos]
             
@@ -222,6 +230,11 @@ class Swerve_Kinematics_Task(RLTask):
             front_right_position = velocity_cmds[5]
             rear_left_position = velocity_cmds[6]
             rear_right_position = velocity_cmds[7]
+            
+            ###DEBUGGING
+            if(i==0):
+                print(f"X:{linear_x_cmd[i]} Y:{linear_y_cmd[i]} Z:{angular_cmd[i]} flv:{front_left_velocity} frv:{front_right_velocity} rlv:{rear_left_velocity} rrv:{rear_right_velocity} flp:{front_left_position} frp:{front_right_position} rlp:{rear_left_position} rrp:{rear_right_position} flcp:{front_left_current_pos} frcp:{front_right_current_pos} rlcp:{rear_left_current_pos} rrcp:{rear_right_current_pos}")
+
 
 
         #   optimization
@@ -244,12 +257,7 @@ class Swerve_Kinematics_Task(RLTask):
             # action.append(calculate_turn_velocity(front_right_current_pos, front_right_position))
             # action.append(calculate_turn_velocity(rear_left_current_pos, rear_left_position))
             # action.append(calculate_turn_velocity(rear_right_current_pos, rear_right_position))
-            action.append(front_left_position)
-            action.append(front_right_position)
-            action.append(rear_left_position)
-            action.append(rear_right_position)
-            
-            # sortlist=[front_left_velocity, front_right_velocity, rear_left_velocity, rear_right_velocity]
+             # sortlist=[front_left_velocity, front_right_velocity, rear_left_velocity, rear_right_velocity]
             # maxs = abs(max(sortlist, key=abs))
             # if (maxs < 0.5):
             #     for num in sortlist:
@@ -261,20 +269,56 @@ class Swerve_Kinematics_Task(RLTask):
             #             num = (num/abs(maxs))*10
             #             # print(num)
             #         action.append(num)
+            ### DOF ORDER
+            ###['elevator_outer_1_joint', 
+
+            ### 'front_left_axle_joint', 
+            ### 'front_right_axle_joint', 
+            ### 'rear_left_axle_joint', 
+            ### 'rear_right_axle_joint',
+             
+            ### 'elevator_center_joint', 
+            ### 'arm_roller_bar_joint', 
+
+            ### 'front_left_wheel_joint', 
+            ### 'front_right_wheel_joint', 
+            ### 'rear_left_wheel_joint', 
+            ### 'rear_right_wheel_joint', 
+
+            ### 'elevator_outer_2_joint', 
+            ### 'top_slider_joint', 
+            ### 'top_gripper_left_arm_joint',
+            ###  'top_gripper_right_arm_joint']
+            action.append(0.0)
+            action.append(front_left_position)
+            action.append(front_right_position)
+            action.append(rear_left_position)
+            action.append(rear_right_position)
+            # action.append(0.0)
+            # action.append(0.0)
+            # action.append(0.0)
+            # action.append(0.0)
+            action.append(0.0)
+            action.append(0.0)
+            # print(front_left_velocity)
             action.append(front_left_velocity)
             action.append(front_right_velocity)
             action.append(rear_left_velocity)
             action.append(rear_right_velocity)
+            # action.append(0.0)
+            # action.append(0.0)
+            # action.append(0.0)
+            # action.append(0.0)
             action.append(0.0)
             action.append(0.0)
             action.append(0.0)
             action.append(0.0)
-            action.append(0.0)
-            action.append(0.0)
-            action.append(0.0)
+
             # print(len(action))
             actionlist.append(action)
         # Sets robots velocities
+        
+        # print(self._swerve.dof_names)
         self._swerve.set_joint_velocities(torch.FloatTensor(actionlist))
 
     def reset_idx(self, env_ids):
@@ -282,10 +326,10 @@ class Swerve_Kinematics_Task(RLTask):
         # For when the environment resets. This is great for randomization and increases the chances of a successful policy in the real world
         num_resets = len(env_ids)
         # Turns the wheels and axles -pi to pi radians
-        self.dof_pos[env_ids, 1] = torch_rand_float(
-            -math.pi, math.pi, (num_resets, 1), device=self._device).squeeze()
-        self.dof_pos[env_ids, 3] = torch_rand_float(
-            -math.pi, math.pi, (num_resets, 1), device=self._device).squeeze()
+        # self.dof_pos[env_ids, 1] = torch_rand_float(
+        #     -math.pi, math.pi, (num_resets, 1), device=self._device).squeeze()
+        # self.dof_pos[env_ids, 3] = torch_rand_float(
+        #     -math.pi, math.pi, (num_resets, 1), device=self._device).squeeze()
         self.dof_vel[env_ids, :] = 0
 
         root_pos = self.initial_root_pos.clone()
@@ -299,10 +343,10 @@ class Swerve_Kinematics_Task(RLTask):
         root_velocities[env_ids] = 0
 
         # apply resets
-        self._swerve.set_joint_positions(
-            self.dof_pos[env_ids], indices=env_ids)
-        self._swerve.set_joint_velocities(
-            self.dof_vel[env_ids], indices=env_ids)
+        # self._swerve.set_joint_positions(
+        #     self.dof_pos[env_ids], indices=env_ids)
+        # self._swerve.set_joint_velocities(
+        #     self.dof_vel[env_ids], indices=env_ids)
 
         self._swerve.set_world_poses(
             root_pos[env_ids], self.initial_root_rot[env_ids].clone(), indices=env_ids)
@@ -380,6 +424,29 @@ class Swerve_Kinematics_Task(RLTask):
         die = torch.where(self.target_dist > 20.0, ones, die)
         # die = torch.where(self.target_dist < 0.5, ones, die)
         die = torch.where(self.root_positions[..., 2] > 0.5, ones, die)
+        die = torch.where(torch.isnan(self.actions[...,0]), ones, die)
+        # die = torch.where(torch.isnan(self.joint_velocities[...,0]), ones, die)
+        # die = torch.where(torch.isnan(self.joint_velocities[...,1]), ones, die)
+        # die = torch.where(torch.isnan(self.joint_velocities[...,2]), ones, die)
+        # die = torch.where(torch.isnan(self.joint_velocities[...,3]), ones, die)
+        # die = torch.where(torch.isnan(self.joint_velocities[...,4]), ones, die)
+        # die = torch.where(torch.isnan(self.joint_velocities[...,5]), ones, die)
+        # die = torch.where(torch.isnan(self.joint_velocities[...,6]), ones, die)
+        # die = torch.where(torch.isnan(self.joint_velocities[...,7]), ones, die)
+
+        # die = torch.where(torch.isnan(self.joint_positions[...,0]), ones, die)
+        # die = torch.where(torch.isnan(self.joint_positions[...,1]), ones, die)
+        # die = torch.where(torch.isnan(self.joint_positions[...,2]), ones, die)
+        # die = torch.where(torch.isnan(self.joint_positions[...,3]), ones, die)
+        # die = torch.where(torch.isnan(self.joint_positions[...,4]), ones, die)
+        # die = torch.where(torch.isnan(self.joint_positions[...,5]), ones, die)
+        # die = torch.where(torch.isnan(self.joint_positions[...,6]), ones, die)
+        # die = torch.where(torch.isnan(self.joint_positions[...,7]), ones, die)
+
+        
+        # die = torch.where(self.joint_positions[...,0] == 'NaN', ones, die)
+        # die = torch.where(((i == 'NaN') for i in self.joint_velocities[...,0:8]), ones, die)
+        # die = torch.where(((i == 'NaN') for i in self.joint_positions[...,0:8]), ones, die)
 
         # resets due to episode length
         self.reset_buf[:] = torch.where(
