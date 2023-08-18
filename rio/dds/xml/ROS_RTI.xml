@@ -85,7 +85,7 @@ This code contains trade secrets of Real-Time Innovations, Inc.
         </domain>
         <domain name="ROS2_DOMAIN_ISAAC" domain_id="0">
           <register_type name="sensor_msgs::msg::dds_::JointState_" type_ref="sensor_msgs::msg::dds_::JointState_" />
-          <topic name="rt/Nitin/isaac_joint_states" register_type_ref="sensor_msgs::msg::dds_::JointState_"/>
+          <topic name="rt/saranga/isaac_joint_states" register_type_ref="sensor_msgs::msg::dds_::JointState_"/>
         </domain>
         <domain name="ROS2_DOMAIN_SERVICE" domain_id="0">
             <register_type name="std_srvs::srv::dds_::SetBool_Request_" type_ref="std_srvs::srv::dds_::SetBool_Request_" />
@@ -95,7 +95,7 @@ This code contains trade secrets of Real-Time Innovations, Inc.
         </domain>
         <domain name="ROS2_DOMAIN_IMU" domain_id="0">
             <register_type name="std_msgs::msg::dds_::String_" type_ref="std_msgs::msg::dds_::String_" />
-            <topic name="rt/Nitin/real_imu" register_type_ref="std_msgs::msg::dds_::String_"/>
+            <topic name="rt/saranga/real_imu" register_type_ref="std_msgs::msg::dds_::String_"/>
         </domain>
     </domain_library>
 
@@ -141,7 +141,7 @@ This code contains trade secrets of Real-Time Innovations, Inc.
       </domain_participant>
       <domain_participant name="isaac_subscriber" domain_ref="ROS2_DOMAIN_LIB::ROS2_DOMAIN_ISAAC">
         <subscriber name="isaac_joint_states_subscriber">
-            <data_reader name="isaac_joint_states_reader" topic_ref="rt/Nitin/isaac_joint_states" />
+            <data_reader name="isaac_joint_states_reader" topic_ref="rt/saranga/isaac_joint_states" />
         </subscriber>
       </domain_participant>
       <domain_participant name="service" domain_ref="ROS2_DOMAIN_LIB::ROS2_DOMAIN_SERVICE">
@@ -154,7 +154,7 @@ This code contains trade secrets of Real-Time Innovations, Inc.
       </domain_participant>
       <domain_participant name="imu" domain_ref="ROS2_DOMAIN_LIB::ROS2_DOMAIN_IMU">
         <subscriber name="imu_subscriber">
-            <data_reader name="imu_reader" topic_ref="rt/Nitin/real_imu" />
+            <data_reader name="imu_reader" topic_ref="rt/saranga/real_imu" />
         </subscriber>
       </domain_participant>
     </domain_participant_library>
