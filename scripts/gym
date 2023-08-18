@@ -75,6 +75,11 @@ case $1 in
             "-h")
                 train-help
             ;;
+
+            "")
+                echo "No arguments specified, task is required!!!"
+                exit 1
+            ;;
             
             *)
                 train $@
