@@ -171,7 +171,7 @@ class TaxiAutoCommand(SequentialCommandGroup):
         self.addRequirements(self.drive)
         self.addCommands(
             WaitCommand(0.5),
-            DriveTimeAutoCommand(self.drive, 3.0, (-3.5, 0, 0))
+            DriveTimeAutoCommand(self.drive, 1.5, (-3.5, 0, 0))
         )
         
 class UnlockDriveCommand(CommandBase):

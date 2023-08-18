@@ -13,7 +13,7 @@ from wpimath.filter import SlewRateLimiter
 from hardware_interface.joystick import Joystick
 import navx
 from hardware_interface.toggle import ToggleButton
-from sim.navxSim import NavxSim
+from hardware_interface.navxSim import NavxSim
 
 
 NAMESPACE = 'real'
@@ -90,10 +90,10 @@ encoder_reset_velocity = math.radians(0.5)
 encoder_reset_iterations = 500
 
 axle_pid_constants = {
-    "kP": 0.3,
+    "kP": 0.7,
     "kI": 0.0,
-    "kD": 0.0,
-    "kF": 0.0,
+    "kD": 0.1,
+    "kF": 0.2,
     "kIzone": 0,
     "kPeakOutput": 1.0
 }
@@ -785,19 +785,19 @@ class DriveTrain():
         self.linY = linearY*self.ROBOT_MAX_TRANSLATIONAL
         self.angZ = angularZ*self.ROBOT_MAX_ROTATIONAL
 
-        self.module_state = self.kinematics.toSwerveModuleStates(self.speeds)
+        module_state = self.kinematics.toSwerveModuleStates(self.speeds)
         self.kinematics.desaturateWheelSpeeds(self.module_state, self.ROBOT_MAX_TRANSLATIONAL)
 
-        self.front_left_state: SwerveModuleState = self.module_state[0]
-        self.front_right_state: SwerveModuleState = self.module_state[1]
-        self.rear_left_state: SwerveModuleState = self.module_state[2]
-        self.rear_right_state: SwerveModuleState = self.module_state[3]
+        front_left_state: SwerveModuleState = module_state[0]
+        front_right_state: SwerveModuleState = module_state[1]
+        rear_left_state: SwerveModuleState = module_state[2]
+        rear_right_state: SwerveModuleState = module_state[3]
 
         # optimize states
-        self.front_left_state = SwerveModuleState.optimize(self.front_left_state, Rotation2d(self.front_left.getEncoderPosition()))
-        self.front_right_state = SwerveModuleState.optimize(self.front_right_state, Rotation2d(self.front_right.getEncoderPosition()))
-        self.rear_left_state = SwerveModuleState.optimize(self.rear_left_state, Rotation2d(self.rear_left.getEncoderPosition()))
-        self.rear_right_state = SwerveModuleState.optimize(self.rear_right_state, Rotation2d(self.rear_right.getEncoderPosition()))
+        front_left_state = SwerveModuleState.optimize(front_left_state, Rotation2d(self.front_left.getEncoderPosition()))
+        front_right_state = SwerveModuleState.optimize(front_right_state, Rotation2d(self.front_right.getEncoderPosition()))
+        rear_left_state = SwerveModuleState.optimize(rear_left_state, Rotation2d(self.rear_left.getEncoderPosition()))
+        rear_right_state = SwerveModuleState.optimize(rear_right_state, Rotation2d(self.rear_right.getEncoderPosition()))
         
         # using custom optimize
         # self.front_left_state = self.customOptimize(self.front_left_state, Rotation2d(self.front_left.getEncoderPosition()))
@@ -805,10 +805,10 @@ class DriveTrain():
         # self.rear_left_state = self.customOptimize(self.rear_left_state, Rotation2d(self.rear_left.getEncoderPosition()))
         # self.rear_right_state = self.customOptimize(self.rear_right_state, Rotation2d(self.rear_right.getEncoderPosition()))
 
-        self.front_left.set(self.front_left_state)
-        self.front_right.set(self.front_right_state)
-        self.rear_left.set(self.rear_left_state)
-        self.rear_right.set(self.rear_right_state)
+        self.front_left.set(front_left_state)
+        self.front_right.set(front_right_state)
+        self.rear_left.set(rear_left_state)
+        self.rear_right.set(rear_right_state)
         
     def lockDrive(self):
         self.locked = True

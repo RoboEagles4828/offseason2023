@@ -17,9 +17,9 @@ def generate_launch_description():
         'rtabmap_args': '--delete_db_on_start',
         'use_sim_time': use_sim_time,
         # Frames
-        'frame_id': f'base_link',
+        'frame_id': f'real/base_link',
         # 'odom_frame_id': f'{NAMESPACE}/zed/odom',
-        'map_frame_id': f'map',
+        'map_frame_id': f'real/map',
         # Topics
         'rgb_topic': f'/real/zed/rgb/image_rect_color',
         'camera_info_topic': f'/real/zed/rgb/camera_info',
