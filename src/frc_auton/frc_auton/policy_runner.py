@@ -13,7 +13,7 @@ class Reader(Node):
     def __init__(self):
         super().__init__("reinforcement_learning_runner")
         # self.robot_ip = robot_ip
-        self.policy = torch.load("/workspaces/offseason2023/isaac/Swervesim/swervesim/runs/SwerveCS/nn/SwerveCS.pth")
+        self.policy = torch.load("/workspaces/offseason2023/isaac/Eaglegym/eaglegym/runs/SwerveCS/nn/SwerveCS.pth")
         self.joint_action_pub = self.create_publisher(Twist, "cmd_vel", 10)
         self.joint_trajectory_action_pub = self.create_publisher(Twist, "joint_trajectory_message", 10)
         self.odom_sub = self.create_subscription(Float32, "odom", self.odom_callback, 10)

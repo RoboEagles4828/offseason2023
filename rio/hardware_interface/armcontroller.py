@@ -61,6 +61,8 @@ class ArmController():
         self.arm_roller_bar = Piston(self.hub, PORTS['ARM_ROLLER_BAR'], max=0.07, name="Arm Roller Bar")
         self.top_gripper_slider = Piston(self.hub, PORTS['TOP_GRIPPER_SLIDER'], max=0.30, name="Top Gripper Slider")
         self.top_gripper = Piston(self.hub, PORTS['TOP_GRIPPER'], min=0.0, max=-0.9, name="Top Gripper", reverse=True)
+        
+        self.servo = wpilib.Servo(0)
 
         self.elevator = Elevator(PORTS['ELEVATOR'], max=0.56)
         self.JOINT_MAP = {
@@ -106,6 +108,12 @@ class ArmController():
                 1, False, # B Button
                 self.top_slider_control_on,
                 self.top_slider_control_off
+            ),
+            
+            "servo_control": ToggleButton(
+                6, True, # Left Trigger
+                self.servo_control_on,
+                self.servo_control_off
             )
         }
         self.toggle = False
@@ -146,6 +154,12 @@ class ArmController():
                 1, False, # B Button
                 self.top_slider_control_on,
                 self.top_slider_control_off
+            ),
+            
+            "servo_control": ToggleButton(
+                6, True, # Left Trigger
+                self.servo_control_on,
+                self.servo_control_off
             )
         }
         
@@ -227,6 +241,12 @@ class ArmController():
     
     def top_slider_control_off(self):
         self.top_gripper_slider.setPosition(self.top_gripper_slider.min)
+        
+    def servo_control_on(self):
+        self.servo.set(0.5)
+    
+    def servo_control_off(self):
+        self.servo.set(0.0)
 
 class Piston():
     def __init__(self, hub : wpilib.PneumaticHub, ports : "list[int]", min : float = 0.0, max : float = 1.0, reverse : bool = False, name : str = "Piston"):

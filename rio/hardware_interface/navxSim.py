@@ -1,23 +1,7 @@
-from ctre import TalonFX, TalonFXSimCollection
-from navx import AHRS
-from wpilib import RobotController
-import random
 import math
-from pyfrc.physics.motor_cfgs import MOTOR_CFG_FALCON_500
 from squaternion import Quaternion
-from dds.dds import DDS_Subscriber
 
-import wpilib.simulation
-import wpimath.system.plant
 from wpimath.geometry import Rotation2d
-
-import os
-import inspect
-import threading
-import logging
-import time
-import traceback
-
 class NavxSim:
     def __init__(self) -> None:
         self.roll = 0

@@ -17,22 +17,22 @@ def generate_launch_description():
         'rtabmap_args': '--delete_db_on_start',
         'use_sim_time': use_sim_time,
         # Frames
-        'frame_id': f'base_link',
+        'frame_id': f'real/base_link',
         # 'odom_frame_id': f'{NAMESPACE}/zed/odom',
-        'map_frame_id': f'map',
+        'map_frame_id': f'real/map',
         # Topics
         'rgb_topic': f'/real/zed/rgb/image_rect_color',
         'camera_info_topic': f'/real/zed/rgb/camera_info',
-        'depth_topic': f'/real/zed/depth/depth_info',
+        'depth_topic': f'/real/zed/depth/depth_registered',
         'imu_topic': f'/real/zed/imu/data',
         # 'odom_topic': f'/{NAMESPACE}/zed/odom',
 
         'approx_sync': 'false',
-        'wait_imu_to_init': 'true',
+        # 'wait_imu_to_init': 'true',
         # 'visual_odometry': 'false',
         # 'publish_tf_odom': 'false',
-        'qos': '1',
-        'rviz': 'true',
+        # 'qos': '1',
+        # 'rviz': 'true',
     }
 
     rtab_layer = IncludeLaunchDescription(
