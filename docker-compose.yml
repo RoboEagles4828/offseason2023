@@ -19,7 +19,7 @@ services:
     volumes:
     - ${HOME}/offseason2023:/opt/workspace
   zed_cam:
-    image: ghcr.io/roboeagles4828/jetson-zed:1
+    image: ghcr.io/roboeagles4828/jetson-zed:2
     network_mode: "host"
     privileged: true
     runtime: nvidia

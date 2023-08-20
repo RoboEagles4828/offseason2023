@@ -48,8 +48,8 @@ def generate_launch_description():
                 'pos_tracking.base_frame': f'{NAMESPACE}/base_link',
                 'pos_tracking.map_frame': f'{NAMESPACE}/map',
                 'pos_tracking.odometry_frame': f'{NAMESPACE}/odom',
-                'general.zed_id': 0,
-                'general.serial_number': 0,
+                # 'general.zed_id': 0,
+                # 'general.serial_number': 0,
                 'pos_tracking.publish_tf': True,
                 'pos_tracking.publish_map_tf': True,
                 'pos_tracking.publish_imu_tf': True

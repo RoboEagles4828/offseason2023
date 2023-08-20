@@ -18,7 +18,7 @@
             serial_number: 0 # usually overwritten by launch file
             pub_resolution: 'CUSTOM' # The resolution used for output. 'NATIVE' to use the same `general.grab_resolution` - `CUSTOM` to apply the `general.pub_downscale_factor` downscale factory to reduce bandwidth in transmission
             pub_downscale_factor: 2.0 # rescale factor used to rescale image before publishing when 'pub_resolution' is 'CUSTOM'
-            pub_frame_rate: 15.0 # [DYNAMIC] - frequency of publishing of visual images and depth images
+            pub_frame_rate: 30.0 # [DYNAMIC] - frequency of publishing of visual images and depth images
             gpu_id: -1
             region_of_interest: '[]' # A polygon defining the ROI where the ZED SDK perform the processing ignoring the rest. Coordinates must be normalized to '1.0' to be resolution independent.
             #region_of_interest: '[[0.25,0.33],[0.75,0.33],[0.75,0.5],[0.5,0.75],[0.25,0.5]]' # A polygon defining the ROI where the ZED SDK perform the processing ignoring the rest. Coordinates must be normalized to '1.0' to be resolution independent.
@@ -45,7 +45,7 @@
         
         depth:
             depth_mode: 'ULTRA' # Matches the ZED SDK setting: 'NONE', 'PERFORMANCE', 'QUALITY', 'ULTRA', 'NEURAL' - Note: if 'NONE' all the modules that requires depth extraction are disabled by default (Pos. Tracking, Obj. Detection, Mapping, ...)
-            depth_stabilization: 1 # Forces positional tracking to start if major than 0 - Range: [0,100]
+            depth_stabilization: true # Forces positional tracking to start if major than 0 - Range: [0,100]
             openni_depth_mode: false # 'false': 32bit float [meters], 'true': 16bit unsigned int [millimeters]
             point_cloud_freq: 10.0 # [DYNAMIC] - frequency of the pointcloud publishing (equal or less to `grab_frame_rate` value)
             depth_confidence: 50 # [DYNAMIC]
@@ -113,7 +113,7 @@
 
         object_detection:
             od_enabled: false # True to enable Object Detection
-            model: 'MULTI_CLASS_BOX_MEDIUM' # 'MULTI_CLASS_BOX_FAST', 'MULTI_CLASS_BOX_MEDIUM', 'MULTI_CLASS_BOX_ACCURATE', 'PERSON_HEAD_BOX_FAST', 'PERSON_HEAD_BOX_ACCURATE'
+            model: 0 # 'MULTI_CLASS_BOX_FAST', 'MULTI_CLASS_BOX_MEDIUM', 'MULTI_CLASS_BOX_ACCURATE', 'PERSON_HEAD_BOX_FAST', 'PERSON_HEAD_BOX_ACCURATE'
             allow_reduced_precision_inference: true # Allow inference to run at a lower precision to improve runtime and memory usage
             max_range: 20.0 # [m] Defines a upper depth range for detections
             confidence_threshold: 50.0 # [DYNAMIC] - Minimum value of the detection confidence of an object [0,99]

@@ -1,13 +1,13 @@
-ARG IMAGE_NAME=dustynv/ros:humble-ros-base-l4t-r35.1.0
+ARG IMAGE_NAME=dustynv/ros:humble-ros-base-l4t-r35.3.1
 
 FROM ${IMAGE_NAME}
 
-ARG ZED_SDK_MAJOR=3
-ARG ZED_SDK_MINOR=8
+ARG ZED_SDK_MAJOR=4
+ARG ZED_SDK_MINOR=0
 ARG JETPACK_MAJOR=5
-ARG JETPACK_MINOR=0
+ARG JETPACK_MINOR=1
 ARG L4T_MAJOR=35
-ARG L4T_MINOR=1
+ARG L4T_MINOR=3
 
 ARG ROS2_DIST=humble       # ROS2 distribution
 
@@ -39,7 +39,8 @@ RUN echo "# R${L4T_MAJOR} (release), REVISION: ${L4T_MINOR}" > /etc/nv_tegra_rel
   build-essential python3 python3-pip python3-dev python3-setuptools libusb-1.0-0-dev -y && \
   pip install protobuf && \
   wget -q --no-check-certificate -O ZED_SDK_Linux_JP.run \
-  https://download.stereolabs.com/zedsdk/${ZED_SDK_MAJOR}.${ZED_SDK_MINOR}/l4t${L4T_MAJOR}.${L4T_MINOR}/jetsons && \
+  # https://download.stereolabs.com/zedsdk/${ZED_SDK_MAJOR}.${ZED_SDK_MINOR}/l4t${L4T_MAJOR}.${L4T_MINOR}/jetsons && \
+  https://stereolabs.sfo2.cdn.digitaloceanspaces.com/zedsdk/4.0/ZED_SDK_Tegra_L4T35.3_v4.0.6.zstd.run && \
   chmod +x ZED_SDK_Linux_JP.run ; ./ZED_SDK_Linux_JP.run silent skip_tools && \
   rm -rf /usr/local/zed/resources/* && \
   rm -rf ZED_SDK_Linux_JP.run && \
@@ -50,7 +51,7 @@ ENV ROS_DISTRO ${ROS2_DIST}
 
 # Copy the sources in the Docker image
 WORKDIR /root/ros2_ws/src
-RUN git clone --recursive https://github.com/stereolabs/zed-ros2-wrapper.git
+RUN git clone --recursive https://github.com/RoboEagles4828/zed-ros2-wrapper.git
 
 # Install missing dependencies
 WORKDIR /root/ros2_ws/src

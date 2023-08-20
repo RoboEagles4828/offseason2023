@@ -32,8 +32,8 @@ PORTS = {
 
 MOTOR_PID_CONFIG = {
     'SLOT': 2,
-    'MAX_SPEED': 18000,             # Ticks/100ms 
-    'TARGET_ACCELERATION': 14000,    # Ticks/100ms
+    'MAX_SPEED': 25000,             # Ticks/100ms 
+    'TARGET_ACCELERATION': 20000,    # Ticks/100ms
     "kP": 0.2,
     "kI": 0.0,
     "kD": 0.1,
@@ -187,6 +187,7 @@ class ArmController():
             for i in range(len(commands["name"])):
                 joint_name = commands["name"][i]
                 if joint_name in self.JOINT_MAP:
+                    # if joint_name != 'elevator_center_joint':
                     self.JOINT_MAP[joint_name].setPosition(commands['position'][i])
         
         elif (time.time() - self.last_cmds_time > CMD_TIMEOUT_SECONDS):
@@ -198,10 +199,11 @@ class ArmController():
     def setArm(self, joystick: Joystick):
         for button in self.toggle_buttons.values():
             button.toggle(joystick.getData()["buttons"])
+        # self.elevator.motor.set(ctre.ControlMode.PercentOutput, joystick.getData()["axes"][4])
 
     # Callback functions for toggle buttons (These were originally lambda functions inlined, but we decided this was more readable)
     def elevator_loading_station_on(self):
-        self.elevator.setPosition(0.056)
+        self.elevator.setPosition(0.15)
         self.top_gripper_slider.setPosition(self.top_gripper_slider.max)
 
     def elevator_loading_station_off(self):
@@ -217,7 +219,7 @@ class ArmController():
         self.top_gripper_slider.setPosition(self.top_gripper_slider.min)
     
     def elevator_high_level_on(self):
-        self.elevator.setPosition(self.elevator.max)
+        self.elevator.setPosition(0.35)
         self.top_gripper_slider.setPosition(self.top_gripper_slider.max)
     
     def elevator_high_level_off(self):
@@ -225,10 +227,10 @@ class ArmController():
         self.top_gripper_slider.setPosition(self.top_gripper_slider.min)
 
     def top_gripper_control_on(self):
-        self.top_gripper.setPosition(self.top_gripper.max)
+        self.top_gripper.setPosition(self.top_gripper.min)
 
     def top_gripper_control_off(self):
-        self.top_gripper.setPosition(self.top_gripper.min)
+        self.top_gripper.setPosition(self.top_gripper.max)
     
     def elevator_pivot_control_on(self):
         self.arm_roller_bar.setPosition(self.arm_roller_bar.max)
