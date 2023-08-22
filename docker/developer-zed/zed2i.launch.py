@@ -56,6 +56,23 @@ def generate_launch_description():
             }
         ]
     )
+    
+    # throttle_zed_node = Node(
+    #     package='topic_tools',
+    #     executable='throttle',
+    #     name='throttle_zed',
+    #     namespace=str(NAMESPACE),
+    #     output='screen',
+    #     parameters=[
+    #         {
+    #             'topics': [
+    #                 f'{NAMESPACE}/zed/rgb/image_rect_color',
+    #                 f'{NAMESPACE}/zed/depth/depth_registered'
+    #             ],
+    #             'throttle_rate': 2.0
+    #         }
+    #     ]
+    # )
 
 
     delay_zed_wrapper = TimerAction(period=5.0, actions=[zed_wrapper_node])
@@ -65,5 +82,6 @@ def generate_launch_description():
     
     # Add nodes to LaunchDescription
     ld.add_action(delay_zed_wrapper)
+    # ld.add_action(throttle_zed_node)
 
     return ld
