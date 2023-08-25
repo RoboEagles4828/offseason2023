@@ -84,8 +84,8 @@ class InverseKinematics():
         else:
             return 0
     
-    def getDriveJointStates(self, x, y, z, module_angles: list):
-        self.speeds = ChassisSpeeds(x, y, z)
+    def getDriveJointStates(self, x, y, z, module_angles: list, imu_angle_radians):
+        self.speeds = ChassisSpeeds.fromFieldRelativeSpeeds(x, y, z, Rotation2d(imu_angle_radians))
         curr_module_states = self.kinematics.toSwerveModuleStates(self.speeds)
         module_speeds = [i.speed for i in curr_module_states]
         
