@@ -29,6 +29,17 @@ stop() {
     docker compose stop
 }
 
+jetson-start() {
+    echo "Starting..."
+    cd ~/offseason2023/
+    docker compose up -d --remove-orphans
+}
+
+container-debug() {
+    echo "Starting ROS Debug..."
+    docker exec -it $(docker ps -aqf "name=offseason2023-main_control-1") bash
+}
+
 edit() {
     echo "Editing..."
     cd ~/offseason2023/
@@ -40,12 +51,15 @@ help() {
     echo "  edit    -- Opens the docker compose file in nano"
     echo "  log     -- Outputs the docker compose logs"
     echo "  restart -- Restarts docker container"
+    echo "  start   -- Starts docker containers"
     echo "  stop    -- Stops docker containers"
     echo "  kill    -- Kills docker containers"
     echo "  ps      -- Same as docker ps"
+    echo "  debug   -- Opens a bash shell in the main_control container"
+    echo "  help    -- Displays this message"
     echo "  "
     echo ""
-    echo "Usage: jetson (edit | restart | stop | kill | log | ps)"
+    echo "Usage: jetson (edit | restart | stop | kill | start | log | ps)"
 }
 
 case $1 in 
@@ -151,6 +165,38 @@ case $1 in
 
     "ps")
         docker ps $2
+    ;;
+
+    "start")
+        case $2 in
+            "--help")
+                help
+            ;;
+
+            "-h")
+                help
+            ;;
+
+            *)
+                jetson-start
+            ;;
+        esac
+    ;;
+
+    "debug")
+        case $2 in
+            "--help")
+                help
+            ;;
+
+            "-h")
+                help
+            ;;
+
+            *)
+                container-debug
+            ;;
+        esac
     ;;
     
     *)

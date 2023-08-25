@@ -1,1 +1,1 @@
-docker/developer/Dockerfile
+docker/jetson/entrypoint.sh

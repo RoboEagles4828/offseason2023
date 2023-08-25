@@ -2,8 +2,9 @@ version: "3.6"
 services:
   main_control:
     # image: "ghcr.io/roboeagles4828/developer-environment:7"
-    image: "ghcr.io/roboeagles4828/jetson:3"
+    image: "ghcr.io/roboeagles4828/jetson:4"
     network_mode: "host"
+    privileged: true
     environment:
       - ROS_DOMAIN_ID=0
       - FASTRTPS_DEFAULT_PROFILES_FILE=/usr/local/share/middleware_profiles/rtps_udp_profile.xml
@@ -55,3 +56,6 @@ services:
                 count: all
                 capabilities: [gpu]
     command: ["ros2", "launch", "zed_wrapper", "zed2i.launch.py"]
+
+    
+
