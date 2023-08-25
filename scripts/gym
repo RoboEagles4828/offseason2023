@@ -37,7 +37,7 @@ train-help() {
 
 train() {
     echo "Training..."
-    isaac $python_path $scripts_path $@
+    isaac $python_path $scripts_path ${@:2}
 }
 
 help() {

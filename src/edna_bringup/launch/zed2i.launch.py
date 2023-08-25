@@ -43,7 +43,8 @@ def generate_launch_description():
             {
                 'general.camera_name': f'{NAMESPACE}/{camera_model}',
                 'general.camera_model': camera_model,
-                'general.svo_file': 'live',
+                'general.grab_resolution': 'SVGA',
+                # 'general.svo_file': 'live',
                 'publish_urdf': 'false',
                 'pos_tracking.base_frame': f'{NAMESPACE}/base_link',
                 'pos_tracking.map_frame': f'{NAMESPACE}/map',
