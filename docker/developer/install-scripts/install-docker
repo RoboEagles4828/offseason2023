@@ -6,6 +6,7 @@ if [ "$INSTALL_DOCKER" != "true" ]; then
     exit 0
 fi
 
+echo -e "\e[93mInstalling Docker\e[0m"
 
 curl -fsSL --insecure https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
 echo \

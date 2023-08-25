@@ -10,5 +10,5 @@ view_tmp.rviz
 src/edna_description/urdf/edna.urdf
 .env
 .rsyncmetadataisaac/Eaglegym/eaglegym/runs/SwerveK/summaries
-add
 isaac/Eaglegym/eaglegym/runs/SwerveK/summaries/
+.rsyncmetadata

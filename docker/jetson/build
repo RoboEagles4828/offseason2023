@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo "ONLY USE THIS SCRIPT ON THE JETSON"
-VERSION=3 # Increment manually for now
+VERSION=4 # Increment manually for now
 PREV_VERSION="$((VERSION-1))"
 GITHUB_REGISTRY="ghcr.io/roboeagles4828"
 IMAGE_NAME="jetson"
@@ -19,8 +19,9 @@ touch ./src/requirements.txt
 docker build -t $GITHUB_REGISTRY/$IMAGE_NAME:$VERSION \
     --cache-from $GITHUB_REGISTRY/$IMAGE_NAME:$PREV_VERSION \
     --build-arg BASE_IMAGE=ros:humble-ros-base \
-    --build-arg INSTALL_RTAB="false" \
-    --build-arg INSTALL_DOCKER="false" .
+    --build-arg INSTALL_RTAB="true" \
+    --build-arg INSTALL_DOCKER="false" \
+    --build-arg INSTALL_PYTHON_DEPS="false" .
 
 echo "Build finished"
 cd ../jetson

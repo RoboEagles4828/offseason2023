@@ -11,6 +11,8 @@ if [ "$INSTALL_COMMON" != "true" ]; then
     exit 0
 fi
 
+echo -e "\e[93mInstalling Common Packages\e[0m"
+
 INSTALL_ZSH="true"
 INSTALL_OH_MY_ZSH="true"
 CONFIGURE_ZSH_AS_DEFAULT_SHELL="true"

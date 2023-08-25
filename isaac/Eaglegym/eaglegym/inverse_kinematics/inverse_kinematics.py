@@ -86,8 +86,22 @@ class InverseKinematics():
     
     def getDriveJointStates(self, x, y, z, module_angles: list):
         self.speeds = ChassisSpeeds(x, y, z)
-        module_states = self.kinematics.toSwerveModuleStates(self.speeds)      
-        self.kinematics.desaturateWheelSpeeds(module_states, self.speeds, self.MODULE_MAX_SPEED, self.ROBOT_MAX_TRANSLATIONAL, self.ROBOT_MAX_ROTATIONAL)
+        curr_module_states = self.kinematics.toSwerveModuleStates(self.speeds)
+        module_speeds = [i.speed for i in curr_module_states]
+        
+        # remove diagonal saturation from wheel speed
+        is_above = False
+        for i in module_speeds:
+            if i > self.MODULE_MAX_SPEED:
+                is_above = True
+                break
+        if is_above:
+            for i in range(len(module_speeds)):
+                module_speeds[i] = module_speeds[i] / max(module_speeds) * self.MODULE_MAX_SPEED
+        
+        module_states = []
+        for index, i in enumerate(module_speeds):
+            module_states.append(SwerveModuleState(i, curr_module_states[index].angle))
         
         front_left_state = module_states[0]
         front_right_state = module_states[1]
