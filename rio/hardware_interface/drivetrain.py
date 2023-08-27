@@ -570,7 +570,7 @@ class DriveTrain():
         futureRobotPose = Pose2d(
             originalSpeeds.vx * LOOP_TIME_S,
             originalSpeeds.vy * LOOP_TIME_S,
-            Rotation2d(originalSpeeds.omega)
+            Rotation2d(originalSpeeds.omega * LOOP_TIME_S)
         )
         twistForPose = GeometryUtils.log(futureRobotPose)
         updatedSpeeds = ChassisSpeeds(
@@ -642,6 +642,8 @@ class DriveTrain():
                 self.speeds = self.correctForDynamics(ChassisSpeeds.fromFieldRelativeSpeeds(linearX, linearY, angularZ, navx_value))
             else:
                 self.speeds = ChassisSpeeds.fromFieldRelativeSpeeds(linearX, linearY, angularZ, navx_value)
+                
+            print(f"X: {self.speeds.vx} Y: {self.speeds.vy} Z: {self.speeds.omega}")
         else:
             if ENABLE_2ND_ORDER:
                 self.speeds = self.correctForDynamics(ChassisSpeeds(linearX, linearY, angularZ))
@@ -703,7 +705,7 @@ class DriveTrain():
 
         if self.is_sim:
             if ENABLE_2ND_ORDER:
-                self.speeds = self.correctForDynamics(ChassisSpeeds.fromFieldRelativeSpeeds(self.linX, self.linY, self.angZ))
+                self.speeds = self.correctForDynamics(ChassisSpeeds.fromFieldRelativeSpeeds(self.linX, self.linY, self.angZ, self.navx_sim.getRotation2d().__mul__(-1)))
             else:
                 self.speeds = ChassisSpeeds.fromFieldRelativeSpeeds(self.linX, self.linY, self.angZ, self.navx_sim.getRotation2d().__mul__(-1))
             #print(self.navx_sim.getRotation2d())

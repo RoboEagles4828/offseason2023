@@ -42,6 +42,7 @@ from omni.isaac.core.prims import RigidPrimView
 
 import numpy as np
 import torch
+import torchgeometry as tgm
 import math
 
 
@@ -239,40 +240,40 @@ class Edna_Kinematics_Task(RLTask):
             rear_right_position = velocity_cmds[7]
             
             ###DEBUGGING
-            if(i==0):
-                #round all tensors
-                linear_x_cmd_rounded = torch.round(linear_x_cmd, decimals=1)
-                linear_y_cmd_rounded = torch.round(linear_y_cmd, decimals=1)
-                angular_cmd_rounded = torch.round(angular_cmd, decimals=1)
-                front_left_velocity_rounded = round(front_left_velocity, 1)
-                front_right_velocity_rounded = round(front_right_velocity, 1)
-                rear_left_velocity_rounded = round(rear_left_velocity, 1)
-                rear_right_velocity_rounded = round(rear_right_velocity, 1)
-                front_left_position_rounded = round(front_left_position, 1)
-                front_right_position_rounded = round(front_right_position, 1)
-                rear_left_position_rounded = round(rear_left_position, 1)
-                rear_right_position_rounded = round(rear_right_position, 1)
-                front_left_current_pos_rounded = torch.round(front_left_current_pos, decimals=1)
-                front_right_current_pos_rounded = torch.round(front_right_current_pos, decimals=1)
-                rear_left_current_pos_rounded = torch.round(rear_left_current_pos, decimals=1)
-                rear_right_current_pos_rounded = torch.round(rear_right_current_pos, decimals=1)
-                #print all tensors
-                print("X: ", linear_x_cmd_rounded)
-                print("Y: ", linear_y_cmd_rounded)
-                print("Z: ", angular_cmd_rounded)
-                print("FLV: ", front_left_velocity_rounded)
-                print("FRV: ", front_right_velocity_rounded)
-                print("RLV: ", rear_left_velocity_rounded)
-                print("RRV: ", rear_right_velocity_rounded)
-                print("FLP: ", front_left_position_rounded)
-                print("FRP: ", front_right_position_rounded)
-                print("RLP: ", rear_left_position_rounded)
-                print("RRP: ", rear_right_position_rounded)
-                print("FLCP: ", front_left_current_pos_rounded)
-                print("FRCP: ", front_right_current_pos_rounded)
-                print("RLCP: ", rear_left_current_pos_rounded)
-                print("RRCP: ", rear_right_current_pos_rounded)
-                print("IMU: ", round(imu_euler[2], 2))
+            # if(i==0):
+            #     #round all tensors
+            #     linear_x_cmd_rounded = torch.round(linear_x_cmd, decimals=1)
+            #     linear_y_cmd_rounded = torch.round(linear_y_cmd, decimals=1)
+            #     angular_cmd_rounded = torch.round(angular_cmd, decimals=1)
+            #     front_left_velocity_rounded = round(front_left_velocity, 1)
+            #     front_right_velocity_rounded = round(front_right_velocity, 1)
+            #     rear_left_velocity_rounded = round(rear_left_velocity, 1)
+            #     rear_right_velocity_rounded = round(rear_right_velocity, 1)
+            #     front_left_position_rounded = round(front_left_position, 1)
+            #     front_right_position_rounded = round(front_right_position, 1)
+            #     rear_left_position_rounded = round(rear_left_position, 1)
+            #     rear_right_position_rounded = round(rear_right_position, 1)
+            #     front_left_current_pos_rounded = torch.round(front_left_current_pos, decimals=1)
+            #     front_right_current_pos_rounded = torch.round(front_right_current_pos, decimals=1)
+            #     rear_left_current_pos_rounded = torch.round(rear_left_current_pos, decimals=1)
+            #     rear_right_current_pos_rounded = torch.round(rear_right_current_pos, decimals=1)
+            #     #print all tensors
+            #     print("X: ", linear_x_cmd_rounded)
+            #     print("Y: ", linear_y_cmd_rounded)
+            #     print("Z: ", angular_cmd_rounded)
+            #     print("FLV: ", front_left_velocity_rounded)
+            #     print("FRV: ", front_right_velocity_rounded)
+            #     print("RLV: ", rear_left_velocity_rounded)
+            #     print("RRV: ", rear_right_velocity_rounded)
+            #     print("FLP: ", front_left_position_rounded)
+            #     print("FRP: ", front_right_position_rounded)
+            #     print("RLP: ", rear_left_position_rounded)
+            #     print("RRP: ", rear_right_position_rounded)
+            #     print("FLCP: ", front_left_current_pos_rounded)
+            #     print("FRCP: ", front_right_current_pos_rounded)
+            #     print("RLCP: ", rear_left_current_pos_rounded)
+            #     print("RRCP: ", rear_right_current_pos_rounded)
+            #     print("IMU: ", round(imu_euler[2], 2))
                 
 
 
@@ -453,8 +454,22 @@ class Edna_Kinematics_Task(RLTask):
         # rewards for moving away form starting point
         for i in range(len(self.root_position_reward)):
             self.root_position_reward[i] = sum(root_positions[i][0:3])
-
-        self.rew_buf[:] = self.root_position_reward*pos_reward
+            
+        # rewards for facing the target
+        target_angle = torch.atan2(
+            self.target_positions[..., 1] - root_positions[..., 1], 
+            self.target_positions[..., 0] - root_positions[..., 0],
+        )
+        
+        robot_orientation_tensor = tgm.quaternion_to_angle_axis(self.root_rot)
+        robot_orientation = robot_orientation_tensor[:, 2]
+        target_orientation = target_angle
+        orientation_diff = torch.abs(robot_orientation - target_orientation)
+        orientation_diff = torch.min(orientation_diff, 2*np.pi - orientation_diff)
+        
+        angle_reward = 1.0 - orientation_diff / (2*np.pi)
+ 
+        self.rew_buf[:] = self.root_position_reward*pos_reward*angle_reward
 
     def is_done(self) -> None:
         # print("line 312")
@@ -462,7 +477,7 @@ class Edna_Kinematics_Task(RLTask):
         ones = torch.ones_like(self.reset_buf)
         die = torch.zeros_like(self.reset_buf)
         die = torch.where(self.target_dist > 20.0, ones, die)
-        # die = torch.where(self.target_dist < 0.5, ones, die)
+        die = torch.where(self.target_dist < 0.5, ones, die)
         die = torch.where(self.root_positions[..., 2] > 0.5, ones, die)
         die = torch.where(torch.isnan(self.actions[...,0]), ones, die)
         # die = torch.where(torch.isnan(self.joint_velocities[...,0]), ones, die)
