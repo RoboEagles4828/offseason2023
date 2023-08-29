@@ -2,7 +2,7 @@ task:
   name: EdnaK
   physics_engine: ${..physics_engine}
   env:
-    numEnvs: 1440
+    numEnvs: 36
     envSpacing: 20.0
     resetDist: 3.0
     clipObservations: 5.0
@@ -136,7 +136,7 @@ train:
       lr_schedule: adaptive
       kl_threshold: 0.008
       score_to_win: 20000
-      max_epochs: 100
+      max_epochs: 1000
       save_best_after: 50
       save_frequency: 25
       grad_norm: 1.0
@@ -165,8 +165,8 @@ multi_gpu: false
 num_threads: 4
 solver_type: 1
 test: false
-checkpoint: ''
-headless: true
+checkpoint: /isaac-sim/runs/EdnaK/nn/last_EdnaK_ep_400_rew_-0.36624026.pth
+headless: false
 enable_livestream: false
 mt_timeout: 30
 wandb_activate: false

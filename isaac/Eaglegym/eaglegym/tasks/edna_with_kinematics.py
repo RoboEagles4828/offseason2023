@@ -446,14 +446,24 @@ class Edna_Kinematics_Task(RLTask):
         # distance to target
         target_dist = torch.sqrt(torch.square(
             self.target_positions - root_positions).sum(-1))
+        
+        # create a new tensor called target point being target_positions X - 0.5 and target_positions Y
+        target_point = torch.stack(
+            [self.target_positions[..., 0] - 0.5, self.target_positions[..., 1]], dim=-1
+        )
+        
+        target_point_dist = torch.sqrt(torch.square(
+            target_point - root_positions[..., 0:2]).sum(-1)
+        )
 
-        pos_reward = 1.0 / (1.0 + (1/0.5)*(target_dist-0.5))
+        # pos_reward = 1.0 / (1.0 + (1/0.5)*(target_dist-0.5))
+        pos_reward = 1.0/(1.0+2.5*target_point_dist*target_point_dist)
         self.target_dist = target_dist
         self.root_positions = root_positions
         self.root_position_reward = self.rew_buf
         # rewards for moving away form starting point
         for i in range(len(self.root_position_reward)):
-            self.root_position_reward[i] = sum(root_positions[i][0:3])
+            self.root_position_reward[i] = sum(root_positions[i][0:2])
             
         # rewards for facing the target
         target_angle = torch.atan2(
@@ -462,12 +472,15 @@ class Edna_Kinematics_Task(RLTask):
         )
         
         robot_orientation_tensor = tgm.quaternion_to_angle_axis(self.root_rot)
-        robot_orientation = robot_orientation_tensor[:, 2]
+        robot_orientation = robot_orientation_tensor[..., 2]
         target_orientation = target_angle
         orientation_diff = torch.abs(robot_orientation - target_orientation)
         orientation_diff = torch.min(orientation_diff, 2*np.pi - orientation_diff)
         
         angle_reward = 1.0 - orientation_diff / (2*np.pi)
+        
+        test = self.root_position_reward*pos_reward*angle_reward
+        print(f"Best Reward: {torch.max(test).item()}")
  
         self.rew_buf[:] = self.root_position_reward*pos_reward*angle_reward
 
@@ -477,9 +490,10 @@ class Edna_Kinematics_Task(RLTask):
         ones = torch.ones_like(self.reset_buf)
         die = torch.zeros_like(self.reset_buf)
         die = torch.where(self.target_dist > 20.0, ones, die)
-        die = torch.where(self.target_dist < 0.5, ones, die)
+        die = torch.where(self.target_dist <= 0.5, ones, die)
         die = torch.where(self.root_positions[..., 2] > 0.5, ones, die)
-        die = torch.where(torch.isnan(self.actions[...,0]), ones, die)
+        
+        # die = torch.where(torch.isnan(self.actions[...,0]), ones, die)
         # die = torch.where(torch.isnan(self.joint_velocities[...,0]), ones, die)
         # die = torch.where(torch.isnan(self.joint_velocities[...,1]), ones, die)
         # die = torch.where(torch.isnan(self.joint_velocities[...,2]), ones, die)
