@@ -242,6 +242,8 @@ class Robot(wpilib.TimedRobot):
         self.shuffleboard.addString("AUTO TURN STATE", lambda: (self.drive_train.auto_turn_value))
 
         self.arm_controller.setToggleButtons()
+        
+        self.main_drive_cmd = MainDriveCommand(self.auton_selector.drive_subsystem, self.joystick)
 
     def robotPeriodic(self):
         self.joystick.type = self.joystick_selector.getSelected()
@@ -269,6 +271,7 @@ class Robot(wpilib.TimedRobot):
             self.doActions()
             
     def autonomousExit(self):
+        CommandScheduler.getInstance().cancelAll()
         logging.info("Exiting Auton")
         global frc_stage
         frc_stage = "AUTON"
@@ -280,6 +283,7 @@ class Robot(wpilib.TimedRobot):
         self.drive_train.reset_slew()
         self.drive_train.unlockDrive()
         CommandScheduler.getInstance().cancelAll()
+        CommandScheduler.getInstance().setDefaultCommand(self.auton_selector.drive_subsystem, self.main_drive_cmd)
         logging.info("Entering Teleop")
         global frc_stage
         frc_stage = "TELEOP"
@@ -287,16 +291,19 @@ class Robot(wpilib.TimedRobot):
     def teleopPeriodic(self):
         self.drive_train.swerveDrive(self.joystick)
         self.arm_controller.setArm(self.joystick)
+        self.main_drive_cmd = MainDriveCommand(self.auton_selector.drive_subsystem, self.joystick)
         load_cmd = TurnToAngleCommand(self.auton_selector.drive_subsystem, 0, False, (self.drive_train.linX, self.drive_train.linY))
         score_cmd = TurnToAngleCommand(self.auton_selector.drive_subsystem, 180, False, (self.drive_train.linX, self.drive_train.linY))
         if self.drive_train.field_oriented_value and self.drive_train.auto_turn_value == "load":
+            CommandScheduler.getInstance().cancelAll()
             load_cmd.schedule()
-            CommandScheduler.getInstance().run()
         elif self.drive_train.field_oriented_value and self.drive_train.auto_turn_value == "score":
+            CommandScheduler.getInstance().cancelAll()
             score_cmd.schedule()
-            CommandScheduler.getInstance().run()
         else:
             CommandScheduler.getInstance().cancelAll()
+            
+        CommandScheduler.getInstance().run()
         global fms_attached
         fms_attached = wpilib.DriverStation.isFMSAttached()
         if self.use_threading:
