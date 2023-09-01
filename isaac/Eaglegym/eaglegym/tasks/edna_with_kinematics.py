@@ -459,6 +459,7 @@ class Edna_Kinematics_Task(RLTask):
         # pos_reward = 1.0 / (1.0 + (1/0.5)*(target_dist-0.5))
         pos_reward = 1.0/(1.0+2.5*target_point_dist*target_point_dist)
         self.target_dist = target_dist
+        self.target_point_dist = target_point_dist
         self.root_positions = root_positions
         self.root_position_reward = self.rew_buf
         # rewards for moving away form starting point
@@ -478,20 +479,23 @@ class Edna_Kinematics_Task(RLTask):
         orientation_diff = torch.min(orientation_diff, 2*np.pi - orientation_diff)
         
         angle_reward = 1.0 - orientation_diff / (2*np.pi)
+        self.test = self.root_position_reward*pos_reward*angle_reward
         
-        test = self.root_position_reward*pos_reward*angle_reward
-        print(f"Best Reward: {torch.max(test).item()}")
- 
-        self.rew_buf[:] = self.root_position_reward*pos_reward*angle_reward
+        if torch.isnan(self.test).any():
+            self.rew_buf[:] = torch.nan_to_num(self.test)
+        else:
+            self.rew_buf[:] = self.root_position_reward*pos_reward*angle_reward
+        print(f"Best Reward: {torch.max(self.test).item()}")
 
     def is_done(self) -> None:
         # print("line 312")
         # These are the dying constaints. It dies if it is going in the wrong direction or starts flying
         ones = torch.ones_like(self.reset_buf)
         die = torch.zeros_like(self.reset_buf)
-        die = torch.where(self.target_dist > 20.0, ones, die)
-        die = torch.where(self.target_dist <= 0.5, ones, die)
+        die = torch.where(self.target_point_dist > 20.0, ones, die)
+        die = torch.where(self.target_point_dist <= 0.5, ones, die)
         die = torch.where(self.root_positions[..., 2] > 0.5, ones, die)
+        die = torch.where(torch.isnan(self.test).any(), ones, die)
         
         # die = torch.where(torch.isnan(self.actions[...,0]), ones, die)
         # die = torch.where(torch.isnan(self.joint_velocities[...,0]), ones, die)

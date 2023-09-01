@@ -283,7 +283,6 @@ class Robot(wpilib.TimedRobot):
         self.drive_train.reset_slew()
         self.drive_train.unlockDrive()
         CommandScheduler.getInstance().cancelAll()
-        CommandScheduler.getInstance().setDefaultCommand(self.auton_selector.drive_subsystem, self.main_drive_cmd)
         logging.info("Entering Teleop")
         global frc_stage
         frc_stage = "TELEOP"
@@ -297,13 +296,13 @@ class Robot(wpilib.TimedRobot):
         if self.drive_train.field_oriented_value and self.drive_train.auto_turn_value == "load":
             CommandScheduler.getInstance().cancelAll()
             load_cmd.schedule()
+            CommandScheduler.getInstance().run()
         elif self.drive_train.field_oriented_value and self.drive_train.auto_turn_value == "score":
             CommandScheduler.getInstance().cancelAll()
             score_cmd.schedule()
+            CommandScheduler.getInstance().run()
         else:
             CommandScheduler.getInstance().cancelAll()
-            
-        CommandScheduler.getInstance().run()
         global fms_attached
         fms_attached = wpilib.DriverStation.isFMSAttached()
         if self.use_threading:

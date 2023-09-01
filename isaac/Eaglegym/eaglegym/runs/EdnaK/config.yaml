@@ -164,8 +164,8 @@ rl_device: cuda:0
 multi_gpu: false
 num_threads: 4
 solver_type: 1
-test: false
-checkpoint: /isaac-sim/runs/EdnaK/nn/last_EdnaK_ep_400_rew_-0.36624026.pth
+test: true
+checkpoint: /isaac-sim/runs/EdnaK/nn/last_EdnaK_ep_775_rew_157.18164.pth
 headless: false
 enable_livestream: false
 mt_timeout: 30
