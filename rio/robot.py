@@ -289,15 +289,15 @@ class Robot(wpilib.TimedRobot):
         frc_stage = "TELEOP"
 
     def teleopPeriodic(self):
-        self.load_cmd.setOtherVelocities((self.drive_train.linX, self.drive_train.linY))
-        self.score_cmd.setOtherVelocities((self.drive_train.linX, self.drive_train.linY))
         if not self.load_cmd.isScheduled() and not self.score_cmd.isScheduled():
             self.drive_train.swerveDrive(self.joystick)
         self.arm_controller.setArm(self.joystick)
         if self.drive_train.field_oriented_value and self.drive_train.auto_turn_value == "load":
+            self.load_cmd.setOtherVelocities((self.drive_train.linX, self.drive_train.linY))
             self.load_cmd.schedule()
             CommandScheduler.getInstance().run()
         elif self.drive_train.field_oriented_value and self.drive_train.auto_turn_value == "score":
+            self.score_cmd.setOtherVelocities((self.drive_train.linX, self.drive_train.linY))
             self.score_cmd.schedule()
             CommandScheduler.getInstance().run()
         else:
