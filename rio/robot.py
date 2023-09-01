@@ -1,4 +1,5 @@
 from hardware_interface.drivetrain import DriveTrain
+import hardware_interface.drivetrain as dt
 from hardware_interface.joystick import Joystick
 from hardware_interface.armcontroller import ArmController
 from commands2 import *
@@ -240,6 +241,12 @@ class Robot(wpilib.TimedRobot):
         self.shuffleboard.addDoubleArray("MOTOR TEMPS", lambda: (self.drive_train.motor_temps))
         self.shuffleboard.addDoubleArray("JOYSTICK OUTPUT", lambda: ([self.drive_train.linX, self.drive_train.linY, self.drive_train.angZ]))
         self.shuffleboard.addString("AUTO TURN STATE", lambda: (self.drive_train.auto_turn_value))
+        
+        self.second_order_chooser = wpilib.SendableChooser()
+        self.second_order_chooser.setDefaultOption("1st Order", False)
+        self.second_order_chooser.addOption("2nd Order", True)
+        
+        self.shuffleboard.add("2nd Order", self.second_order_chooser)
 
         self.arm_controller.setToggleButtons()
         
@@ -289,6 +296,7 @@ class Robot(wpilib.TimedRobot):
         frc_stage = "TELEOP"
 
     def teleopPeriodic(self):
+        dt.ENABLE_2ND_ORDER = self.second_order_chooser.getSelected()
         if not self.load_cmd.isScheduled() and not self.score_cmd.isScheduled():
             self.drive_train.swerveDrive(self.joystick)
         self.arm_controller.setArm(self.joystick)

@@ -581,6 +581,7 @@ class DriveTrain():
         return updatedSpeeds
 
     def swerveDrive(self, joystick: Joystick):
+        print(f"SECOND_ORDER: {ENABLE_2ND_ORDER}")
         angle_source = self.angle_source_selector.getSelected()
         self.ROBOT_MAX_TRANSLATIONAL = self.profile_selector.getSelected()[0]
         self.ROBOT_MAX_ROTATIONAL = self.profile_selector.getSelected()[1]
