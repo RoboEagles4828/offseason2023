@@ -30,7 +30,8 @@ navx_sim_data : list = None
 frc_stage = "DISABLED"
 fms_attached = False
 stop_threads = False
-nt : NetworkTable = None
+send_nt : NetworkTable = None
+recieve_nt : NetworkTable = None
 
 # Logging
 format = "%(asctime)s: %(message)s"
@@ -63,12 +64,14 @@ def initDDS(ddsAction, participantName, actionName):
     return dds
 
 def initNetworkTable():
-    global nt
-    if nt == None:
+    global send_nt
+    global recieve_nt
+    if send_nt == None or recieve_nt == None:
         NetworkTables.initialize(server="localhost")
-        nt = NetworkTables.getTable("Dashboard")
+        send_nt = NetworkTables.getTable("Dashboard")
+        recieve_nt = NetworkTables.getTable("Dashboard_Sub")
         logging.info("Success: NetworkTable created")
-    return nt
+    return (send_nt, recieve_nt)
 
 ############################################
 ## Threads
@@ -78,8 +81,11 @@ def threadLoop(name, dds, action):
     global frc_stage
     try:
         while stop_threads == False:
-            if (frc_stage == 'AUTON' and name != "joystick") or (name in ["encoder", "stage-broadcaster", "dashboard", "dashboard_sub", "service", "imu"]) or (frc_stage == 'TELEOP'):
-                action(dds)
+            if (frc_stage == 'AUTON' and name != "joystick") or (name in ["encoder", "stage-broadcaster", "dashboard", "dashboard_sub"]) or (frc_stage == 'TELEOP'):
+                if "dashboard" in name:
+                    action()
+                else:
+                    action(dds)
             time.sleep(20/1000)
     except Exception as e:
         logging.error(f"An issue occured with the {name} thread")
@@ -187,13 +193,13 @@ def dashboardThread():
     dashboard_publisher = initDDS(DDS_Publisher, DASHBOARD_PARTICIPANT_NAME, DASHBOARD_WRITER_NAME)
     threadLoop('dashboard', dashboard_publisher, dashboardAction)
     
-def dashboardAction(publisher : DDS_Publisher):
+def dashboardAction():
     global dashboard_data_list
     data = ""
     for i in dashboard_data_list:
         data += f"{str(i)}|"
 
-    nt.putString("dashboard", data)
+    send_nt.putString("dashboard", data)
 ############################################
 
 ################## DASHBOARD SUB ###############
@@ -204,8 +210,8 @@ def dashboardSubThread():
     dashboard_subscriber = initDDS(DDS_Subscriber, DASHBOARD_SUB, DASHBOARD_READER)
     threadLoop('dashboard_sub', dashboard_subscriber, dashboardSubAction)
     
-def dashboardSubAction(subscriber : DDS_Subscriber):
-    stuff = nt.getString("dashboard_sub", "str")
+def dashboardSubAction():
+    stuff = recieve_nt.getString("dashboard_sub", "None")
     if stuff:
         data = stuff
         dataArr = data.split("|")
@@ -273,20 +279,20 @@ class Robot(wpilib.TimedRobot):
             if ENABLE_DASHBOARD:
                 self.threads.append({"name": "dashboard", "thread": startThread("dashboard") })
                 self.threads.append({"name": "dashboard_sub", "thread": startThread("dashboard_sub") })            
-            self.threads.append({"name": "service", "thread": startThread("service") })
-            self.threads.append({"name": "imu", "thread": startThread("imu") })
+            # self.threads.append({"name": "service", "thread": startThread("service") })
+            # self.threads.append({"name": "imu", "thread": startThread("imu") })
             
         else:
             self.encoder_publisher = DDS_Publisher(xml_path, ENCODER_PARTICIPANT_NAME, ENCODER_WRITER_NAME)
             self.stage_publisher = DDS_Publisher(xml_path, STAGE_PARTICIPANT_NAME, STAGE_WRITER_NAME)
             self.dashboard_publisher = DDS_Publisher(xml_path, DASHBOARD_PARTICIPANT_NAME, DASHBOARD_WRITER_NAME)
             self.dashboard_subscriber = DDS_Subscriber(xml_path, DASHBOARD_SUB, DASHBOARD_READER)
-            self.service_publisher = DDS_Publisher(xml_path, SERVICE_PARTICIPANT_NAME, SERVICE_WRITER_NAME)
-            self.imu_subscriber = DDS_Subscriber(xml_path, IMU_PARTICIPANT_NAME, IMU_READER_NAME)
+            # self.service_publisher = DDS_Publisher(xml_path, SERVICE_PARTICIPANT_NAME, SERVICE_WRITER_NAME)
+            # self.imu_subscriber = DDS_Subscriber(xml_path, IMU_PARTICIPANT_NAME, IMU_READER_NAME)
         
         self.arm_controller = initArmController()
         self.drive_train = initDriveTrain()
-        self.nt = initNetworkTable()
+        self.send_nt, self.recieve_nt = initNetworkTable()
         self.drive_train.is_sim = self.isSimulation()
         self.joystick = Joystick("xbox")
         self.auton_selector = AutonSelector(self.arm_controller, self.drive_train)
@@ -424,8 +430,8 @@ class Robot(wpilib.TimedRobot):
         stageBroadcasterAction(self.stage_publisher)
         dashboardAction(self.dashboard_publisher)
         dashboardSubAction(self.dashboard_subscriber)
-        serviceAction(self.service_publisher)
-        imuAction(self.imu_subscriber)
+        # serviceAction(self.service_publisher)
+        # imuAction(self.imu_subscriber)
         
     def stopThreads(self):
         global stop_threads

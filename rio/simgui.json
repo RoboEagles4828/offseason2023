@@ -29,6 +29,8 @@
   "NTProvider": {
     "types": {
       "/FMSInfo": "FMSInfo",
+      "/Shuffleboard/Main/2nd Order": "String Chooser",
+      "/Shuffleboard/Main/ANGLE SOURCE": "String Chooser",
       "/Shuffleboard/Main/AUTON": "String Chooser",
       "/Shuffleboard/Main/JOYSTICK": "String Chooser",
       "/Shuffleboard/Main/NAVX": "Gyro",
@@ -39,6 +41,12 @@
     }
   },
   "NetworkTables": {
+    "Persistent Values": {
+      "open": false
+    },
+    "Transitory Values": {
+      "open": false
+    },
     "retained": {
       "Dashboard": {
         "open": true
@@ -69,6 +77,36 @@
     "Connections": {
       "open": true
     },
+    "NT3@127.0.0.1:50496": {
+      "Publishers": {
+        "open": true
+      },
+      "Subscribers": {
+        "open": true
+      },
+      "open": true
+    },
+    "NT3@127.0.0.1:50559": {
+      "Publishers": {
+        "open": true
+      },
+      "Subscribers": {
+        "open": true
+      },
+      "open": true
+    },
+    "NT3@127.0.0.1:56685": {
+      "Publishers": {
+        "open": true
+      },
+      "open": true
+    },
+    "NT3@127.0.0.1:56686": {
+      "Publishers": {
+        "open": true
+      },
+      "open": true
+    },
     "NT3@127.0.0.1:59714": {
       "Publishers": {
         "open": true
@@ -77,8 +115,7 @@
     },
     "Server": {
       "open": true
-    },
-    "visible": true
+    }
   },
   "Plot": {
     "Plot <0>": {

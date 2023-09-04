@@ -1,6 +1,8 @@
 {
   "Docking": {
-    "Data": []
+    "Data": [
+      "DockNode  ID=0x00000001 Pos=237,38 Size=233,216 Selected=0x2D9B9756"
+    ]
   },
   "MainWindow": {
     "GLOBAL": {
@@ -10,8 +12,46 @@
       "style": "1",
       "userScale": "3",
       "width": "1846",
-      "xpos": "332",
-      "ypos": "432"
+      "xpos": "507",
+      "ypos": "271"
+    }
+  },
+  "Table": {
+    "0x542B5671,2": {
+      "Column 0  Width": "188",
+      "Column 1  Width": "441",
+      "RefScale": "16"
+    },
+    "0x665E1402,2": {
+      "Column 0  Width": "160",
+      "Column 1  Weight": "1.0000",
+      "RefScale": "16"
+    },
+    "0x965B9C9E,2": {
+      "Column 0  Width": "160",
+      "Column 1  Weight": "1.0000",
+      "RefScale": "16"
+    },
+    "0xB7E3A053,2": {
+      "Column 0  Width": "160",
+      "Column 1  Weight": "1.0000",
+      "RefScale": "16"
+    },
+    "0xE56EC1C2,4": {
+      "Column 0  Weight": "1.0000",
+      "Column 1  Weight": "1.0000",
+      "Column 2  Weight": "1.0000",
+      "Column 3  Weight": "1.0000"
+    },
+    "0xFC87C091,2": {
+      "Column 0  Width": "160",
+      "Column 1  Weight": "1.0000",
+      "RefScale": "16"
+    },
+    "0xFFBC7203,2": {
+      "Column 0  Width": "160",
+      "Column 1  Weight": "1.0000",
+      "RefScale": "16"
     }
   },
   "Window": {
@@ -27,18 +67,18 @@
     },
     "###Joysticks": {
       "Collapsed": "0",
-      "Pos": "752,454",
-      "Size": "976,82"
+      "Pos": "734,200",
+      "Size": "976,278"
     },
     "###NetworkTables": {
       "Collapsed": "0",
-      "Pos": "365,175",
-      "Size": "750,645"
+      "Pos": "397,182",
+      "Size": "653,438"
     },
     "###NetworkTables Info": {
       "Collapsed": "0",
-      "Pos": "1143,139",
-      "Size": "679,660"
+      "Pos": "447,220",
+      "Size": "453,326"
     },
     "###Other Devices": {
       "Collapsed": "1",
@@ -52,12 +92,13 @@
     },
     "###RoboRIO": {
       "Collapsed": "0",
+      "DockId": "0x00000001,0",
       "Pos": "237,38",
       "Size": "233,216"
     },
     "###System Joysticks": {
       "Collapsed": "0",
-      "Pos": "1019,167",
+      "Pos": "917,477",
       "Size": "232,254"
     },
     "###Timing": {
