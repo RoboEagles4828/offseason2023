@@ -48,14 +48,31 @@ def generate_launch_description():
                 'pos_tracking.base_frame': f'{NAMESPACE}/base_link',
                 'pos_tracking.map_frame': f'{NAMESPACE}/map',
                 'pos_tracking.odometry_frame': f'{NAMESPACE}/odom',
-                'general.zed_id': 0,
-                'general.serial_number': 0,
+                # 'general.zed_id': 0,
+                # 'general.serial_number': 0,
                 'pos_tracking.publish_tf': True,
                 'pos_tracking.publish_map_tf': True,
                 'pos_tracking.publish_imu_tf': True
             }
         ]
     )
+    
+    # throttle_zed_node = Node(
+    #     package='topic_tools',
+    #     executable='throttle',
+    #     name='throttle_zed',
+    #     namespace=str(NAMESPACE),
+    #     output='screen',
+    #     parameters=[
+    #         {
+    #             'topics': [
+    #                 f'{NAMESPACE}/zed/rgb/image_rect_color',
+    #                 f'{NAMESPACE}/zed/depth/depth_registered'
+    #             ],
+    #             'throttle_rate': 2.0
+    #         }
+    #     ]
+    # )
 
 
     delay_zed_wrapper = TimerAction(period=5.0, actions=[zed_wrapper_node])
@@ -65,5 +82,6 @@ def generate_launch_description():
     
     # Add nodes to LaunchDescription
     ld.add_action(delay_zed_wrapper)
+    # ld.add_action(throttle_zed_node)
 
     return ld

@@ -1,4 +1,5 @@
 from hardware_interface.drivetrain import DriveTrain
+import hardware_interface.drivetrain as dt
 from hardware_interface.joystick import Joystick
 from hardware_interface.armcontroller import ArmController
 from commands2 import *
@@ -315,8 +316,17 @@ class Robot(wpilib.TimedRobot):
         self.shuffleboard.addDoubleArray("MOTOR TEMPS", lambda: (self.drive_train.motor_temps))
         self.shuffleboard.addDoubleArray("JOYSTICK OUTPUT", lambda: ([self.drive_train.linX, self.drive_train.linY, self.drive_train.angZ]))
         self.shuffleboard.addString("AUTO TURN STATE", lambda: (self.drive_train.auto_turn_value))
+        
+        self.second_order_chooser = wpilib.SendableChooser()
+        self.second_order_chooser.setDefaultOption("1st Order", False)
+        self.second_order_chooser.addOption("2nd Order", True)
+        
+        self.shuffleboard.add("2nd Order", self.second_order_chooser)
 
         self.arm_controller.setToggleButtons()
+        
+        self.load_cmd = TurnToAngleCommand(self.auton_selector.drive_subsystem, 0, False)
+        self.score_cmd = TurnToAngleCommand(self.auton_selector.drive_subsystem, 180, False)
 
     def robotPeriodic(self):
         self.joystick.type = self.joystick_selector.getSelected()
@@ -364,6 +374,7 @@ class Robot(wpilib.TimedRobot):
             self.doActions()
             
     def autonomousExit(self):
+        CommandScheduler.getInstance().cancelAll()
         logging.info("Exiting Auton")
         global frc_stage
         frc_stage = "AUTON"
@@ -380,18 +391,17 @@ class Robot(wpilib.TimedRobot):
         frc_stage = "TELEOP"
 
     def teleopPeriodic(self):
-        if self.profile:
-            self.drive_train.swerveDrive(self.joystick, profile=self.profile)
-        else:
+        dt.ENABLE_2ND_ORDER = self.second_order_chooser.getSelected()
+        if not self.load_cmd.isScheduled() and not self.score_cmd.isScheduled():
             self.drive_train.swerveDrive(self.joystick)
         self.arm_controller.setArm(self.joystick)
-        load_cmd = TurnToAngleCommand(self.auton_selector.drive_subsystem, 0, False, (self.drive_train.linX, self.drive_train.linY))
-        score_cmd = TurnToAngleCommand(self.auton_selector.drive_subsystem, 180, False, (self.drive_train.linX, self.drive_train.linY))
         if self.drive_train.field_oriented_value and self.drive_train.auto_turn_value == "load":
-            load_cmd.schedule()
+            self.load_cmd.setOtherVelocities((self.drive_train.linX, self.drive_train.linY))
+            self.load_cmd.schedule()
             CommandScheduler.getInstance().run()
         elif self.drive_train.field_oriented_value and self.drive_train.auto_turn_value == "score":
-            score_cmd.schedule()
+            self.score_cmd.setOtherVelocities((self.drive_train.linX, self.drive_train.linY))
+            self.score_cmd.schedule()
             CommandScheduler.getInstance().run()
         else:
             CommandScheduler.getInstance().cancelAll()

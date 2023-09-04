@@ -117,3 +117,8 @@ COPY zed2i-config.yaml common.yaml
 WORKDIR /root/ros2_ws/src/zed-ros2-wrapper/zed_wrapper/launch
 RUN rm zed2i.launch.py
 COPY zed2i.launch.py zed2i.launch.py
+
+WORKDIR /usr/local/zed/settings
+COPY SN39192289.conf SN39192289.conf
+
+WORKDIR /root/ros2_ws/src/zed-ros2-wrapper/zed_wrapper/launch

@@ -1,10 +1,30 @@
 from commands2 import *
+from commands2._impl import PerpetualCommand
 from wpilib import Timer
 import wpimath
 from wpimath.controller import PIDController
 from hardware_interface.subsystems.drive_subsystem import DriveSubsystem
 import logging
 import math
+
+class MainDriveCommand(CommandBase):
+    def __init__(self, drive: DriveSubsystem, joystick):
+        super().__init__()
+        self.drive = drive
+        self.joystick = joystick
+        self.addRequirements(self.drive)
+    
+    def initialize(self):
+        self.drive.unlockDrive()
+        
+    def execute(self):
+        self.drive.swerve_drive(self.joystick)
+        
+    def end(self, interrupted):
+        self.drive.stop()
+        
+    def isFinished(self):
+        return False
 
 class DriveTimeAutoCommand(CommandBase):
     def __init__(self, drive: DriveSubsystem, seconds: float, velocity: tuple[float, float, float]):
@@ -33,16 +53,16 @@ class DriveTimeAutoCommand(CommandBase):
         return self.timer.hasElapsed(self.seconds)
     
 class TurnToAngleCommand(CommandBase):
-    def __init__(self, drive: DriveSubsystem, angle: float, relative: bool, other_velocities=(0, 0)):
+    def __init__(self, drive: DriveSubsystem, angle: float, relative: bool):
         super().__init__()
         self.drive = drive
         self.angle = angle
         self.target = 0
         self.relative = relative
-        self.turn_pid = PIDController(0.3, 0, 0.1)
+        self.turn_pid = PIDController(0.1, 0, 0.1)
         self.turn_pid.enableContinuousInput(-180, 180)
         self.turn_pid.setTolerance(5)
-        self.other = [i/self.drive.drivetrain.ROBOT_MAX_TRANSLATIONAL for i in other_velocities]
+        self.other = [i/self.drive.drivetrain.ROBOT_MAX_TRANSLATIONAL for i in (0, 0)]
         self.addRequirements(self.drive)
         
     def initialize(self):
@@ -60,6 +80,9 @@ class TurnToAngleCommand(CommandBase):
             return min
         else:
             return value
+        
+    def setOtherVelocities(self, velocities):
+        self.other = [i/self.drive.drivetrain.ROBOT_MAX_TRANSLATIONAL for i in velocities]
         
     def execute(self):
         current_angle = self.drive.getGyroAngle180()
@@ -82,7 +105,7 @@ class TurnToAngleAutonCommand(CommandBase):
         self.angle = angle
         self.target = 0
         self.relative = relative
-        self.turn_pid = PIDController(0.3, 0, 0.1)
+        self.turn_pid = PIDController(0.2, 0, 0.1)
         self.turn_pid.enableContinuousInput(-180, 180)
         self.turn_pid.setTolerance(5)
         self.other = [i/self.drive.drivetrain.ROBOT_MAX_TRANSLATIONAL for i in other_velocities]

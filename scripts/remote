@@ -29,13 +29,16 @@ smart-deploy() {
         --exclude edna_tests \
         --exclude .rsyncmetadata \
     /workspaces/offseason2023/ $USERNAME@$IP_ADDRESS:$REMOTE_PATH \
-        | egrep -v "sending incremental file list" | egrep -v "^\." | awk '{print $2}' | tr ' ' '\n' >> /workspaces/offseason2023/.rsyncmetadata
+        | egrep -v "sending incremental file list" | egrep -v "^\." | awk '{print $2}' | tr ' ' '\n' > /workspaces/offseason2023/.rsyncmetadata
     
     echo "Files that will be changed:"
+    echo ""
     printf '%s\n' $(</workspaces/offseason2023/.rsyncmetadata)
+    echo ""
 
     read -p "Would you like to sync the files? (y/n) " response
     if [ "$response" != "y" ]; then
+        echo -e "${RED}Aborting...${NC}"
         exit
     fi
 

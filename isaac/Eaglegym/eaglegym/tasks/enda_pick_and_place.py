@@ -31,6 +31,7 @@ from eaglegym.robots.articulations.edna import Edna
 from eaglegym.robots.articulations.views.edna_view import EdnaView
 from eaglegym.tasks.utils.usd_utils import set_drive
 from eaglegym.inverse_kinematics.inverse_kinematics import InverseKinematics
+from omni.isaac.core.utils.stage import add_reference_to_stage
 from omni.isaac.core.objects import DynamicSphere
 
 
@@ -42,6 +43,8 @@ from omni.isaac.core.prims import RigidPrimView
 import numpy as np
 import torch
 import math
+import os
+from random import randint, choice
 
 
 class Edna_Pick_And_Place_Task(RLTask):
@@ -94,6 +97,8 @@ class Edna_Pick_And_Place_Task(RLTask):
 
     # Adds all of the items to the stage
     def set_up_scene(self, scene) -> None:
+        file_path = os.path.abspath(__file__)
+        self.project_root_path = os.path.abspath(os.path.join(file_path, "../../../../../../"))
         # Adds USD of edna to stage
         self.get_edna()
         # Adds ball to stage
@@ -103,8 +108,9 @@ class Edna_Pick_And_Place_Task(RLTask):
         self._edna = EdnaView(
             prim_paths_expr="/World/envs/.*/edna", name="ednaview")
         # Allows for position tracking of targets
-        self._balls = RigidPrimView(
-            prim_paths_expr="/World/envs/.*/cube", name="targets_view", reset_xform_properties=False)
+        self.gamepieces = []
+        # self._balls = RigidPrimView(
+        #     prim_paths_expr="/World/envs/.*/cube", name="targets_view", reset_xform_properties=False)
         # Adds everything to the scene
         scene.add(self._edna)
         for axle in self._edna._axle:
@@ -126,18 +132,36 @@ class Edna_Pick_And_Place_Task(RLTask):
 
     def get_target(self):
         # Adds a red ball as target
-        radius = 0.1  # meters
-        color = torch.tensor([0, 0, 1])
-        ball = DynamicSphere(
-            prim_path=self.default_zero_env_path + "/cube",
-            translation=self._ball_position,
-            name="target_0",
-            radius=radius,
-            color=color,
-        )
-        self._sim_config.apply_articulation_settings("cube", get_prim_at_path(
-            ball.prim_path), self._sim_config.parse_actor_config("cube"))
-        ball.set_collision_enabled(True)
+        # radius = 0.1  # meters
+        # color = torch.tensor([0, 0, 1])
+        # ball = DynamicSphere(
+        #     prim_path=self.default_zero_env_path + "/cube",
+        #     translation=self._ball_position,
+        #     name="target_0",
+        #     radius=radius,
+        #     color=color,
+        # )
+        # self._sim_config.apply_articulation_settings("cube", get_prim_at_path(
+        #     ball.prim_path), self._sim_config.parse_actor_config("cube"))
+        # ball.set_collision_enabled(True)
+        
+        cone = os.path.join(self.project_root_path, "isaac/assets/game_pieces/GE-23700_JFH.usd")
+        cube = os.path.join(self.project_root_path, "isaac/assets/game_pieces/GE-23701_JFL.usd")
+        next_piece = len(self.gamepieces)
+        if choice([True, False]):
+            name = "/World/Cube_"+str(next_piece)
+            view = "cube_"+str(next_piece)+"_view"
+            add_reference_to_stage(cube, "/World/Cube_"+str(next_piece))
+            self.gamepieces.append(RigidPrim(name, view, position=position))
+        else:
+            name = "/World/Cone_"+str(next_piece)
+            view = "cone_"+str(next_piece)+"_view" 
+            add_reference_to_stage(cone, name)
+            self.gamepieces.append(RigidPrim(name, view, position=position))
+    def get_field_objects(self):
+        substation = os.path.join(self.project_root_path, "assets/substation")
+
+        
 
     def get_observations(self) -> dict:
         # Gets various positions and velocties to observations

@@ -13,21 +13,21 @@ def generate_launch_description():
     
     common = { 'use_sim_time': 'true', 'namespace': NAMESPACE }
     
+    real_layer = IncludeLaunchDescription(
+            PythonLaunchDescriptionSource([os.path.join(
+                bringup_path,'launch','real.launch.py'
+            )]), launch_arguments=common.items())
+    
     rtab_layer = IncludeLaunchDescription(
             PythonLaunchDescriptionSource([os.path.join(
                 bringup_path,'launch','rtab-real.launch.py'
             )]))
     
-    rviz = IncludeLaunchDescription(
-            PythonLaunchDescriptionSource([os.path.join(
-                bringup_path,'launch','rviz.launch.py'
-            )]))
-    
-    delay_rviz = TimerAction(period=5.0, actions=[rviz])
+    delay_rtab = TimerAction(period=5.0, actions=[rtab_layer])
     
 
     # Launch!
     return LaunchDescription([
-        rtab_layer,
-        delay_rviz,
+        real_layer,
+        rtab_layer
     ])

@@ -4,6 +4,7 @@ RUN mkdir -p /opt/install-scripts
 ARG INSTALL_COMMON="true"
 ARG INSTALL_DOCKER="true"
 ARG INSTALL_RTAB="true"
+ARG INSTALL_PYTHON_DEPS="true"
 
 ######################
 # User configuration #
@@ -73,7 +74,7 @@ COPY install-scripts/install-rtab /opt/install-scripts/install-rtab
 RUN chmod +x /opt/install-scripts/install-rtab
 USER ${USERNAME}
 RUN sudo apt update && sudo apt-get install -y python3-pip
-RUN /opt/install-scripts/install-rtab ${INSTALL_RTAB}
+RUN sudo /opt/install-scripts/install-rtab ${INSTALL_RTAB}
 USER root
 
 ####################
@@ -92,13 +93,9 @@ RUN mkdir -p '/opt/workspace'
 #######################
 # Install Python deps #
 #######################
-RUN pip install rticonnextdds-connector \
-robotpy==2023.4.2.1 \
-robotpy[ctre] \
-robotpy[all] \
-robotpy[commands2] \
-robotpy[navx] \
-wpilib==2023.4.2.0 
+COPY install-scripts/install-python-deps /opt/install-scripts/install-python-deps
+RUN chmod +x /opt/install-scripts/install-python-deps
+RUN /opt/install-scripts/install-python-deps ${INSTALL_PYTHON_DEPS}
 
 ######################
 # Install Git Extras #

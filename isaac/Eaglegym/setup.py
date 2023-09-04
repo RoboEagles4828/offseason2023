@@ -19,6 +19,7 @@ INSTALL_REQUIRES = [
     "rl-games==1.6.0",
     "shapely",
     "squaternion",
+    "torchgeometry",
     "robotpy==2022.4.8",
     "wpilib==2022.4.1.6"
 ]

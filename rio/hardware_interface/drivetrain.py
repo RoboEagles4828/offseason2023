@@ -1,9 +1,10 @@
 import wpilib
-from wpimath.geometry._geometry import Translation2d, Rotation2d
+from wpimath.geometry._geometry import *
 from wpimath.kinematics import SwerveDrive4Kinematics, ChassisSpeeds, SwerveModuleState
 from wpimath.controller import ProfiledPIDControllerRadians
 from wpimath._controls._controls.trajectory import TrapezoidProfileRadians
 from hardware_interface.motion_magic import MotionMagic
+from hardware_interface import GeometryUtils
 import ctre
 import ctre.sensors
 import math
@@ -17,6 +18,8 @@ from hardware_interface.navxSim import NavxSim
 
 
 NAMESPACE = 'real'
+
+ENABLE_2ND_ORDER = True
 
 # Small Gear Should Face the back of the robot
 # All wheel drive motors should not be inverted
@@ -564,21 +567,28 @@ class DriveTrain():
             return SwerveModuleState(desiredState.speed * -1.0, desiredState.angle.rotateBy(Rotation2d.fromDegrees(180)))
         else:
             return SwerveModuleState(desiredState.speed, desiredState.angle)
+        
+    def correctForDynamics(self, originalSpeeds: ChassisSpeeds):
+        LOOP_TIME_S = 0.02
+        futureRobotPose = Pose2d(
+            originalSpeeds.vx * LOOP_TIME_S,
+            originalSpeeds.vy * LOOP_TIME_S,
+            Rotation2d(originalSpeeds.omega * LOOP_TIME_S)
+        )
+        twistForPose = GeometryUtils.log(futureRobotPose)
+        updatedSpeeds = ChassisSpeeds(
+            twistForPose.dx / LOOP_TIME_S,
+            twistForPose.dy / LOOP_TIME_S,
+            twistForPose.dtheta / LOOP_TIME_S
+        )
+        return updatedSpeeds
 
-    def swerveDrive(self, joystick: Joystick, profile=None):
-        if profile:
-            if profile == "competition":
-                self.ROBOT_MAX_TRANSLATIONAL = self.comp[0]
-                self.ROBOT_MAX_ROTATIONAL = self.comp[1]
-                self.MODULE_MAX_SPEED = self.comp[0]
-            elif profile == "workshop":
-                self.ROBOT_MAX_TRANSLATIONAL = self.work[0]
-                self.ROBOT_MAX_ROTATIONAL = self.work[1]
-                self.MODULE_MAX_SPEED = self.work[0]
-        else:
-            self.ROBOT_MAX_TRANSLATIONAL = self.profile_selector.getSelected()[0]
-            self.ROBOT_MAX_ROTATIONAL = self.profile_selector.getSelected()[1]
-            self.MODULE_MAX_SPEED = self.profile_selector.getSelected()[0]
+    def swerveDrive(self, joystick: Joystick):
+        print(f"SECOND_ORDER: {ENABLE_2ND_ORDER}")
+        angle_source = self.angle_source_selector.getSelected()
+        self.ROBOT_MAX_TRANSLATIONAL = self.profile_selector.getSelected()[0]
+        self.ROBOT_MAX_ROTATIONAL = self.profile_selector.getSelected()[1]
+        self.MODULE_MAX_SPEED = self.profile_selector.getSelected()[0]
 
         # slew 
         # gives joystick ramping
@@ -631,30 +641,18 @@ class DriveTrain():
                 navx_value = Rotation2d.fromDegrees(self.navx.getYaw()).__mul__(-1)
             elif angle_source == "normal":
                 navx_value = self.navx.getRotation2d().__mul__(-1)
-            self.speeds = ChassisSpeeds.fromFieldRelativeSpeeds(linearX, linearY, angularZ, navx_value)
-            #if self.last_print != f"NavX: {self.navx.getRotation2d().degrees()*-1} linX: {round(self.speeds.vx, 2)} linY: {round(self.speeds.vy, 2)} angZ: {round(self.speeds.omega, 2)} MoveScaleX: {round(self.move_scale_x, 2)} MoveScaleY: {round(self.move_scale_y, 2)} TurnScale: {round(self.turn_scale, 2)}":
-            #logging.info(f"NavX: {self.navx.getRotation2d().degrees()*-1} linX: {round(self.speeds.vx, 2)} linY: {round(self.speeds.vy, 2)} angZ: {round(self.speeds.omega, 2)} MoveScaleX: {round(self.move_scale_x, 2)} MoveScaleY: {round(self.move_scale_y, 2)} TurnScale: {round(self.turn_scale, 2)}")
-                #self.last_print = f"NavX: {self.navx.getRotation2d().degrees()*-1} linX: {round(self.speeds.vx, 2)} linY: {round(self.speeds.vy, 2)} angZ: {round(self.speeds.omega, 2)} MoveScaleX: {round(self.move_scale_x, 2)} MoveScaleY: {round(self.move_scale_y, 2)} TurnScale: {round(self.turn_scale, 2)}"
-        elif self.field_oriented_value and self.auto_turn_value == "load":
-            # auto turn to 0 degress while moving
-            # if self.navx.getYaw() > 0.4:
-            #     self.speeds = ChassisSpeeds.fromFieldRelativeSpeeds(linearX, linearY, self.ROBOT_MAX_ROTATIONAL/self.turn_scale, self.navx.getRotation2d().__mul__(-1))
-            # elif self.navx.getYaw() < -0.4:
-            #     self.speeds = ChassisSpeeds.fromFieldRelativeSpeeds(linearX, linearY, -self.ROBOT_MAX_ROTATIONAL/self.turn_scale, self.navx.getRotation2d().__mul__(-1))
-            # else:
-            #     self.speeds = ChassisSpeeds.fromFieldRelativeSpeeds(linearX, linearY, 0.0, self.navx.getRotation2d().__mul__(-1))
-            pass
-        elif self.field_oriented_value and self.auto_turn_value == "score":
-            # auto turn to 180 degress while moving
-            # if self.navx.getYaw() < 179.5 and self.navx.getYaw() >= 0.0:
-            #     self.speeds = ChassisSpeeds.fromFieldRelativeSpeeds(linearX, linearY, -self.ROBOT_MAX_ROTATIONAL/self.turn_scale, self.navx.getRotation2d().__mul__(-1))
-            # elif self.navx.getYaw() > -179.5 and self.navx.getYaw() < 0.0:
-            #     self.speeds = ChassisSpeeds.fromFieldRelativeSpeeds(linearX, linearY, self.ROBOT_MAX_ROTATIONAL/self.turn_scale, self.navx.getRotation2d().__mul__(-1))
-            # else:
-            #     self.speeds = ChassisSpeeds.fromFieldRelativeSpeeds(linearX, linearY, 0.0, self.navx.getRotation2d().__mul__(-1))
-            pass
+                
+            if ENABLE_2ND_ORDER:
+                self.speeds = self.correctForDynamics(ChassisSpeeds.fromFieldRelativeSpeeds(linearX, linearY, angularZ, navx_value))
+            else:
+                self.speeds = ChassisSpeeds.fromFieldRelativeSpeeds(linearX, linearY, angularZ, navx_value)
+                
+            print(f"X: {self.speeds.vx} Y: {self.speeds.vy} Z: {self.speeds.omega}")
         else:
-            self.speeds = ChassisSpeeds(linearX, linearY, angularZ)
+            if ENABLE_2ND_ORDER:
+                self.speeds = self.correctForDynamics(ChassisSpeeds(linearX, linearY, angularZ))
+            else:    
+                self.speeds = ChassisSpeeds(linearX, linearY, angularZ)
             #if self.last_print != f"linX: {round(self.speeds.vx, 2)} linY: {round(self.speeds.vy, 2)} angZ: {round(self.speeds.omega, 2)} MoveScaleX: {round(self.move_scale_x, 2)} MoveScaleY: {round(self.move_scale_y, 2)} TurnScale: {round(self.turn_scale, 2)}":
             #logging.info(f"linX: {round(self.speeds.vx, 2)} linY: {round(self.speeds.vy, 2)} angZ: {round(self.speeds.omega, 2)} MoveScaleX: {round(self.move_scale_x, 2)} MoveScaleY: {round(self.move_scale_y, 2)} TurnScale: {round(self.turn_scale, 2)}")
                 #self.last_print = f"linX: {round(self.speeds.vx, 2)} linY: {round(self.speeds.vy, 2)} angZ: {round(self.speeds.omega, 2)} MoveScaleX: {round(self.move_scale_x, 2)} MoveScaleY: {round(self.move_scale_y, 2)} TurnScale: {round(self.turn_scale, 2)}"
@@ -663,7 +661,7 @@ class DriveTrain():
         
         # normalize speeds
         # if the speeds are greater than the max speed, scale them down
-        self.kinematics.desaturateWheelSpeeds(self.module_state, self.speeds, self.MODULE_MAX_SPEED, self.ROBOT_MAX_TRANSLATIONAL, self.ROBOT_MAX_ROTATIONAL)
+        self.kinematics.desaturateWheelSpeeds(self.module_state, self.MODULE_MAX_SPEED)
 
         self.front_left_state: SwerveModuleState = self.module_state[0]
         self.front_right_state: SwerveModuleState = self.module_state[1]
@@ -710,7 +708,10 @@ class DriveTrain():
         data = dict()
 
         if self.is_sim:
-            self.speeds = ChassisSpeeds.fromFieldRelativeSpeeds(self.linX, self.linY, self.angZ, self.navx_sim.getRotation2d().__mul__(-1))
+            if ENABLE_2ND_ORDER:
+                self.speeds = self.correctForDynamics(ChassisSpeeds.fromFieldRelativeSpeeds(self.linX, self.linY, self.angZ, self.navx_sim.getRotation2d().__mul__(-1)))
+            else:
+                self.speeds = ChassisSpeeds.fromFieldRelativeSpeeds(self.linX, self.linY, self.angZ, self.navx_sim.getRotation2d().__mul__(-1))
             #print(self.navx_sim.getRotation2d())
             
             self.module_state = self.kinematics.toSwerveModuleStates(self.speeds)
@@ -796,7 +797,10 @@ class DriveTrain():
         self.ROBOT_MAX_TRANSLATIONAL = self.profile_selector.getSelected()[0]
         self.ROBOT_MAX_ROTATIONAL = self.profile_selector.getSelected()[1]
         self.MODULE_MAX_SPEED = self.profile_selector.getSelected()[0]
-        self.speeds = ChassisSpeeds(linearX*self.ROBOT_MAX_TRANSLATIONAL, -linearY*self.ROBOT_MAX_TRANSLATIONAL, angularZ*self.ROBOT_MAX_ROTATIONAL)
+        if ENABLE_2ND_ORDER:
+            self.speeds = self.correctForDynamics(ChassisSpeeds(linearX*self.ROBOT_MAX_TRANSLATIONAL, -linearY*self.ROBOT_MAX_TRANSLATIONAL, angularZ*self.ROBOT_MAX_ROTATIONAL))
+        else:
+            self.speeds = ChassisSpeeds(linearX*self.ROBOT_MAX_TRANSLATIONAL, -linearY*self.ROBOT_MAX_TRANSLATIONAL, angularZ*self.ROBOT_MAX_ROTATIONAL)
         self.linX = linearX*self.ROBOT_MAX_TRANSLATIONAL
         self.linY = linearY*self.ROBOT_MAX_TRANSLATIONAL
         self.angZ = angularZ*self.ROBOT_MAX_ROTATIONAL
@@ -830,7 +834,10 @@ class DriveTrain():
         self.ROBOT_MAX_TRANSLATIONAL = self.profile_selector.getSelected()[0]
         self.ROBOT_MAX_ROTATIONAL = self.profile_selector.getSelected()[1]
         self.MODULE_MAX_SPEED = self.profile_selector.getSelected()[0]
-        self.speeds = ChassisSpeeds.fromFieldRelativeSpeeds(linearX*self.ROBOT_MAX_TRANSLATIONAL, -linearY*self.ROBOT_MAX_TRANSLATIONAL, angularZ*self.ROBOT_MAX_ROTATIONAL, self.navx.getRotation2d().__mul__(-1))
+        if ENABLE_2ND_ORDER:
+            self.speeds = self.correctForDynamics(ChassisSpeeds.fromFieldRelativeSpeeds(linearX*self.ROBOT_MAX_TRANSLATIONAL, -linearY*self.ROBOT_MAX_TRANSLATIONAL, angularZ*self.ROBOT_MAX_ROTATIONAL, self.navx.getRotation2d().__mul__(-1)))
+        else:
+            self.speeds = ChassisSpeeds.fromFieldRelativeSpeeds(linearX*self.ROBOT_MAX_TRANSLATIONAL, -linearY*self.ROBOT_MAX_TRANSLATIONAL, angularZ*self.ROBOT_MAX_ROTATIONAL, self.navx.getRotation2d().__mul__(-1))
         self.linX = linearX*self.ROBOT_MAX_TRANSLATIONAL
         self.linY = linearY*self.ROBOT_MAX_TRANSLATIONAL
         self.angZ = angularZ*self.ROBOT_MAX_ROTATIONAL

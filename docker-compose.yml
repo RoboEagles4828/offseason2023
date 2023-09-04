@@ -2,14 +2,14 @@ version: "3.6"
 services:
   main_control:
     # image: "ghcr.io/roboeagles4828/developer-environment:7"
-    image: "ghcr.io/roboeagles4828/jetson:3"
+    image: "ghcr.io/roboeagles4828/jetson:4"
     network_mode: "host"
+    privileged: true
     environment:
       - ROS_DOMAIN_ID=0
       - FASTRTPS_DEFAULT_PROFILES_FILE=/usr/local/share/middleware_profiles/rtps_udp_profile.xml
     deploy:
       restart_policy:
-        condition: unless-stopped
         delay: 2s
         max_attempts: 3
         window: 120s
@@ -19,7 +19,7 @@ services:
     volumes:
     - ${HOME}/offseason2023:/opt/workspace
   zed_cam:
-    image: ghcr.io/roboeagles4828/jetson-zed:1
+    image: ghcr.io/roboeagles4828/jetson-zed:2
     network_mode: "host"
     privileged: true
     runtime: nvidia
@@ -42,9 +42,9 @@ services:
       - /opt/nvidia/nsight-systems-cli:/opt/nvidia/nsight-systems-cli
       - /opt/nvidia/vpi2:/opt/nvidia/vpi2
       - /usr/share/vpi2:/usr/share/vpi2
-      - /run/jtop.sock:/run/jtop.sock:ro
       - /dev/*:/dev/*
-      - ${HOME}/offseason2023/src/edna_bringup/config/zed-config-common.yaml:/root/ros2_ws/src/zed-ros2-wrapper/zed_wrapper/config/common.yaml
+      - ${HOME}/offseason2023/src/edna_bringup/config/zed_config-common-custom-box.yaml:/root/ros2_ws/src/zed-ros2-wrapper/zed_wrapper/config/common.yaml
+      - ${HOME}/offseason2023/model.engine:/root/ros2_ws/model.engine
       - ${HOME}/offseason2023/scripts/config/SN39192289.conf:/usr/local/zed/settings/SN39192289.conf
       - ${HOME}/offseason2023/src/edna_bringup/launch/zed2i.launch.py:/root/ros2_ws/src/zed-ros2-wrapper/zed_wrapper/launch/zed2i.launch.py
     depends_on:
@@ -57,3 +57,6 @@ services:
                 count: all
                 capabilities: [gpu]
     command: ["ros2", "launch", "zed_wrapper", "zed2i.launch.py"]
+
+    
+

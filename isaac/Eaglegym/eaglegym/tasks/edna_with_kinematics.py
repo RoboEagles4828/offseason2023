@@ -31,6 +31,7 @@ from eaglegym.robots.articulations.edna import Edna
 from eaglegym.robots.articulations.views.edna_view import EdnaView
 from eaglegym.tasks.utils.usd_utils import set_drive
 from eaglegym.inverse_kinematics.inverse_kinematics import InverseKinematics
+from squaternion import Quaternion
 from omni.isaac.core.objects import DynamicSphere
 
 
@@ -41,6 +42,7 @@ from omni.isaac.core.prims import RigidPrimView
 
 import numpy as np
 import torch
+import torchgeometry as tgm
 import math
 
 
@@ -186,6 +188,7 @@ class Edna_Kinematics_Task(RLTask):
             actions[:, 1:2] * self.velocity_limit, -self.velocity_limit, self.velocity_limit)
         angular_cmd = torch.clamp(
             actions[:, 2:3] * self.velocity_limit, -self.velocity_limit, self.velocity_limit)
+        
         x_offset = 0.7366
         radius = 0.1016
         actionlist = []
@@ -219,7 +222,12 @@ class Edna_Kinematics_Task(RLTask):
             
             module_angles = [front_left_current_pos, front_right_current_pos, rear_left_current_pos, rear_right_current_pos]
             
-            velocity_cmds = self.inverse_kinematics.getDriveJointStates(linear_x_cmd[i], linear_y_cmd[i], angular_cmd[i], module_angles)
+            pos, rot = self._edna.get_world_poses()
+            quat = rot[i]
+            imu_quat = Quaternion(quat[0], quat[1], quat[2], quat[3])
+            imu_euler = imu_quat.to_euler()
+            
+            velocity_cmds = self.inverse_kinematics.getDriveJointStates(linear_x_cmd[i], linear_y_cmd[i], angular_cmd[i], module_angles, imu_euler[2])
  
             front_left_velocity = velocity_cmds[0]
             front_right_velocity = velocity_cmds[1]
@@ -232,8 +240,41 @@ class Edna_Kinematics_Task(RLTask):
             rear_right_position = velocity_cmds[7]
             
             ###DEBUGGING
-            if(i==0):
-                print(f"X:{linear_x_cmd[i]} Y:{linear_y_cmd[i]} Z:{angular_cmd[i]} flv:{front_left_velocity} frv:{front_right_velocity} rlv:{rear_left_velocity} rrv:{rear_right_velocity} flp:{front_left_position} frp:{front_right_position} rlp:{rear_left_position} rrp:{rear_right_position} flcp:{front_left_current_pos} frcp:{front_right_current_pos} rlcp:{rear_left_current_pos} rrcp:{rear_right_current_pos}")
+            # if(i==0):
+            #     #round all tensors
+            #     linear_x_cmd_rounded = torch.round(linear_x_cmd, decimals=1)
+            #     linear_y_cmd_rounded = torch.round(linear_y_cmd, decimals=1)
+            #     angular_cmd_rounded = torch.round(angular_cmd, decimals=1)
+            #     front_left_velocity_rounded = round(front_left_velocity, 1)
+            #     front_right_velocity_rounded = round(front_right_velocity, 1)
+            #     rear_left_velocity_rounded = round(rear_left_velocity, 1)
+            #     rear_right_velocity_rounded = round(rear_right_velocity, 1)
+            #     front_left_position_rounded = round(front_left_position, 1)
+            #     front_right_position_rounded = round(front_right_position, 1)
+            #     rear_left_position_rounded = round(rear_left_position, 1)
+            #     rear_right_position_rounded = round(rear_right_position, 1)
+            #     front_left_current_pos_rounded = torch.round(front_left_current_pos, decimals=1)
+            #     front_right_current_pos_rounded = torch.round(front_right_current_pos, decimals=1)
+            #     rear_left_current_pos_rounded = torch.round(rear_left_current_pos, decimals=1)
+            #     rear_right_current_pos_rounded = torch.round(rear_right_current_pos, decimals=1)
+            #     #print all tensors
+            #     print("X: ", linear_x_cmd_rounded)
+            #     print("Y: ", linear_y_cmd_rounded)
+            #     print("Z: ", angular_cmd_rounded)
+            #     print("FLV: ", front_left_velocity_rounded)
+            #     print("FRV: ", front_right_velocity_rounded)
+            #     print("RLV: ", rear_left_velocity_rounded)
+            #     print("RRV: ", rear_right_velocity_rounded)
+            #     print("FLP: ", front_left_position_rounded)
+            #     print("FRP: ", front_right_position_rounded)
+            #     print("RLP: ", rear_left_position_rounded)
+            #     print("RRP: ", rear_right_position_rounded)
+            #     print("FLCP: ", front_left_current_pos_rounded)
+            #     print("FRCP: ", front_right_current_pos_rounded)
+            #     print("RLCP: ", rear_left_current_pos_rounded)
+            #     print("RRCP: ", rear_right_current_pos_rounded)
+            #     print("IMU: ", round(imu_euler[2], 2))
+                
 
 
 
@@ -405,26 +446,58 @@ class Edna_Kinematics_Task(RLTask):
         # distance to target
         target_dist = torch.sqrt(torch.square(
             self.target_positions - root_positions).sum(-1))
+        
+        # create a new tensor called target point being target_positions X - 0.5 and target_positions Y
+        target_point = torch.stack(
+            [self.target_positions[..., 0] - 0.5, self.target_positions[..., 1]], dim=-1
+        )
+        
+        target_point_dist = torch.sqrt(torch.square(
+            target_point - root_positions[..., 0:2]).sum(-1)
+        )
 
-        pos_reward = 1.0 / (1.0 + (1/0.5)*(target_dist-0.5))
+        # pos_reward = 1.0 / (1.0 + (1/0.5)*(target_dist-0.5))
+        pos_reward = 1.0/(1.0+2.5*target_point_dist*target_point_dist)
         self.target_dist = target_dist
+        self.target_point_dist = target_point_dist
         self.root_positions = root_positions
         self.root_position_reward = self.rew_buf
         # rewards for moving away form starting point
         for i in range(len(self.root_position_reward)):
-            self.root_position_reward[i] = sum(root_positions[i][0:3])
-
-        self.rew_buf[:] = self.root_position_reward*pos_reward
+            self.root_position_reward[i] = sum(root_positions[i][0:2])
+            
+        # rewards for facing the target
+        target_angle = torch.atan2(
+            self.target_positions[..., 1] - root_positions[..., 1], 
+            self.target_positions[..., 0] - root_positions[..., 0],
+        )
+        
+        robot_orientation_tensor = tgm.quaternion_to_angle_axis(self.root_rot)
+        robot_orientation = robot_orientation_tensor[..., 2]
+        target_orientation = target_angle
+        orientation_diff = torch.abs(robot_orientation - target_orientation)
+        orientation_diff = torch.min(orientation_diff, 2*np.pi - orientation_diff)
+        
+        angle_reward = 1.0 - orientation_diff / (2*np.pi)
+        self.test = self.root_position_reward*pos_reward*angle_reward
+        
+        if torch.isnan(self.test).any():
+            self.rew_buf[:] = torch.nan_to_num(self.test)
+        else:
+            self.rew_buf[:] = self.root_position_reward*pos_reward*angle_reward
+        print(f"Best Reward: {torch.max(self.test).item()}")
 
     def is_done(self) -> None:
         # print("line 312")
         # These are the dying constaints. It dies if it is going in the wrong direction or starts flying
         ones = torch.ones_like(self.reset_buf)
         die = torch.zeros_like(self.reset_buf)
-        die = torch.where(self.target_dist > 20.0, ones, die)
-        # die = torch.where(self.target_dist < 0.5, ones, die)
+        die = torch.where(self.target_point_dist > 20.0, ones, die)
+        die = torch.where(self.target_point_dist <= 0.5, ones, die)
         die = torch.where(self.root_positions[..., 2] > 0.5, ones, die)
-        die = torch.where(torch.isnan(self.actions[...,0]), ones, die)
+        die = torch.where(torch.isnan(self.test).any(), ones, die)
+        
+        # die = torch.where(torch.isnan(self.actions[...,0]), ones, die)
         # die = torch.where(torch.isnan(self.joint_velocities[...,0]), ones, die)
         # die = torch.where(torch.isnan(self.joint_velocities[...,1]), ones, die)
         # die = torch.where(torch.isnan(self.joint_velocities[...,2]), ones, die)
