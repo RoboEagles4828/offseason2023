@@ -64,7 +64,8 @@ This code contains trade secrets of Real-Time Innovations, Inc.
           </module>
         </module>
       </module>
-    </types>
+    </module>
+  </types>
 
   <!-- Domain Library -->
   <domain_library name="ROS2_DOMAIN_LIB">
@@ -160,19 +161,17 @@ This code contains trade secrets of Real-Time Innovations, Inc.
         <data_writer name="dashboard_writer" topic_ref="rt/dashboard_data" />
       </publisher>
     </domain_participant>
-  </domain_participant_library>
-      <domain_participant name="service" domain_ref="ROS2_DOMAIN_LIB::ROS2_DOMAIN_SERVICE">
-        <publisher name="service_pub">
-            <data_writer name="service_writer" topic_ref="rq/boolRequest" />
-        </publisher>
-        <subscriber name="service_sub">
-            <data_reader name="service_reader" topic_ref="rr/boolReply" />
-        </subscriber>
-      </domain_participant>
-      <domain_participant name="imu" domain_ref="ROS2_DOMAIN_LIB::ROS2_DOMAIN_IMU">
-        <subscriber name="imu_subscriber">
-            <data_reader name="imu_reader" topic_ref="rt/saranga/real_imu" />
-        </subscriber>
-      </domain_participant>
-    </domain_participant_library>
+    <domain_participant name="service" domain_ref="ROS2_DOMAIN_LIB::ROS2_DOMAIN_SERVICE">
+      <publisher name="service_pub">
+          <data_writer name="service_writer" topic_ref="rq/boolRequest" />
+      </publisher>
+      <subscriber name="service_sub">
+          <data_reader name="service_reader" topic_ref="rr/boolReply" />
+      </subscriber>
+    </domain_participant>
+    <domain_participant name="imu" domain_ref="ROS2_DOMAIN_LIB::ROS2_DOMAIN_IMU">
+      <subscriber name="imu_subscriber">
+          <data_reader name="imu_reader" topic_ref="rt/saranga/real_imu" />
+      </subscriber>
+    </domain_participant>
 </dds>
