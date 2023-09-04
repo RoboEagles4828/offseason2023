@@ -10,4 +10,4 @@ WORKDIR /
 RUN git clone https://github.com/RoboEagles4828/zed-engine-builder.git
 
 WORKDIR /zed-engine-builder
-RUN cmake . && make
+# RUN cmake . && make
