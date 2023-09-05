@@ -241,18 +241,18 @@ class SwerveModule():
         self.wheel_motor.setNeutralMode(ctre.NeutralMode.Brake)
 
         # Supply Current Limit
-        supply_current_limit = 20
+        supply_current_limit = 30
         supply_current_threshold = 40
         supply_current_threshold_time = 0.1
         supply_current_limit_configs = ctre.SupplyCurrentLimitConfiguration(True, supply_current_limit, supply_current_threshold, supply_current_threshold_time)
         self.wheel_motor.configSupplyCurrentLimit(supply_current_limit_configs, timeout_ms)
         
         # Stator Current Limit
-        stator_current_limit = 20
-        stator_current_threshold = 40
-        stator_current_threshold_time = 0.1
-        stator_current_limit_configs = ctre.StatorCurrentLimitConfiguration(True, stator_current_limit, stator_current_threshold, stator_current_threshold_time)
-        self.wheel_motor.configStatorCurrentLimit(stator_current_limit_configs, timeout_ms)
+        # stator_current_limit = 20
+        # stator_current_threshold = 40
+        # stator_current_threshold_time = 0.1
+        # stator_current_limit_configs = ctre.StatorCurrentLimitConfiguration(True, stator_current_limit, stator_current_threshold, stator_current_threshold_time)
+        # self.wheel_motor.configStatorCurrentLimit(stator_current_limit_configs, timeout_ms)
 
         # Velocity Ramp
         self.wheel_motor.configClosedloopRamp(0)
@@ -607,7 +607,7 @@ class DriveTrain():
             self.field_oriented_value = not self.field_oriented_button.toggle(joystick.getData()["buttons"])
 
         if joystick.getData()["buttons"][6] == 1.0:
-            self.navx.zeroYaw()
+            self.navx.reset()
             if self.is_sim:
                 self.navx_sim.zeroYaw()
 

@@ -263,7 +263,7 @@ class Robot(wpilib.TimedRobot):
     def autonomousInit(self):
         if not self.isSimulation():
             self.arm_controller.top_gripper_control_on()
-        self.drive_train.navx.zeroYaw()
+        self.drive_train.navx.reset()
         self.auton_selector.run()
         logging.info("Entering Auton")
         global frc_stage

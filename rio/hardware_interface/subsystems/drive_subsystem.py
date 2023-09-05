@@ -1,4 +1,5 @@
 from commands2 import SubsystemBase
+from wpimath.kinematics import ChassisSpeeds
 from hardware_interface.drivetrain import DriveTrain
 
 class DriveSubsystem(SubsystemBase):
@@ -11,11 +12,22 @@ class DriveSubsystem(SubsystemBase):
             self.drivetrain.swerveDriveAutonFieldOriented(x, y, z)
         else:
             self.drivetrain.swerveDriveAuton(x, y, z)
+            
+    def getKinematics(self):
+        return self.drivetrain.kinematics
     
     def resetGyro(self):
         if self.drivetrain.is_sim:
             self.drivetrain.navx_sim.zeroYaw()
         self.drivetrain.navx.zeroYaw()
+        
+    def hardResetGyro(self):
+        if self.drivetrain.is_sim:
+            self.drivetrain.navx_sim.zeroYaw()
+        self.drivetrain.navx.reset()
+        
+    def recalibrateGyro(self):
+        self.drivetrain.navx.calibrate()
         
     def getEncoderData(self):
         return self.drivetrain.getEncoderData()
@@ -29,6 +41,9 @@ class DriveSubsystem(SubsystemBase):
         if self.drivetrain.is_sim:
             return self.drivetrain.navx_sim.getPitchDegrees()
         return self.drivetrain.navx.getPitch()
+    
+    def getVelocity(self):
+        return self.drivetrain.speeds
     
     def lockDrive(self):
         self.drivetrain.lockDrive()
