@@ -38,7 +38,7 @@ class DriveTimeAutoCommand(CommandBase):
     def isFinished(self):
         return self.timer.hasElapsed(self.seconds)
     
-class DriveDistanceAutoCommand(CommandBase):
+class DriveDistanceAutoCommand(SequentialCommandGroup):
     def __init__(self, drive: DriveSubsystem, distance: float, velocity: tuple[float, float], units : Units = Units.METERS):
         super().__init__()
         self.drive = drive
@@ -63,15 +63,9 @@ class DriveDistanceAutoCommand(CommandBase):
     def initialize(self):
         dist = self.convertToMeters(self.distance, self.units)
         self.time = dist / math.sqrt(self.x**2 + self.y**2)
-        self.timer.start()
-        self.timer.reset()
-        
-    def execute(self):
-        self.drive.swerve_drive(self.x, self.y, 0, True)
-    
-    def end(self, interrupted):
-        self.drive.swerve_drive(0, 0, 0, True)
-        self.drive.stop()
+        self.addCommands(
+            DriveTimeAutoCommand(self.drive, self.time, (self.x, self.y, 0))
+        )
         
     def isFinished(self):
         return self.timer.hasElapsed(self.time)
