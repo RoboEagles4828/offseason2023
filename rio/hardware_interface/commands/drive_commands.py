@@ -1,7 +1,7 @@
 from commands2 import *
 from wpilib import Timer
 import wpimath
-from wpimath.units import feetToMeters
+from wpimath.units import *
 from wpimath.controller import PIDController
 from hardware_interface.subsystems.drive_subsystem import DriveSubsystem
 import logging
@@ -29,14 +29,15 @@ class DriveTimeAutoCommand(CommandBase):
 
     def execute(self):
         self.drive.swerve_drive(self.x, self.y, self.z, True)
-        # print(f"DriveTimeAuton Runtime: {self.timer.get()}")
+        print(f"Time Elapsed: {self.timer.get()} s")
+        print(f"Distance Traveled: {self.timer.get()*self.x} m")
         
     def end(self, interrupted):
         self.drive.swerve_drive(0, 0, 0, True)
         self.drive.stop()
         
     def isFinished(self):
-        return self.timer.hasElapsed(self.seconds)
+        return self.timer.get() >= self.seconds
     
 class DriveDistanceAutoCommand(SequentialCommandGroup):
     def __init__(self, drive: DriveSubsystem, distance: float, velocity: tuple[float, float], units : Units = Units.METERS):
@@ -48,7 +49,12 @@ class DriveDistanceAutoCommand(SequentialCommandGroup):
         self.units = units
         self.time = 0
         self.timer = Timer()
+        dist = self.convertToMeters(self.distance, self.units)
+        self.time = dist / math.sqrt(self.x**2 + self.y**2)
         self.addRequirements(self.drive)
+        self.addCommands(
+            DriveTimeAutoCommand(self.drive, self.time, (self.x, self.y, 0))
+        )
         
     def convertToMeters(self, distance, units):
         if units == Units.METERS:
@@ -59,13 +65,6 @@ class DriveDistanceAutoCommand(SequentialCommandGroup):
             return feetToMeters(distance/12)
         else:
             return distance
-        
-    def initialize(self):
-        dist = self.convertToMeters(self.distance, self.units)
-        self.time = dist / math.sqrt(self.x**2 + self.y**2)
-        self.addCommands(
-            DriveTimeAutoCommand(self.drive, self.time, (self.x, self.y, 0))
-        )
         
     def isFinished(self):
         return self.timer.hasElapsed(self.time)
@@ -117,19 +116,19 @@ class BalanceOnChargeStationCommand(CommandBase):
         super().__init__()
         self.drive = drive
         self.level_threshold = level_threshold
-        self.pitch_controller = PIDController(0.3, 0, 0.1)
-        self.pitch_controller.enableContinuousInput(-180, 180)
-        self.pitch_controller.setTolerance(5)
         self.addRequirements(self.drive)
         
     def initialize(self):
-        self.pitch_controller.reset()
-        self.pitch_controller.setSetpoint(self.level_threshold)
+        self.drive.unlockDrive()
         
     def execute(self):
-        current_pitch = self.drive.getGyroPitch180()
-        pitch_power = self.pitch_controller.calculate(current_pitch)
-        self.drive.swerve_drive(-pitch_power/1000.0, 0, 0, True)
+        print("Balance Pitch: ", self.drive.getGyroPitch180())
+        if self.drive.getGyroPitch180() < self.level_threshold:
+            self.drive.swerve_drive(0.2, 0, 0, True)
+        elif self.drive.getGyroPitch180() > self.level_threshold:
+            self.drive.swerve_drive(-0.2, 0, 0, True)
+        else:
+            self.drive.swerve_drive(0, 0, 0, True)
         
     def end(self, interrupted):
         self.drive.swerve_drive(0, 0, 0, True)
@@ -137,7 +136,8 @@ class BalanceOnChargeStationCommand(CommandBase):
         self.drive.lockDrive()
         
     def isFinished(self):
-        return self.pitch_controller.atSetpoint()
+        curr_angle = self.drive.getGyroPitch180()
+        return abs(curr_angle) < self.level_threshold
         
 class DriveToChargeStationCommand(CommandBase):
     def __init__(self, drive: DriveSubsystem, tilt_threshold: float):
@@ -150,7 +150,8 @@ class DriveToChargeStationCommand(CommandBase):
         self.drive.unlockDrive()
         
     def execute(self):
-        self.drive.swerve_drive(-0.5, 0, 0, True)
+        print("To Charge Pitch: ", self.drive.getGyroPitch180())
+        self.drive.swerve_drive(-3.5, 0, 0, True)
         
     def end(self, interrupted):
         self.drive.swerve_drive(0, 0, 0, True)
@@ -165,8 +166,8 @@ class TaxiAutoCommand(SequentialCommandGroup):
         self.drive = drive
         self.addRequirements(self.drive)
         self.addCommands(
-            WaitCommand(0.5),
-            DriveTimeAutoCommand(self.drive, 1.5, (-3.5, 0, 0))
+            PrintCommand("Starting Taxi Auto"),
+            DriveDistanceAutoCommand(self.drive, 1.0, (0.5, 0), Units.METERS),
         )
         
 class UnlockDriveCommand(CommandBase):

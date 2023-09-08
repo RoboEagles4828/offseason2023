@@ -248,11 +248,11 @@ class SwerveModule():
         self.wheel_motor.configSupplyCurrentLimit(supply_current_limit_configs, timeout_ms)
         
         # Stator Current Limit
-        # stator_current_limit = 20
-        # stator_current_threshold = 40
-        # stator_current_threshold_time = 0.1
-        # stator_current_limit_configs = ctre.StatorCurrentLimitConfiguration(True, stator_current_limit, stator_current_threshold, stator_current_threshold_time)
-        # self.wheel_motor.configStatorCurrentLimit(stator_current_limit_configs, timeout_ms)
+        stator_current_limit = 20
+        stator_current_threshold = 40
+        stator_current_threshold_time = 0.1
+        stator_current_limit_configs = ctre.StatorCurrentLimitConfiguration(True, stator_current_limit, stator_current_threshold, stator_current_threshold_time)
+        self.wheel_motor.configStatorCurrentLimit(stator_current_limit_configs, timeout_ms)
 
         # Velocity Ramp
         self.wheel_motor.configClosedloopRamp(0)
@@ -478,6 +478,8 @@ class DriveTrain():
         self.angle_source_selector.addOption("Angle", "angle")
         self.angle_source_selector.addOption("Yaw", "yaw")
         self.angle_source_selector.setDefaultOption("Normal", "normal")
+        
+        self.module_state = [SwerveModuleState(0, Rotation2d(0))]*4
         
 
         self.slow = False
@@ -839,6 +841,21 @@ class DriveTrain():
         self.front_right_state = SwerveModuleState(0, Rotation2d.fromDegrees(0))
         self.rear_left_state = SwerveModuleState(0, Rotation2d.fromDegrees(0))
         self.rear_right_state = SwerveModuleState(0, Rotation2d.fromDegrees(0))
+        
+    def metersToShaftTicks(self, meters):
+        wheel_circumference = 2 * math.pi * self.wheel_radius
+        rotations = meters / wheel_circumference
+        radians = rotations * 2 * math.pi
+        ticks = getWheelShaftTicks(radians, "position")
+        return ticks
+    
+    def shaftTicksToMeters(self, ticks):
+        radians = getWheelRadians(ticks, "position")
+        wheel_circumference = 2 * math.pi * self.wheel_radius
+        rotations = radians / (2 * math.pi)
+        meters = rotations * wheel_circumference
+        return meters
+        
         
 
 

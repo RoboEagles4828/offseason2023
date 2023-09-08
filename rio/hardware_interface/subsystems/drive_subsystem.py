@@ -13,6 +13,28 @@ class DriveSubsystem(SubsystemBase):
         else:
             self.drivetrain.swerveDriveAuton(x, y, z)
             
+    def getWheelEncoderPositions(self):
+        return [
+            self.drivetrain.front_left.getEncoderData()[0]["position"],
+            self.drivetrain.front_right.getEncoderData()[0]["position"],
+            self.drivetrain.rear_left.getEncoderData()[0]["position"],
+            self.drivetrain.rear_right.getEncoderData()[0]["position"]
+        ]
+        
+    def getWheelEncoderVelocities(self):
+        return [
+            self.drivetrain.front_left.getEncoderData()[0]["velocity"],
+            self.drivetrain.front_right.getEncoderData()[0]["velocity"],
+            self.drivetrain.rear_left.getEncoderData()[0]["velocity"],
+            self.drivetrain.rear_right.getEncoderData()[0]["velocity"]
+        ]
+        
+    def metersToShaftTicks(self, meters):
+        return self.drivetrain.metersToShaftTicks(meters)
+    
+    def shaftTicksToMeters(self, ticks):
+        return self.drivetrain.shaftTicksToMeters(ticks)
+            
     def getKinematics(self):
         return self.drivetrain.kinematics
     

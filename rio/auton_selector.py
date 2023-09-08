@@ -68,10 +68,7 @@ class AutonSelector():
         elif self.selected == self.MID_CHARGE:
             self.command = self.mid_charge_auton()
             
-        auton = SequentialCommandGroup(
-            self.command,
-            PostAutonCommand(self.drive_subsystem)
-        )
+        auton = self.command
         auton.schedule()
             
     def cube_high_taxi_auton(self):
@@ -122,7 +119,7 @@ class AutonSelector():
         high_charge_auton = SequentialCommandGroup(
             ScoreCommand(self.arm_subsystem, ElevatorState.HIGH, "cone"),
             DriveToChargeStationCommand(self.drive_subsystem, 10),
-            BalanceOnChargeStationCommand(self.drive_subsystem, 0)
+            BalanceOnChargeStationCommand(self.drive_subsystem, 5)
         )
         return high_charge_auton
 

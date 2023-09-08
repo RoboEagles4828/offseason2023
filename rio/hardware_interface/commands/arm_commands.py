@@ -49,7 +49,7 @@ class ElevatorPresetCommand(CommandBase):
         if self.state == ElevatorState.HOME:
             return self.timer.hasElapsed(3)
         elif self.state == ElevatorState.MID:
-            return self.timer.hasElapsed(3)
+            return self.timer.hasElapsed(2)
         elif self.state == ElevatorState.HIGH:
             return self.timer.hasElapsed(4)
         elif self.state == ElevatorState.LOADING_STATION:
@@ -80,16 +80,10 @@ class ScoreCommand(SequentialCommandGroup):
     def __init__(self, arm: ArmSubsystem, state: ElevatorState, gamepiece: str):
         super().__init__()
         self.addCommands(
-            ConditionalCommand(
-                ElevatorPivotCommand(arm, PivotState.UP),
-                DoNothingCommand(),
-                lambda: state == ElevatorState.HIGH and gamepiece == "cone"
-            ),
             ElevatorPresetCommand(arm, state),
             TopGripperCommand(arm, GrabberState.OPEN),
             WaitCommand(0.5),
             ElevatorPresetCommand(arm, ElevatorState.HOME),
-            ElevatorPivotCommand(arm, PivotState.DOWN)
         )
         
         

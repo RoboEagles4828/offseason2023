@@ -12,8 +12,8 @@ class PivotState():
     DOWN = False
     
 class GrabberState():
-    OPEN = False
-    CLOSED = True
+    OPEN = True
+    CLOSED = False
 
 class ArmSubsystem(SubsystemBase):
     def __init__(self, armcontroller: ArmController):
