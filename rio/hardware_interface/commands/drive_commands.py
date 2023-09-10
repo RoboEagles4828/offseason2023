@@ -33,42 +33,13 @@ class DriveTimeAutoCommand(CommandBase):
         print(f"Distance Traveled: {self.timer.get()*self.x} m")
         
     def end(self, interrupted):
-        self.drive.swerve_drive(0, 0, 0, True)
+        print("TIME END")
+        self.drive.swerve_drive(0, 0, 0, False)
         self.drive.stop()
         
     def isFinished(self):
         return self.timer.get() >= self.seconds
-    
-class DriveDistanceAutoCommand(SequentialCommandGroup):
-    def __init__(self, drive: DriveSubsystem, distance: float, velocity: tuple[float, float], units : Units = Units.METERS):
-        super().__init__()
-        self.drive = drive
-        self.distance = distance
-        self.x = velocity[0]
-        self.y = velocity[1]
-        self.units = units
-        self.time = 0
-        self.timer = Timer()
-        dist = self.convertToMeters(self.distance, self.units)
-        self.time = dist / math.sqrt(self.x**2 + self.y**2)
-        self.addRequirements(self.drive)
-        self.addCommands(
-            DriveTimeAutoCommand(self.drive, self.time, (self.x, self.y, 0))
-        )
         
-    def convertToMeters(self, distance, units):
-        if units == Units.METERS:
-            return distance
-        elif units == Units.FEET:
-            return feetToMeters(distance)
-        elif units == Units.INCHES:
-            return feetToMeters(distance/12)
-        else:
-            return distance
-        
-    def isFinished(self):
-        return self.timer.hasElapsed(self.time)
-    
 class TurnToAngleCommand(CommandBase):
     def __init__(self, drive: DriveSubsystem, angle: float, relative: bool):
         super().__init__()
@@ -115,29 +86,58 @@ class BalanceOnChargeStationCommand(CommandBase):
     def __init__(self, drive: DriveSubsystem, level_threshold: float):
         super().__init__()
         self.drive = drive
+        self.power = 0.1
         self.level_threshold = level_threshold
+        self.zero_count = 0
         self.addRequirements(self.drive)
         
     def initialize(self):
         self.drive.unlockDrive()
         
     def execute(self):
-        print("Balance Pitch: ", self.drive.getGyroPitch180())
-        if self.drive.getGyroPitch180() < self.level_threshold:
-            self.drive.swerve_drive(0.2, 0, 0, True)
-        elif self.drive.getGyroPitch180() > self.level_threshold:
-            self.drive.swerve_drive(-0.2, 0, 0, True)
-        else:
-            self.drive.swerve_drive(0, 0, 0, True)
+        print("Balance Pitch: ", self.drive.getGyroRoll180())
+        if self.drive.getGyroRoll180() < 1:
+            self.drive.swerve_drive(-self.power, 0, 0, False)
+        elif self.drive.getGyroRoll180() > 1:
+            self.drive.swerve_drive(self.power, 0, 0, False)
+        if self.drive.getGyroRoll180() == 0:
+            self.power /= 1.1
         
     def end(self, interrupted):
-        self.drive.swerve_drive(0, 0, 0, True)
-        self.drive.stop()
+        self.drive.swerve_drive(0, 0, 0, False)
+        print("LOCKING")
         self.drive.lockDrive()
         
     def isFinished(self):
-        curr_angle = self.drive.getGyroPitch180()
+        curr_angle = self.drive.getGyroRoll180()
         return abs(curr_angle) < self.level_threshold
+    
+# class BalanceOnChargePIDCommand(CommandBase):
+#     def __init__(self, drive: DriveSubsystem, level_threshold: float):
+#         super().__init__()
+#         self.drive = drive
+#         self.level_threshold = level_threshold
+#         self.pid = PIDController(0.3, 0, 0.1)
+#         # self.pid.enableContinuousInput(-180, 180)
+#         self.pid.setTolerance(level_threshold)
+        
+#     def initialize(self):
+#         self.pid.reset()
+#         self.pid.setSetpoint(0)
+        
+#     def execute(self):
+#         current_pitch = self.drive.getGyroRoll180()
+#         pitch_power = self.pid.calculate(current_pitch)
+#         print(-pitch_power)
+#         self.drive.swerve_drive(-pitch_power/1000.0, 0, 0, False)
+        
+#     def end(self, interrupted):
+#         self.drive.swerve_drive(0, 0, 0, False)
+#         self.drive.lockDrive()
+#         self.drive.stop()
+    
+#     def isFinished(self):
+#         return self.pid.atSetpoint()
         
 class DriveToChargeStationCommand(CommandBase):
     def __init__(self, drive: DriveSubsystem, tilt_threshold: float):
@@ -150,25 +150,32 @@ class DriveToChargeStationCommand(CommandBase):
         self.drive.unlockDrive()
         
     def execute(self):
-        print("To Charge Pitch: ", self.drive.getGyroPitch180())
-        self.drive.swerve_drive(-3.5, 0, 0, True)
+        print("To Charge Pitch: ", self.drive.getGyroRoll180())
+        self.drive.swerve_drive(-3.5, 0, 0, False)
         
     def end(self, interrupted):
-        self.drive.swerve_drive(0, 0, 0, True)
+        self.drive.swerve_drive(0, 0, 0, False)
         self.drive.stop()
         
     def isFinished(self):
-        return self.drive.getGyroPitch180() >= self.tilt_threshold
+        return abs(self.drive.getGyroRoll180()) >= self.tilt_threshold
     
 class TaxiAutoCommand(SequentialCommandGroup):
-    def __init__(self, drive: DriveSubsystem):
+    def __init__(self, drive: DriveSubsystem, side: str):
         super().__init__()
         self.drive = drive
+        self.side = side
         self.addRequirements(self.drive)
-        self.addCommands(
-            PrintCommand("Starting Taxi Auto"),
-            DriveDistanceAutoCommand(self.drive, 1.0, (0.5, 0), Units.METERS),
-        )
+        if self.side == "bump":
+            self.addCommands(
+                PrintCommand("Starting Taxi Auto"),
+                DriveTimeAutoCommand(self.drive, 1.75, (-1.5, 0, 0))
+            )
+        else:
+            self.addCommands(
+                PrintCommand("Starting Taxi Auto"),
+                DriveTimeAutoCommand(self.drive, 1.0, (-1.5, 0, 0))
+            )
         
 class UnlockDriveCommand(CommandBase):
     def __init__(self, drive: DriveSubsystem):
@@ -192,18 +199,6 @@ class FieldOrientCommand(CommandBase):
         self.drive.unlockDrive()
         self.drive.hardResetGyro()
         self.drive.recalibrateGyro()
-        
-        
-class PostAutonCommand(SequentialCommandGroup):
-    def __init__(self, drive: DriveSubsystem):
-        super().__init__()
-        self.drive = drive
-        self.addRequirements(self.drive)
-        self.addCommands(
-            UnlockDriveCommand(self.drive),
-            TurnToAngleCommand(self.drive, 180, False),
-            FieldOrientCommand(self.drive)
-        )
         
     
     

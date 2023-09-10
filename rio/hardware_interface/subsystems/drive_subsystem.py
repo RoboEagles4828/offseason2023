@@ -59,6 +59,11 @@ class DriveSubsystem(SubsystemBase):
             return self.drivetrain.navx_sim.getYawDegrees()
         return self.drivetrain.navx.getYaw()
     
+    def getGyroRoll180(self):
+        if self.drivetrain.is_sim:
+            return self.drivetrain.navx_sim.getRollDegrees()
+        return self.drivetrain.navx.getRoll()
+    
     def getGyroPitch180(self):
         if self.drivetrain.is_sim:
             return self.drivetrain.navx_sim.getPitchDegrees()

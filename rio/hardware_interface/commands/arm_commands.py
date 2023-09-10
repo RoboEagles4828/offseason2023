@@ -51,7 +51,7 @@ class ElevatorPresetCommand(CommandBase):
         elif self.state == ElevatorState.MID:
             return self.timer.hasElapsed(2)
         elif self.state == ElevatorState.HIGH:
-            return self.timer.hasElapsed(4)
+            return self.timer.hasElapsed(2.5)
         elif self.state == ElevatorState.LOADING_STATION:
             return self.timer.hasElapsed(1)
         
@@ -82,7 +82,6 @@ class ScoreCommand(SequentialCommandGroup):
         self.addCommands(
             ElevatorPresetCommand(arm, state),
             TopGripperCommand(arm, GrabberState.OPEN),
-            WaitCommand(0.5),
             ElevatorPresetCommand(arm, ElevatorState.HOME),
         )
         

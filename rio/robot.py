@@ -252,6 +252,8 @@ class Robot(wpilib.TimedRobot):
         
         self.load_cmd = TurnToAngleCommand(self.auton_selector.drive_subsystem, 0, False)
         self.score_cmd = TurnToAngleCommand(self.auton_selector.drive_subsystem, 180, False)
+        
+        self.auton_run = False
 
     def robotPeriodic(self):
         self.joystick.type = self.joystick_selector.getSelected()
@@ -261,9 +263,8 @@ class Robot(wpilib.TimedRobot):
 
     # Auton
     def autonomousInit(self):
-        if not self.isSimulation():
-            self.arm_controller.top_gripper_control_on()
         self.drive_train.navx.reset()
+        self.drive_train.set_navx_offset(0)
         self.auton_selector.run()
         logging.info("Entering Auton")
         global frc_stage
@@ -281,6 +282,7 @@ class Robot(wpilib.TimedRobot):
     def autonomousExit(self):
         CommandScheduler.getInstance().cancelAll()
         logging.info("Exiting Auton")
+        self.drive_train.set_navx_offset(180)
         global frc_stage
         frc_stage = "AUTON"
 

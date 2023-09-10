@@ -22,17 +22,25 @@ class AutonSelector():
         self.CUBE_HIGH_PLACE = "Cube High Place Auton"
         self.MID_PLACE = "Mid Place Auton"
         self.MID_CHARGE = "Mid Charge Auton"
+        self.MID_TAXI_B = "Mid Taxi BUMP Auton"
+        self.HIGH_TAXI_B = "High Taxi BUMP Auton"
+        self.CUBE_HIGH_TAXI_B = "Cube High Taxi BUMP Auton"
+        self.TAXI_AUTON_B = "Taxi Auton BUMP"
         self.autonChooser = wpilib.SendableChooser()
-        self.autonChooser.addOption("Taxi Auton", self.TAXI)
+        self.autonChooser.addOption("Taxi CLEAN Auton", self.TAXI)
+        self.autonChooser.addOption("Taxi BUMP Auton", self.TAXI_AUTON_B)
         self.autonChooser.addOption("High Place Auton", self.HIGH_PLACE)
-        self.autonChooser.setDefaultOption("High Taxi Auton", self.HIGH_TAXI)
-        self.autonChooser.addOption("Cube High Taxi Auton", self.CUBE_HIGH_TAXI)
-        self.autonChooser.addOption("Mid Taxi Auton", self.MID_TAXI)
+        self.autonChooser.setDefaultOption("High Taxi CLEAN Auton", self.HIGH_TAXI)
+        self.autonChooser.addOption("High Taxi BUMP Auton", self.HIGH_TAXI_B)
+        # self.autonChooser.addOption("Cube High Taxi CLEAN Auton", self.CUBE_HIGH_TAXI)
+        # self.autonChooser.addOption("Mid Place Auton", self.MID_PLACE)
+        # self.autonChooser.addOption("Mid Taxi CLEAN Auton", self.MID_TAXI)
+        # self.autonChooser.addOption("Mid Taxi BUMP Auton", self.MID_TAXI_B)
+        # self.autonChooser.addOption("Cube High Taxi BUMP Auton", self.CUBE_HIGH_TAXI_B)
         self.autonChooser.addOption("Charge Auton", self.CHARGE)
         self.autonChooser.addOption("High Charge Auton", self.HIGH_CHARGE)
-        self.autonChooser.addOption("Cube High Place Auton", self.CUBE_HIGH_PLACE)
-        self.autonChooser.addOption("Mid Place Auton", self.MID_PLACE)
-        self.autonChooser.addOption("Mid Charge Auton", self.MID_CHARGE)
+        # self.autonChooser.addOption("Cube High Place Auton", self.CUBE_HIGH_PLACE)
+        # self.autonChooser.addOption("Mid Charge Auton", self.MID_CHARGE)
 
         self.selected = self.autonChooser.getSelected()
 
@@ -47,71 +55,74 @@ class AutonSelector():
 
     def run(self):
         self.selected = self.autonChooser.getSelected()
-        if self.selected == self.TAXI:
-            self.command = self.taxi_auton()
-        elif self.selected == self.HIGH_PLACE: 
-            self.command = self.high_place_auton()
-        elif self.selected == self.HIGH_TAXI:
-            self.command = self.high_taxi_auton()
-        elif self.selected == self.CHARGE:
-            self.command = self.charge_auton()
-        elif self.selected == self.CUBE_HIGH_TAXI:
-            self.command = self.cube_high_taxi_auton()
-        elif self.selected == self.HIGH_CHARGE:
-            self.command = self.high_charge_auton()
-        elif self.selected == self.MID_TAXI:
-            self.command = self.mid_taxi_auton()
-        elif self.selected == self.CUBE_HIGH_PLACE:
-            self.command = self.cube_high_place_auton()
-        elif self.selected == self.MID_PLACE:
-            self.command = self.mid_place_auton()
-        elif self.selected == self.MID_CHARGE:
-            self.command = self.mid_charge_auton()
-            
+        # if self.selected == self.TAXI:
+        #     self.command = self.taxi_auton("clean")
+        # elif self.selected == self.HIGH_PLACE: 
+        #     self.command = self.high_place_auton()
+        # elif self.selected == self.HIGH_TAXI:
+        #     self.command = self.high_taxi_auton("clean")
+        # elif self.selected == self.CHARGE:
+        #     self.command = self.charge_auton()
+        # elif self.selected == self.CUBE_HIGH_TAXI:
+        #     self.command = self.cube_high_taxi_auton("clean")
+        # elif self.selected == self.HIGH_CHARGE:
+        #     self.command = self.high_charge_auton()
+        # elif self.selected == self.MID_TAXI:
+        #     self.command = self.mid_taxi_auton("clean")
+        # elif self.selected == self.CUBE_HIGH_PLACE:
+        #     self.command = self.cube_high_place_auton()
+        # elif self.selected == self.MID_PLACE:
+        #     self.command = self.mid_place_auton()
+        # elif self.selected == self.MID_CHARGE:
+        #     self.command = self.mid_charge_auton()
+        # elif self.selected == self.MID_TAXI_B:
+        #     self.command = self.mid_taxi_auton("bump")
+        
+        autons = {
+            self.TAXI: self.taxi_auton("clean"),
+            self.TAXI_AUTON_B: self.taxi_auton("bump"),
+            self.HIGH_PLACE: self.high_place_auton(),
+            self.HIGH_TAXI: self.high_taxi_auton("clean"),
+            self.HIGH_TAXI_B: self.high_taxi_auton("bump"),
+            self.CHARGE: self.charge_auton(),
+            self.HIGH_CHARGE: self.high_charge_auton(),
+        }
+        
+        self.command = autons[self.selected]
+        
         auton = self.command
         auton.schedule()
-            
-    def cube_high_taxi_auton(self):
-        cube_high_taxi_auton = SequentialCommandGroup(
-            ScoreCommand(self.arm_subsystem, ElevatorState.HIGH, "cube"),
-            TaxiAutoCommand(self.drive_subsystem)
-        )
-        return cube_high_taxi_auton
-        
-    def cube_high_place_auton(self):
-        cube_high_place_auton = ScoreCommand(self.arm_subsystem, ElevatorState.HIGH, "cube")
-        return cube_high_place_auton
 
     def high_place_auton(self):
         high_place_auton = ScoreCommand(self.arm_subsystem, ElevatorState.HIGH, "cone")
         return high_place_auton
         
-    def mid_place_auton(self):
-        mid_place_auton = ScoreCommand(self.arm_subsystem, ElevatorState.MID, "cone")
-        return mid_place_auton
+    # def mid_place_auton(self):
+    #     mid_place_auton = ScoreCommand(self.arm_subsystem, ElevatorState.MID, "cone")
+    #     return mid_place_auton
 
-    def mid_taxi_auton(self):
-        mid_taxi_auton = SequentialCommandGroup(
-            ScoreCommand(self.arm_subsystem, ElevatorState.MID, "cone"),
-            TaxiAutoCommand(self.drive_subsystem)
-        )
-        return mid_taxi_auton
+    # def mid_taxi_auton(self, side):
+    #     mid_taxi_auton = SequentialCommandGroup(
+    #         ScoreCommand(self.arm_subsystem, ElevatorState.MID, "cone"),
+    #         TaxiAutoCommand(self.drive_subsystem, side)
+    #     )
+    #     return mid_taxi_auton
 
-    def high_taxi_auton(self):
+    def high_taxi_auton(self, side):
         high_taxi_auton = SequentialCommandGroup(
             ScoreCommand(self.arm_subsystem, ElevatorState.HIGH, "cone"),
-            TaxiAutoCommand(self.drive_subsystem)
+            TaxiAutoCommand(self.drive_subsystem, side)
         )
         return high_taxi_auton
 
-    def taxi_auton(self):
-        taxiAuton = TaxiAutoCommand(self.drive_subsystem)
+    def taxi_auton(self, side):
+        taxiAuton = TaxiAutoCommand(self.drive_subsystem, side)
         return taxiAuton    
     
     def charge_auton(self):
         chargeAuton = SequentialCommandGroup(
             DriveToChargeStationCommand(self.drive_subsystem, 10),
-            BalanceOnChargeStationCommand(self.drive_subsystem, 0)
+            BalanceOnChargeStationCommand(self.drive_subsystem, 7)
         )
         return chargeAuton
         
@@ -119,17 +130,9 @@ class AutonSelector():
         high_charge_auton = SequentialCommandGroup(
             ScoreCommand(self.arm_subsystem, ElevatorState.HIGH, "cone"),
             DriveToChargeStationCommand(self.drive_subsystem, 10),
-            BalanceOnChargeStationCommand(self.drive_subsystem, 5)
+            BalanceOnChargeStationCommand(self.drive_subsystem, 7)
         )
         return high_charge_auton
-
-    def mid_charge_auton(self):
-        mid_charge_auton = SequentialCommandGroup(
-            ScoreCommand(self.arm_subsystem, ElevatorState.MID, "cone"),
-            DriveToChargeStationCommand(self.drive_subsystem, 10),
-            BalanceOnChargeStationCommand(self.drive_subsystem, 0)
-        )
-        return mid_charge_auton
 
 
         
