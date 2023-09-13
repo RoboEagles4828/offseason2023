@@ -763,15 +763,15 @@ class DriveTrain():
         ROBOT_MAX_ROTATIONAL = 5.0
         MODULE_MAX_SPEED = 5.0
         if ENABLE_2ND_ORDER:
-            self.speeds = self.correctForDynamics(ChassisSpeeds(linearX*self.ROBOT_MAX_TRANSLATIONAL, -linearY*self.ROBOT_MAX_TRANSLATIONAL, angularZ*self.ROBOT_MAX_ROTATIONAL))
+            self.speeds = self.correctForDynamics(ChassisSpeeds(linearX*ROBOT_MAX_TRANSLATIONAL, -linearY*ROBOT_MAX_TRANSLATIONAL, angularZ*ROBOT_MAX_ROTATIONAL))
         else:
-            self.speeds = ChassisSpeeds(linearX*self.ROBOT_MAX_TRANSLATIONAL, -linearY*self.ROBOT_MAX_TRANSLATIONAL, angularZ*self.ROBOT_MAX_ROTATIONAL)
-        self.linX = linearX*self.ROBOT_MAX_TRANSLATIONAL
-        self.linY = linearY*self.ROBOT_MAX_TRANSLATIONAL
-        self.angZ = angularZ*self.ROBOT_MAX_ROTATIONAL
+            self.speeds = ChassisSpeeds(linearX*ROBOT_MAX_TRANSLATIONAL, -linearY*ROBOT_MAX_TRANSLATIONAL, angularZ*ROBOT_MAX_ROTATIONAL)
+        self.linX = linearX*ROBOT_MAX_TRANSLATIONAL
+        self.linY = linearY*ROBOT_MAX_TRANSLATIONAL
+        self.angZ = angularZ*ROBOT_MAX_ROTATIONAL
 
         self.module_state = self.kinematics.toSwerveModuleStates(self.speeds)
-        self.kinematics.desaturateWheelSpeeds(self.module_state, self.speeds, self.MODULE_MAX_SPEED, self.ROBOT_MAX_TRANSLATIONAL, self.ROBOT_MAX_ROTATIONAL)
+        self.kinematics.desaturateWheelSpeeds(self.module_state, self.speeds, MODULE_MAX_SPEED, ROBOT_MAX_TRANSLATIONAL, ROBOT_MAX_ROTATIONAL)
 
         self.front_left_state: SwerveModuleState = self.module_state[0]
         self.front_right_state: SwerveModuleState = self.module_state[1]
