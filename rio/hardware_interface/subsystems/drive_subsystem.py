@@ -1,11 +1,14 @@
 from commands2 import SubsystemBase
 from wpimath.kinematics import ChassisSpeeds
 from hardware_interface.drivetrain import DriveTrain
+from hardware_interface.joystick import Joystick
+import math
 
 class DriveSubsystem(SubsystemBase):
-    def __init__(self, drivetrain: DriveTrain):
+    def __init__(self, drivetrain: DriveTrain, joystick: Joystick):
         super().__init__()
         self.drivetrain = drivetrain
+        self.joystick = joystick
         
     def swerve_drive(self, x, y, z, field_oriented):
         if field_oriented:
@@ -72,11 +75,19 @@ class DriveSubsystem(SubsystemBase):
     def getVelocity(self):
         return self.drivetrain.speeds
     
+    def getJoyVelocity(self):
+        linearX = math.pow(self.joystick.getData()["axes"][1], 5) * self.drivetrain.ROBOT_MAX_TRANSLATIONAL / self.drivetrain.move_scale_x
+        linearY = math.pow(self.joystick.getData()["axes"][0], 5) * -self.drivetrain.ROBOT_MAX_TRANSLATIONAL / self.drivetrain.move_scale_y
+        return ChassisSpeeds(linearX, linearY, 0)
+    
     def lockDrive(self):
         self.drivetrain.lockDrive()
         
     def unlockDrive(self):
         self.drivetrain.unlockDrive()
+        
+    def percentToMeters(self, percent):
+        return percent * 5.0
         
     def stop(self):
         self.drivetrain.stop()

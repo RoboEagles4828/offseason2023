@@ -1,8 +1,11 @@
 from commands2 import *
 from wpilib import Timer
+from hardware_interface.joystick import Joystick
 import wpimath
+from wpimath import angleModulus
 from wpimath.units import *
-from wpimath.controller import PIDController
+from wpimath.trajectory import TrapezoidProfile, TrapezoidProfileRadians
+from wpimath.controller import PIDController, ProfiledPIDController, ProfiledPIDControllerRadians
 from hardware_interface.subsystems.drive_subsystem import DriveSubsystem
 import logging
 import math
@@ -41,23 +44,16 @@ class DriveTimeAutoCommand(CommandBase):
         return self.timer.get() >= self.seconds
         
 class TurnToAngleCommand(CommandBase):
-    def __init__(self, drive: DriveSubsystem, angle: float, relative: bool):
+    def __init__(self, drive: DriveSubsystem, target):
         super().__init__()
         self.drive = drive
-        self.angle = angle
-        self.target = 0
-        self.relative = relative
-        self.threshold = 5
+        self.constraints = TrapezoidProfileRadians.Constraints(5.0, 2.5)
+        self.pid = ProfiledPIDControllerRadians(0.3, 0.0, 0.0, self.constraints)
+        self.pid.enableContinuousInput(-math.pi, math.pi)
+        self.target = math.radians(target)
+        self.timer = Timer()
         self.addRequirements(self.drive)
         
-    def initialize(self):
-        logging.info("TurnToAngleCommand initialized")
-        current_angle = self.drive.getGyroAngle180()
-        if self.relative:
-            self.target = current_angle + self.angle
-        else:
-            self.target = self.angle
-            
     def clampToRange(self, value, min, max):
         if value > max:
             return max
@@ -66,21 +62,24 @@ class TurnToAngleCommand(CommandBase):
         else:
             return value
         
+    def initialize(self):
+        self.timer.reset()
+        self.timer.start()
+        self.pid.setGoal(self.target)
+        
     def execute(self):
-        current_angle = self.drive.getGyroAngle180()
-        turn_power = math.copysign(2.5, self.target - current_angle)
-        other_velocities = (self.drive.getVelocity().vx, self.drive.getVelocity().vy)
-        logging.info(f"TurnToAngleCommand executing, target: {self.target} current: {self.drive.getGyroAngle180()} power: {turn_power/1000.0}")
-        self.drive.swerve_drive(other_velocities[0], other_velocities[1], turn_power, True)
+        calc = self.pid.calculate(math.radians(self.drive.getGyroAngle180()))
+        power = calc
+        self.drive.swerve_drive(self.drive.getJoyVelocity().vx/self.drive.drivetrain.ROBOT_MAX_TRANSLATIONAL, self.drive.getJoyVelocity().vy/self.drive.drivetrain.ROBOT_MAX_TRANSLATIONAL, power, True)
+        print(power/100.0)
+        print("Pos: ", self.drive.getGyroAngle180())
         
     def end(self, interrupted):
-        logging.info("TurnToAngleCommand ended")
-        other_velocities = (self.drive.getVelocity().vx, self.drive.getVelocity().vy)
-        self.drive.swerve_drive(other_velocities[0], other_velocities[1], 0, True)
+        self.drive.swerve_drive(self.drive.getJoyVelocity().vx/self.drive.drivetrain.ROBOT_MAX_TRANSLATIONAL, self.drive.getJoyVelocity().vy/self.drive.drivetrain.ROBOT_MAX_TRANSLATIONAL, 0, False)
         self.drive.stop()
-        
+    
     def isFinished(self):
-        return abs(self.drive.getGyroAngle180() - self.target) < self.threshold
+        return self.pid.atGoal()
         
 class BalanceOnChargeStationCommand(CommandBase):
     def __init__(self, drive: DriveSubsystem, level_threshold: float):

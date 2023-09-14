@@ -53,7 +53,7 @@ class NavxSim:
         return math.degrees(self.roll)
     
     def getRotation2d(self):
-        return Rotation2d.fromDegrees(self.getYawDegrees())
+        return Rotation2d.fromDegrees(self.getYawDegrees()).__mul__(-1)
     
     def getQuaternionWXYZ(self):
         return [self.quat.w, self.quat.x, self.quat.y, self.quat.z]

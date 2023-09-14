@@ -217,7 +217,7 @@ class Robot(wpilib.TimedRobot):
         self.drive_train = initDriveTrain()
         self.drive_train.is_sim = self.isSimulation()
         self.joystick = Joystick("xbox")
-        self.auton_selector = AutonSelector(self.arm_controller, self.drive_train)
+        self.auton_selector = AutonSelector(self.arm_controller, self.drive_train, self.joystick)
         self.joystick_selector = wpilib.SendableChooser()
         self.joystick_selector.setDefaultOption("XBOX", "xbox")
         self.joystick_selector.addOption("PS4", "ps4")
@@ -250,8 +250,8 @@ class Robot(wpilib.TimedRobot):
 
         self.arm_controller.setToggleButtons()
         
-        self.load_cmd = TurnToAngleCommand(self.auton_selector.drive_subsystem, 0, False)
-        self.score_cmd = TurnToAngleCommand(self.auton_selector.drive_subsystem, 180, False)
+        self.load_cmd = TurnToAngleCommand(self.auton_selector.drive_subsystem, 0)
+        self.score_cmd = TurnToAngleCommand(self.auton_selector.drive_subsystem, 180)
         
         self.auton_run = False
 
@@ -303,11 +303,9 @@ class Robot(wpilib.TimedRobot):
             self.drive_train.swerveDrive(self.joystick)
         self.arm_controller.setArm(self.joystick)
         if self.drive_train.field_oriented_value and self.drive_train.auto_turn_value == "load":
-            self.load_cmd.setOtherVelocities((self.drive_train.linX, self.drive_train.linY))
             self.load_cmd.schedule()
             CommandScheduler.getInstance().run()
         elif self.drive_train.field_oriented_value and self.drive_train.auto_turn_value == "score":
-            self.score_cmd.setOtherVelocities((self.drive_train.linX, self.drive_train.linY))
             self.score_cmd.schedule()
             CommandScheduler.getInstance().run()
         else:

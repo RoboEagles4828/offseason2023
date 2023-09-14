@@ -3,15 +3,17 @@ from hardware_interface.armcontroller import ArmController
 from hardware_interface.drivetrain import DriveTrain
 from hardware_interface.subsystems.drive_subsystem import DriveSubsystem
 from hardware_interface.subsystems.arm_subsystem import ArmSubsystem
+from hardware_interface.joystick import Joystick
 from hardware_interface.commands.drive_commands import *
 from hardware_interface.commands.arm_commands import *
 import time
 
 
 class AutonSelector():
-    def __init__(self, arm_controller: ArmController, drive_train: DriveTrain):
+    def __init__(self, arm_controller: ArmController, drive_train: DriveTrain, joystick: Joystick):
         self.arm_controller = arm_controller
         self.drive_train = drive_train
+        self.joystick = joystick
         self.TAXI = "Taxi Auton"
         self.HIGH_PLACE = "High Place Auton"
         self.HIGH_TAXI = "High Taxi Auton"
@@ -27,10 +29,10 @@ class AutonSelector():
         self.CUBE_HIGH_TAXI_B = "Cube High Taxi BUMP Auton"
         self.TAXI_AUTON_B = "Taxi Auton BUMP"
         self.autonChooser = wpilib.SendableChooser()
-        self.autonChooser.addOption("Taxi CLEAN Auton", self.TAXI)
+        self.autonChooser.setDefaultOption("Taxi CLEAN Auton", self.TAXI)
         self.autonChooser.addOption("Taxi BUMP Auton", self.TAXI_AUTON_B)
         self.autonChooser.addOption("High Place Auton", self.HIGH_PLACE)
-        self.autonChooser.setDefaultOption("High Taxi CLEAN Auton", self.HIGH_TAXI)
+        self.autonChooser.addOption("High Taxi CLEAN Auton", self.HIGH_TAXI)
         self.autonChooser.addOption("High Taxi BUMP Auton", self.HIGH_TAXI_B)
         # self.autonChooser.addOption("Cube High Taxi CLEAN Auton", self.CUBE_HIGH_TAXI)
         # self.autonChooser.addOption("Mid Place Auton", self.MID_PLACE)
@@ -50,7 +52,7 @@ class AutonSelector():
         
         self.command = DoNothingCommand()
         
-        self.drive_subsystem = DriveSubsystem(self.drive_train)
+        self.drive_subsystem = DriveSubsystem(self.drive_train, self.joystick)
         self.arm_subsystem = ArmSubsystem(self.arm_controller)
 
     def run(self):

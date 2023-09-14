@@ -703,7 +703,7 @@ class DriveTrain():
         else:
             self.print = ""
 
-        logging.info(f"Navx: {Rotation2d.fromDegrees(self.navx.getRotation2d().__mul__(-1).degrees() + self.navx_offset)}")
+        logging.info(f"Navx: {Rotation2d.fromDegrees(self.getNavx().getRotation2d().__mul__(-1).degrees() + self.navx_offset)}")
         #logging.info(f"FR: {self.front_left_state.speed}, {self.front_left_state.angle.radians()} | Current Angle: {self.front_left.getEncoderPosition()}")
         # logging.info(f"{self.print}linX: {round(self.speeds.vx, 2)} linY: {round(self.speeds.vy, 2)} angZ: {round(self.speeds.omega, 2)} FL: {round(radiansToMeters(getWheelRadians(self.front_left.wheel_motor.getSelectedSensorVelocity(), 'velocity')), 2)}")
         
@@ -757,6 +757,11 @@ class DriveTrain():
         #print(f"{round(self.linX, 2)} {round(self.linY, 2)} {round(self.angZ, 2)} | {round(self.front_left.getMotorPosition(), 2)} {round(self.front_left.getMotorPosition(), 2)} {round(self.front_left.getMotorPosition(), 2)} {round(self.front_left.getMotorPosition(), 2)}")
         
         return data
+
+    def getNavx(self):
+        if self.is_sim:
+            return self.navx_sim
+        return self.navx
 
     def swerveDriveAuton(self, linearX, linearY, angularZ):
         ROBOT_MAX_TRANSLATIONAL = 5.0
