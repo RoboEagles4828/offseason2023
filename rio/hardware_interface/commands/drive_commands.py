@@ -174,7 +174,7 @@ class TaxiAutoCommand(SequentialCommandGroup):
         else:
             self.addCommands(
                 PrintCommand("Starting Taxi Auto"),
-                DriveTimeAutoCommand(self.drive, 1.0, (-1.5, 0, 0))
+                DriveTimeAutoCommand(self.drive, 1.3, (-1.5, 0, 0))
             )
         
 class UnlockDriveCommand(CommandBase):

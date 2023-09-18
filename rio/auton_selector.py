@@ -122,7 +122,8 @@ class AutonSelector():
     def charge_auton(self):
         chargeAuton = SequentialCommandGroup(
             DriveToChargeStationCommand(self.drive_subsystem, 10),
-            BalanceOnChargeStationCommand(self.drive_subsystem, 7)
+            BalanceOnChargeStationCommand(self.drive_subsystem, 7),
+            DriveTimeAutoCommand(self.drive_subsystem, 1.0, (0.04, 0.0, 0.0)),
         )
         return chargeAuton
         
@@ -130,7 +131,8 @@ class AutonSelector():
         high_charge_auton = SequentialCommandGroup(
             ScoreCommand(self.arm_subsystem, ElevatorState.HIGH, "cone"),
             DriveToChargeStationCommand(self.drive_subsystem, 10),
-            BalanceOnChargeStationCommand(self.drive_subsystem, 7)
+            BalanceOnChargeStationCommand(self.drive_subsystem, 7),
+            DriveTimeAutoCommand(self.drive_subsystem, 1.0, (0.04, 0.0, 0.0)),
         )
         return high_charge_auton
 

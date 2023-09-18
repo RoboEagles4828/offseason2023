@@ -271,6 +271,7 @@ class Robot(wpilib.TimedRobot):
         frc_stage = "AUTON"
 
     def autonomousPeriodic(self):
+        self.drive_train.set_navx_offset(180)
         CommandScheduler.getInstance().run()
         global fms_attached
         fms_attached = wpilib.DriverStation.isFMSAttached()
@@ -282,7 +283,6 @@ class Robot(wpilib.TimedRobot):
     def autonomousExit(self):
         CommandScheduler.getInstance().cancelAll()
         logging.info("Exiting Auton")
-        self.drive_train.set_navx_offset(180)
         global frc_stage
         frc_stage = "AUTON"
 

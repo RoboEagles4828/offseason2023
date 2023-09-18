@@ -834,10 +834,10 @@ class DriveTrain():
         
     def lockDrive(self):
         self.locked = True
-        front_left_state = SwerveModuleState(0, Rotation2d.fromDegrees(90))
-        front_right_state = SwerveModuleState(0, Rotation2d.fromDegrees(90))
-        rear_left_state = SwerveModuleState(0, Rotation2d.fromDegrees(90))
-        rear_right_state = SwerveModuleState(0, Rotation2d.fromDegrees(90))
+        front_left_state = SwerveModuleState(0, Rotation2d.fromDegrees(45))
+        front_right_state = SwerveModuleState(0, Rotation2d.fromDegrees(-45))
+        rear_left_state = SwerveModuleState(0, Rotation2d.fromDegrees(-45))
+        rear_right_state = SwerveModuleState(0, Rotation2d.fromDegrees(45))
         
         self.front_left.set(front_left_state)
         self.front_right.set(front_right_state)
