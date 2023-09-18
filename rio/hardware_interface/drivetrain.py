@@ -248,8 +248,8 @@ class SwerveModule():
         self.wheel_motor.configSupplyCurrentLimit(supply_current_limit_configs, timeout_ms)
         
         # Stator Current Limit
-        stator_current_limit = 40
-        stator_current_threshold = 80
+        stator_current_limit = 40 # TerrorBytes/Yeti: 80
+        stator_current_threshold = 80 # TerrorBytes/Yeti: 120
         stator_current_threshold_time = 0.1
         stator_current_limit_configs = ctre.StatorCurrentLimitConfiguration(True, stator_current_limit, stator_current_threshold, stator_current_threshold_time)
         self.wheel_motor.configStatorCurrentLimit(stator_current_limit_configs, timeout_ms)
@@ -301,14 +301,14 @@ class SwerveModule():
         supply_current_limit = 20
         supply_current_threshold = 40
         supply_current_threshold_time = 0.1
-        supply_current_limit_configs = ctre.SupplyCurrentLimitConfiguration(True, supply_current_limit, supply_current_threshold, supply_current_threshold_time)
+        supply_current_limit_configs = ctre.SupplyCurrentLimitConfiguration(False, supply_current_limit, supply_current_threshold, supply_current_threshold_time)
         self.axle_motor.configSupplyCurrentLimit(supply_current_limit_configs, timeout_ms)
 
         # Stator Current Limit
         stator_current_limit = 40
         stator_current_threshold = 80
         stator_current_threshold_time = 0.1
-        stator_current_limit_configs = ctre.StatorCurrentLimitConfiguration(True, stator_current_limit, stator_current_threshold, stator_current_threshold_time)
+        stator_current_limit_configs = ctre.StatorCurrentLimitConfiguration(False, stator_current_limit, stator_current_threshold, stator_current_threshold_time)
         self.axle_motor.configStatorCurrentLimit(stator_current_limit_configs, timeout_ms)
 
     def neutralize_module(self):
