@@ -1,4 +1,5 @@
 import wpilib
+import wpimath
 import logging
 
 CONTROLLER_PORT = 0
@@ -59,19 +60,23 @@ class Joystick:
         elif self.type.lower() == "ps4":
             self.joystick = wpilib.PS4Controller(CONTROLLER_PORT)
         pov = self.joystick.getPOV()
-        leftX = self.joystick.getLeftX()
-        leftY = self.joystick.getLeftY()
-        rightX = self.joystick.getRightX()
-        rightY = self.joystick.getRightY()
+        leftX = wpimath.applyDeadband(self.joystick.getLeftX(), self.deadzone)
+        leftY = wpimath.applyDeadband(self.joystick.getLeftY(), self.deadzone)
+        rightX = wpimath.applyDeadband(self.joystick.getRightX(), self.deadzone)
+        rightY = wpimath.applyDeadband(self.joystick.getRightY(), self.deadzone)
         leftTrigger = self.joystick.getLeftTriggerAxis() if self.type == "xbox" else self.joystick.getL2Axis()
         rightTrigger = self.joystick.getRightTriggerAxis() if self.type == "xbox" else self.joystick.getR2Axis()
 
         axes = [
-            self.scaleAxis(leftX) if abs(leftX) > self.deadzone else 0.0, # 0
-            self.scaleAxis(leftY) if abs(leftY) > self.deadzone else 0.0, # 1
+            # self.scaleAxis(leftX) if abs(leftX) > self.deadzone else 0.0, # 0
+            # self.scaleAxis(leftY) if abs(leftY) > self.deadzone else 0.0, # 1
+            self.scaleAxis(leftX), 
+            self.scaleAxis(leftY),
             self.scaleTrigger(leftTrigger), # 2
-            self.scaleAxis(rightX) if abs(rightX) > self.deadzone else 0.0, # 3
-            self.scaleAxis(rightY) if abs(rightY) > self.deadzone else 0.0, # 4
+            # self.scaleAxis(rightX) if abs(rightX) > self.deadzone else 0.0, # 3
+            # self.scaleAxis(rightY) if abs(rightY) > self.deadzone else 0.0, # 4
+            self.scaleAxis(rightX),
+            self.scaleAxis(rightY),
             self.scaleTrigger(rightTrigger), # 5
             pov_x_map[pov], # 6
             pov_y_map[pov], # 7
