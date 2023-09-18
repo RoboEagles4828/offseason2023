@@ -29,6 +29,8 @@
   "NTProvider": {
     "types": {
       "/FMSInfo": "FMSInfo",
+      "/Shuffleboard/Main/2nd Order": "String Chooser",
+      "/Shuffleboard/Main/ANGLE SOURCE": "String Chooser",
       "/Shuffleboard/Main/AUTON": "String Chooser",
       "/Shuffleboard/Main/JOYSTICK": "String Chooser",
       "/Shuffleboard/Main/NAVX": "Gyro",

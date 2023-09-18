@@ -1,6 +1,6 @@
 from commands2 import SubsystemBase
 from wpimath.kinematics import ChassisSpeeds
-from hardware_interface.drivetrain import DriveTrain
+from hardware_interface.subsystems.swerve.drivetrain import DriveTrain
 
 class DriveSubsystem(SubsystemBase):
     def __init__(self, drivetrain: DriveTrain):

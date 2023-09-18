@@ -7,8 +7,9 @@ from pyfrc.physics.core import PhysicsInterface
 
 from sim.talonFxSim import TalonFxSim
 from sim.cancoderSim import CancoderSim
-from hardware_interface.drivetrain import getAxleRadians, getWheelRadians, SwerveModule, AXLE_JOINT_GEAR_RATIO
-from hardware_interface.armcontroller import PORTS, TOTAL_INTAKE_REVOLUTIONS
+from hardware_interface.subsystems.swerve.swerve_constants import *
+from hardware_interface.subsystems.swerve.swerve_module import SwerveModule
+from hardware_interface.subsystems.arm.arm_constants import *
 from hardware_interface.joystick import CONTROLLER_PORT
 
 import math

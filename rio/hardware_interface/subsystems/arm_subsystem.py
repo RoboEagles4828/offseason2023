@@ -1,5 +1,5 @@
 from commands2 import SubsystemBase
-from hardware_interface.armcontroller import ArmController
+from hardware_interface.subsystems.arm.armcontroller import ArmController
 
 class ElevatorState():
     HIGH = "high"

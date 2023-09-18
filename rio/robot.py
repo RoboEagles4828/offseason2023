@@ -1,7 +1,7 @@
-from hardware_interface.drivetrain import DriveTrain
-import hardware_interface.drivetrain as dt
+from hardware_interface.subsystems.swerve.drivetrain import DriveTrain
+import hardware_interface.subsystems.swerve.drivetrain as dt
 from hardware_interface.joystick import Joystick
-from hardware_interface.armcontroller import ArmController
+from hardware_interface.subsystems.arm.armcontroller import ArmController
 from commands2 import *
 import wpilib
 from wpilib.shuffleboard import Shuffleboard

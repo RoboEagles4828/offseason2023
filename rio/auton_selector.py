@@ -1,6 +1,6 @@
 import wpilib
-from hardware_interface.armcontroller import ArmController
-from hardware_interface.drivetrain import DriveTrain
+from hardware_interface.subsystems.arm.armcontroller import ArmController
+from hardware_interface.subsystems.swerve.drivetrain import DriveTrain
 from hardware_interface.subsystems.drive_subsystem import DriveSubsystem
 from hardware_interface.subsystems.arm_subsystem import ArmSubsystem
 from hardware_interface.commands.drive_commands import *
