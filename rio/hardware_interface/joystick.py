@@ -37,7 +37,7 @@ class Joystick:
             self.joystick = wpilib.XboxController(CONTROLLER_PORT)
         elif self.type.lower() == "ps4":
             self.joystick = wpilib.PS4Controller(CONTROLLER_PORT)
-        self.deadzone = 0.15
+        self.deadzone = 0.1
         self.last_joystick_data = self.getEmptyData()
         self.count = 0
 

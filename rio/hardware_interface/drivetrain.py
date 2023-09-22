@@ -19,7 +19,7 @@ from hardware_interface.navxSim import NavxSim
 
 NAMESPACE = 'real'
 
-ENABLE_2ND_ORDER = True
+ENABLE_2ND_ORDER = False
 
 # Small Gear Should Face the back of the robot
 # All wheel drive motors should not be inverted
@@ -443,7 +443,7 @@ class DriveTrain():
         self.wheel_radius = 0.0508
 
         self.ROBOT_MAX_TRANSLATIONAL = 10.0 #16.4041995 # 5.0 # m/s
-        self.ROBOT_MAX_ROTATIONAL = 10.0 #16.4041995 * math.pi #rad/s
+        self.ROBOT_MAX_ROTATIONAL = 2.5 #16.4041995 * math.pi #rad/s
 
         self.MODULE_MAX_SPEED = 10.0 #16.4041995 # m/s
 
@@ -703,7 +703,7 @@ class DriveTrain():
         else:
             self.print = ""
 
-        logging.info(f"Navx: {Rotation2d.fromDegrees(self.navx.getRotation2d().__mul__(-1).degrees() + self.navx_offset)}")
+        logging.info(f"Navx {angle_source}: {Rotation2d.fromDegrees(self.navx.getRotation2d().__mul__(-1).degrees() + self.navx_offset)}")
         #logging.info(f"FR: {self.front_left_state.speed}, {self.front_left_state.angle.radians()} | Current Angle: {self.front_left.getEncoderPosition()}")
         # logging.info(f"{self.print}linX: {round(self.speeds.vx, 2)} linY: {round(self.speeds.vy, 2)} angZ: {round(self.speeds.omega, 2)} FL: {round(radiansToMeters(getWheelRadians(self.front_left.wheel_motor.getSelectedSensorVelocity(), 'velocity')), 2)}")
         
