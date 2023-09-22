@@ -61,6 +61,14 @@ Wait until both are downloaded and installed.
 2. Open Isaac
 3. Open Isaac and hit load on the *Import URDF* extension window
 4. Press Play on the left hand side
-5. Run `launch isaac` inside devcontainer
+5. Run `pysim` inside a new devcontainer terminal (this is the simulated driverstation window)
+6. Run `launch isaac_pysim` inside a new devcontainer terminal
+7. Run auton/teleop by enabling in the simulated driverstation window
 
-### In real life (TODO)
+### In real life
+
+1. Connect an xbox controller
+2. Launch FRC Driverstation
+3. Launch WPILib Shuffleboard
+4. Select auton/teleop
+5. Press Enable
