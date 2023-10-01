@@ -67,6 +67,7 @@ class IsaacDriveHardware(Node):
             return isaac_position - 2.0 * math.pi
         elif isaac_position < -math.pi:
             return isaac_position + 2.0 * math.pi
+        self.get_logger().info(f"Isaac Position: {isaac_position}")
         return isaac_position
         
     def read(self):
