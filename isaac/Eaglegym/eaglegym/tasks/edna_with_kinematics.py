@@ -44,6 +44,7 @@ import numpy as np
 import torch
 import torchgeometry as tgm
 import math
+import sys
 
 
 class Edna_Kinematics_Task(RLTask):
@@ -60,7 +61,7 @@ class Edna_Kinematics_Task(RLTask):
         self._task_cfg = sim_config.task_config
 
         # limits max velocity of wheels and axles
-        self.velocity_limit = 0.5
+        self.velocity_limit = 2.5
 
         self.dt = 1 / 60
         self.max_episode_length_s = self._task_cfg["env"]["episodeLength_s"]
@@ -91,6 +92,8 @@ class Edna_Kinematics_Task(RLTask):
         self.target_positions[:, 1] = 1
         
         self.inverse_kinematics = InverseKinematics()
+        
+        self.robot_length = 0.7366
 
         return
 
@@ -389,8 +392,7 @@ class Edna_Kinematics_Task(RLTask):
         # self._edna.set_joint_velocities(
         #     self.dof_vel[env_ids], indices=env_ids)
 
-        self._edna.set_world_poses(
-            root_pos[env_ids], self.initial_root_rot[env_ids].clone(), indices=env_ids)
+        self._edna.set_world_poses(root_pos[env_ids], self.initial_root_rot[env_ids].clone(), indices=env_ids)
         self._edna.set_velocities(root_velocities[env_ids], indices=env_ids)
 
         # bookkeeping
@@ -444,58 +446,73 @@ class Edna_Kinematics_Task(RLTask):
 
         root_positions = self.root_pos - self._env_pos
         # distance to target
-        target_dist = torch.sqrt(torch.square(
-            self.target_positions - root_positions).sum(-1))
+        target_dist = torch.sqrt(torch.square(self.target_positions - root_positions).sum(-1))
         
         # create a new tensor called target point being target_positions X - 0.5 and target_positions Y
         target_point = torch.stack(
             [self.target_positions[..., 0] - 0.5, self.target_positions[..., 1]], dim=-1
         )
         
-        target_point_dist = torch.sqrt(torch.square(
-            target_point - root_positions[..., 0:2]).sum(-1)
-        )
+        target_point_x = target_point[..., 0]
+        target_point_y = target_point[..., 1]
+        curr_pos_x = root_positions[..., 0]
+        curr_pos_y = root_positions[..., 1]
+        
+        x_reward = -(curr_pos_x-target_point_x)**2 + 1
+        y_reward = -(curr_pos_y-target_point_y)**2 + 1
+        pos_reward = x_reward + y_reward
+        
+        pos_reward = torch.where(target_dist < 0.5, torch.ones_like(pos_reward) * -2.0, pos_reward)
+        pos_reward = torch.where(target_dist > 20.0, torch.ones_like(pos_reward) * -2.0, pos_reward)
+        pos_reward = torch.where(target_dist < self.robot_length / 2.0, torch.ones_like(pos_reward) * -5.0, pos_reward)
+        pos_reward = torch.where(root_positions[..., 2] > 0.5, torch.ones_like(pos_reward) * -2.0, pos_reward)
+        
+        # penalty if robot is tipped over
+        
+        # convert quaternion self.root_rot to euler angles
+        rot = tgm.core.quaternion_to_angle_axis(self.root_rot)
+        pitch = rot[..., 1]
+        roll = rot[..., 0]
+        yaw = rot[..., 2]
+        
+        print("Quat: ", self.root_rot)
+        print("Euler: ", rot)
+        
+        self.pitch = pitch
+        self.roll = roll
+        
+        # penalty if robot is tipped over
+        pos_reward = torch.where(torch.abs(pitch) > math.pi / 2.0, torch.ones_like(pos_reward) * -5.0, pos_reward)
+        pos_reward = torch.where(torch.abs(roll) > math.pi / 2.0, torch.ones_like(pos_reward) * -5.0, pos_reward)
+        pos_reward = torch.where(pitch < -0.5, torch.ones_like(pos_reward) * -5.0, pos_reward)
 
         # pos_reward = 1.0 / (1.0 + (1/0.5)*(target_dist-0.5))
-        pos_reward = 1.0/(1.0+2.5*target_point_dist*target_point_dist)
+        # stop_point_reward = -torch.exp(-5*(target_point_dist-0.5))
+        # proximity_reward = 20-target_point_dist**2
+        # pos_reward = proximity_reward + stop_point_reward
+
         self.target_dist = target_dist
-        self.target_point_dist = target_point_dist
         self.root_positions = root_positions
         self.root_position_reward = self.rew_buf
         # rewards for moving away form starting point
         for i in range(len(self.root_position_reward)):
-            self.root_position_reward[i] = sum(root_positions[i][0:2])
+            self.root_position_reward[i] = sum(root_positions[i][0:2])*0.01
             
-        # rewards for facing the target
-        target_angle = torch.atan2(
-            self.target_positions[..., 1] - root_positions[..., 1], 
-            self.target_positions[..., 0] - root_positions[..., 0],
-        )
-        
-        robot_orientation_tensor = tgm.quaternion_to_angle_axis(self.root_rot)
-        robot_orientation = robot_orientation_tensor[..., 2]
-        target_orientation = target_angle
-        orientation_diff = torch.abs(robot_orientation - target_orientation)
-        orientation_diff = torch.min(orientation_diff, 2*np.pi - orientation_diff)
-        
-        angle_reward = 1.0 - orientation_diff / (2*np.pi)
-        self.test = self.root_position_reward*pos_reward*angle_reward
-        
-        if torch.isnan(self.test).any():
-            self.rew_buf[:] = torch.nan_to_num(self.test)
-        else:
-            self.rew_buf[:] = self.root_position_reward*pos_reward*angle_reward
-        print(f"Best Reward: {torch.max(self.test).item()}")
+        reward = pos_reward + self.root_position_reward
+            
+        self.rew_buf[:] = reward
+        # print(f"Best Reward: {torch.max(self.rew_buf).item()}")
 
     def is_done(self) -> None:
         # print("line 312")
         # These are the dying constaints. It dies if it is going in the wrong direction or starts flying
         ones = torch.ones_like(self.reset_buf)
         die = torch.zeros_like(self.reset_buf)
-        die = torch.where(self.target_point_dist > 20.0, ones, die)
-        die = torch.where(self.target_point_dist <= 0.5, ones, die)
+        die = torch.where(self.target_dist > 20.0, ones, die)
+        die = torch.where(self.target_dist < 0.5, ones, die)
         die = torch.where(self.root_positions[..., 2] > 0.5, ones, die)
-        die = torch.where(torch.isnan(self.test).any(), ones, die)
+        die = torch.where(torch.abs(self.pitch) > math.pi / 2.0, ones, die)
+        die = torch.where(torch.abs(self.roll) > math.pi / 2.0, ones, die)
         
         # die = torch.where(torch.isnan(self.actions[...,0]), ones, die)
         # die = torch.where(torch.isnan(self.joint_velocities[...,0]), ones, die)
@@ -525,7 +542,6 @@ class Edna_Kinematics_Task(RLTask):
         self.reset_buf[:] = torch.where(
             self.progress_buf >= self._max_episode_length - 1, ones, die)
         # print("line 316")
-
 
 def simplifiy_angle(current_pos, turn_pos, velocity):
     while (abs(current_pos - turn_pos) > math.pi / 2):
