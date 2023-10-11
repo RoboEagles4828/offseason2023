@@ -2,7 +2,7 @@ task:
   name: EdnaK
   physics_engine: ${..physics_engine}
   env:
-    numEnvs: 36
+    numEnvs: 2880
     envSpacing: 20.0
     resetDist: 3.0
     clipObservations: 5.0

@@ -10,8 +10,8 @@ class MotionMagic():
         self.tolerance = 0.05
         
         self.velocityInRampWindow1 = 0.5
-        self.velocityInRampWindow2 = 0.66
-        self.velocityInCruiseWindow = 1.0
+        self.velocityInRampWindow2 = 2.0
+        self.velocityInCruiseWindow = 3.0
         self.rampWindow1 = 0.3
         self.rampWindow2 = 0.8
         

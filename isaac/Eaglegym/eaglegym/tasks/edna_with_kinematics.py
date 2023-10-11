@@ -91,6 +91,8 @@ class Edna_Kinematics_Task(RLTask):
             (self._num_envs, 3), device=self._device, dtype=torch.float32)  # xyx of target position
         self.target_positions[:, 1] = 1
         
+        self.reward_moving_average = []
+        
         self.inverse_kinematics = InverseKinematics()
         
         self.robot_length = 0.7366
@@ -223,14 +225,28 @@ class Edna_Kinematics_Task(RLTask):
             rear_right_current_pos = (
                 (self._edna.get_joint_positions()[i][4]))
             
+            if math.isnan(front_left_current_pos):
+                front_left_current_pos = 0.0
+            if math.isnan(front_right_current_pos):
+                front_right_current_pos = 0.0
+            if math.isnan(rear_left_current_pos):
+                rear_left_current_pos = 0.0
+            if math.isnan(rear_right_current_pos):
+                rear_right_current_pos = 0.0
+            
             module_angles = [front_left_current_pos, front_right_current_pos, rear_left_current_pos, rear_right_current_pos]
             
-            pos, rot = self._edna.get_world_poses()
-            quat = rot[i]
-            imu_quat = Quaternion(quat[0], quat[1], quat[2], quat[3])
-            imu_euler = imu_quat.to_euler()
+            # pos, rot = self._edna.get_world_poses()
+            # quat = rot[i]
+            # imu_quat = Quaternion(quat[0], quat[1], quat[2], quat[3])
+            # imu_euler = imu_quat.to_euler()
             
-            velocity_cmds = self.inverse_kinematics.getDriveJointStates(linear_x_cmd[i], linear_y_cmd[i], angular_cmd[i], module_angles, imu_euler[2])
+            rot = tgm.core.quaternion_to_angle_axis(self.root_rot)
+            yaw = rot[i, 2]
+            
+            # print("YAW PRE: ", yaw.item())
+            
+            velocity_cmds = self.inverse_kinematics.getDriveJointStates(linear_x_cmd[i], linear_y_cmd[i], angular_cmd[i], module_angles, yaw.item())
  
             front_left_velocity = velocity_cmds[0]
             front_right_velocity = velocity_cmds[1]
@@ -445,8 +461,9 @@ class Edna_Kinematics_Task(RLTask):
     def calculate_metrics(self) -> None:
 
         root_positions = self.root_pos - self._env_pos
+
         # distance to target
-        target_dist = torch.sqrt(torch.square(self.target_positions - root_positions).sum(-1))
+        target_dist = torch.sqrt(torch.sum(torch.square(self.target_positions - root_positions)))
         
         # create a new tensor called target point being target_positions X - 0.5 and target_positions Y
         target_point = torch.stack(
@@ -464,8 +481,8 @@ class Edna_Kinematics_Task(RLTask):
         
         pos_reward = torch.where(target_dist < 0.5, torch.ones_like(pos_reward) * -2.0, pos_reward)
         pos_reward = torch.where(target_dist > 20.0, torch.ones_like(pos_reward) * -2.0, pos_reward)
-        pos_reward = torch.where(target_dist < self.robot_length / 2.0, torch.ones_like(pos_reward) * -5.0, pos_reward)
-        pos_reward = torch.where(root_positions[..., 2] > 0.5, torch.ones_like(pos_reward) * -2.0, pos_reward)
+        pos_reward = torch.where(target_dist <= self.robot_length / 2.0, torch.ones_like(pos_reward) * -5.0, pos_reward)
+        pos_reward = torch.where(root_positions[..., 2] > 0.5, torch.ones_like(pos_reward) * -3.0, pos_reward)
         
         # penalty if robot is tipped over
         
@@ -474,9 +491,6 @@ class Edna_Kinematics_Task(RLTask):
         pitch = rot[..., 1]
         roll = rot[..., 0]
         yaw = rot[..., 2]
-        
-        print("Quat: ", self.root_rot)
-        print("Euler: ", rot)
         
         self.pitch = pitch
         self.roll = roll
@@ -501,7 +515,8 @@ class Edna_Kinematics_Task(RLTask):
         reward = pos_reward + self.root_position_reward
             
         self.rew_buf[:] = reward
-        # print(f"Best Reward: {torch.max(self.rew_buf).item()}")
+        
+        print("Reward Tensor: ", self.rew_buf)
 
     def is_done(self) -> None:
         # print("line 312")
@@ -513,25 +528,6 @@ class Edna_Kinematics_Task(RLTask):
         die = torch.where(self.root_positions[..., 2] > 0.5, ones, die)
         die = torch.where(torch.abs(self.pitch) > math.pi / 2.0, ones, die)
         die = torch.where(torch.abs(self.roll) > math.pi / 2.0, ones, die)
-        
-        # die = torch.where(torch.isnan(self.actions[...,0]), ones, die)
-        # die = torch.where(torch.isnan(self.joint_velocities[...,0]), ones, die)
-        # die = torch.where(torch.isnan(self.joint_velocities[...,1]), ones, die)
-        # die = torch.where(torch.isnan(self.joint_velocities[...,2]), ones, die)
-        # die = torch.where(torch.isnan(self.joint_velocities[...,3]), ones, die)
-        # die = torch.where(torch.isnan(self.joint_velocities[...,4]), ones, die)
-        # die = torch.where(torch.isnan(self.joint_velocities[...,5]), ones, die)
-        # die = torch.where(torch.isnan(self.joint_velocities[...,6]), ones, die)
-        # die = torch.where(torch.isnan(self.joint_velocities[...,7]), ones, die)
-
-        # die = torch.where(torch.isnan(self.joint_positions[...,0]), ones, die)
-        # die = torch.where(torch.isnan(self.joint_positions[...,1]), ones, die)
-        # die = torch.where(torch.isnan(self.joint_positions[...,2]), ones, die)
-        # die = torch.where(torch.isnan(self.joint_positions[...,3]), ones, die)
-        # die = torch.where(torch.isnan(self.joint_positions[...,4]), ones, die)
-        # die = torch.where(torch.isnan(self.joint_positions[...,5]), ones, die)
-        # die = torch.where(torch.isnan(self.joint_positions[...,6]), ones, die)
-        # die = torch.where(torch.isnan(self.joint_positions[...,7]), ones, die)
 
         
         # die = torch.where(self.joint_positions[...,0] == 'NaN', ones, die)

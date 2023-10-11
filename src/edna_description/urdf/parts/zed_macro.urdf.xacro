@@ -54,6 +54,7 @@
       <xacro:property name="bottom_slope" value="0.0" />
       <xacro:property name="screw_offset_x" value="-0.01" />
       <xacro:property name="optical_offset_x" value="-0.01" />
+      <xacro:property name="weight" value="0.166" />
     </xacro:if>
 
 
@@ -90,14 +91,22 @@
 
 
     <!-- Left Camera -->
-    <link name="${prefix}_left_camera_frame" />
+    <link name="${prefix}_left_camera_frame">
+      <xacro:inertial_box mass="${weight/4}" x="0.0" y="0.0" z="0.0">
+        <origin xyz="0 ${baseline/2} 0" rpy="0 0 0" />
+      </xacro:inertial_box>
+    </link>
     <joint name="${prefix}_left_camera_joint" type="fixed">
       <parent link="${prefix}_camera_center"/>
       <child link="${prefix}_left_camera_frame"/>
       <origin xyz="0 ${baseline/2} 0" rpy="-${M_PI/2} 0 -${M_PI/2}" />
     </joint>
 
-    <link name="${prefix}_left_camera_optical_frame"/>
+    <link name="${prefix}_left_camera_optical_frame">
+      <xacro:inertial_box mass="${weight/4}" x="0.0" y="0.0" z="0.0">
+        <origin xyz="0 ${baseline/2} 0" rpy="0 0 0" />
+      </xacro:inertial_box>
+    </link>
     <joint name="${prefix}_left_camera_optical_joint" type="fixed">
       <origin xyz="0 0 ${optical_offset_x}" rpy="${M_PI} 0 0"/>
       <parent link="${prefix}_left_camera_frame"/>
@@ -106,14 +115,22 @@
 
 
     <!-- Right Camera -->
-    <link name="${prefix}_right_camera_frame" />
+    <link name="${prefix}_right_camera_frame">
+      <xacro:inertial_box mass="${weight/4}" x="0.0" y="0.0" z="0.0">
+        <origin xyz="0 ${baseline/2} 0" rpy="0 0 0" />
+      </xacro:inertial_box>
+    </link>
     <joint name="${prefix}_right_camera_joint" type="fixed">
       <parent link="${prefix}_camera_center"/>
       <child link="${prefix}_right_camera_frame"/>
       <origin xyz="0 -${baseline/2} 0" rpy="-${M_PI/2} 0 -${M_PI/2}" />
     </joint>
 
-    <link name="${prefix}_right_camera_optical_frame"/>
+    <link name="${prefix}_right_camera_optical_frame">
+      <xacro:inertial_box mass="${weight/4}" x="0.0" y="0.0" z="0.0">
+        <origin xyz="0 ${baseline/2} 0" rpy="0 0 0" />
+      </xacro:inertial_box>
+    </link>
     <joint name="${prefix}_right_camera_optical_joint" type="fixed">
       <origin xyz="0 0 ${optical_offset_x}" rpy="${M_PI} 0 0"/>
       <parent link="${prefix}_right_camera_frame"/>
