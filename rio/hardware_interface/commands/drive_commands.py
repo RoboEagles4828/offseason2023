@@ -199,6 +199,32 @@ class FieldOrientCommand(CommandBase):
         self.drive.unlockDrive()
         self.drive.hardResetGyro()
         self.drive.recalibrateGyro()
+
+
+
+class ConeMoveCommand(CommandBase):
+    def __init__(self, drive: DriveSubsystem, x: float, y: float, z: float):
+        super().__init__()
+        self.drive = drive
+        self.x = x
+        self.y = y
+        self.z = z
+        self.power = .2
+        self.addRequirements(self.drive)
+
+    def execute(self) -> None:
+        self.drive.swerve_drive(math.copysign(self.power,self.x), math.copysign(self.power, self.y), 0, False)
+
+    def isFinished(self) -> bool:
+        if(abs(self.x)<=1 and abs(self.y)<=1):
+            return True
+        else:
+            return False
+        
+    def end(self, interrupted: bool) -> None:
+        self.drive.swerve_drive(0, 0, 0, False)
+        self.drive.stop()
+        
         
     
     
