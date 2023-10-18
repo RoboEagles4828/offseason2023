@@ -202,28 +202,27 @@ class FieldOrientCommand(CommandBase):
 
 
 
-class ConeMoveCommand(CommandBase):
-    def __init__(self, drive: DriveSubsystem, x: float, y: float, z: float):
-        super().__init__()
+class ConeMoveAuton():
+    def __init__(self, drive: DriveSubsystem, object_pos: tuple[float, float, float]):
         self.drive = drive
-        self.x = x
-        self.y = y
-        self.z = z
+        self.object_pos = object_pos
+        self.x = self.object_pos[0]
+        self.y = self.object_pos[1]
+        self.z = self.object_pos[2]
         self.power = .2
-        self.addRequirements(self.drive)
 
     def execute(self) -> None:
-        self.drive.swerve_drive(math.copysign(self.power,self.x), math.copysign(self.power, self.y), 0, False)
-
-    def isFinished(self) -> bool:
-        if(abs(self.x)<=1 and abs(self.y)<=1):
-            return True
+        self.x = self.object_pos[0]
+        self.y = self.object_pos[1]
+        self.z = self.object_pos[2]
+        distance = math.sqrt(self.x**2 + self.y**2)
+        if distance <= 0.5:
+            self.power = 0.0
         else:
-            return False
-        
-    def end(self, interrupted: bool) -> None:
-        self.drive.swerve_drive(0, 0, 0, False)
-        self.drive.stop()
+            self.power = .2     
+        self.drive.swerve_drive(math.copysign(self.power,self.x), math.copysign(self.power, self.y), 0, False)
+        print("INPUT POSE", [self.x, self.y, self.z])
+        print("CONE MOVE VELOCITY", self.drive.getVelocity())
         
         
     

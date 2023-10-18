@@ -65,7 +65,7 @@ def threadLoop(name, dds, action):
     global frc_stage
     try:
         while stop_threads == False:
-            if (frc_stage == 'AUTON' and name != "joystick") or (name in ["encoder", "stage-broadcaster", "service", "imu", "zed"]) or (frc_stage == 'TELEOP'):
+            if (frc_stage == 'AUTON' and name != "joystick") or (name in ["stage-broadcaster", "service", "imu", "zed"]) or (frc_stage == 'TELEOP'):
                 action(dds)
             time.sleep(20/1000)
     except Exception as e:
@@ -79,9 +79,9 @@ def threadLoop(name, dds, action):
 # Generic Start Thread Function
 def startThread(name) -> threading.Thread | None:
     thread = None
-    if name == "encoder":
-        thread = threading.Thread(target=encoderThread, daemon=True)
-    elif name == "stage-broadcaster":
+    # if name == "encoder":
+    #     thread = threading.Thread(target=encoderThread, daemon=True)
+    if name == "stage-broadcaster":
         thread = threading.Thread(target=stageBroadcasterThread, daemon=True)
     elif name == "service":
         thread = threading.Thread(target=serviceThread, daemon=True)
@@ -103,9 +103,9 @@ arm_controller_lock = threading.Lock()
 ENCODER_PARTICIPANT_NAME = "ROS2_PARTICIPANT_LIB::encoder_info"
 ENCODER_WRITER_NAME = "encoder_info_publisher::encoder_info_writer"
 
-def encoderThread():
-    encoder_publisher = initDDS(DDS_Publisher, ENCODER_PARTICIPANT_NAME, ENCODER_WRITER_NAME)
-    threadLoop('encoder', encoder_publisher, encoderAction)
+# def encoderThread():
+#     encoder_publisher = initDDS(DDS_Publisher, ENCODER_PARTICIPANT_NAME, ENCODER_WRITER_NAME)
+#     threadLoop('encoder', encoder_publisher, encoderAction)
 
 def encoderAction(publisher):
     # TODO: Make these some sort of null value to identify lost data
@@ -194,24 +194,26 @@ def imuAction(subscriber):
         ]
 ############################################
 
-object_pos = []
+object_pos = [0.0, 0.0, 0.0]
+
 
 ZED_PARTICIPANT_NAME = "ROS2_PARTICIPANT_LIB::zed_objects"
 ZED_READER_NAME = "zed_objects_subscriber::zed_objects_reader"
 
 def zedThread():
-    zed_subscriber = initDDS(DDS_Subscriber, IMU_PARTICIPANT_NAME, IMU_READER_NAME)
+    zed_subscriber = initDDS(DDS_Subscriber, ZED_PARTICIPANT_NAME, ZED_READER_NAME)
     threadLoop("zed", zed_subscriber, zedAction)
     
 def zedAction(subscriber):
     global object_pos
     data: dict = subscriber.read()
-    logging.info(f"data: {data}")
     if data is not None:
-        obj = data["objects"]
-        object_pos = obj["position"]
-        object_pos = [float(i) for i in object_pos]
-        logging.info(f"object_pos: {object_pos}")
+        arr = data["data"].split("|")
+        object_pos[0] = float(arr[0])
+        object_pos[1] = float(arr[1])
+        object_pos[2] = float(arr[2])
+    else:
+        object_pos = [0.0, 0.0, 0.0]
 class Robot(wpilib.TimedRobot):
     def robotInit(self):
         self.use_threading = True
@@ -223,13 +225,13 @@ class Robot(wpilib.TimedRobot):
             logging.info("Initializing Threads")
             global stop_threads
             stop_threads = False
-            if ENABLE_ENCODER: self.threads.append({"name": "encoder", "thread": startThread("encoder") })
+            # if ENABLE_ENCODER: self.threads.append({"name": "encoder", "thread": startThread("encoder") })
             if ENABLE_STAGE_BROADCASTER: self.threads.append({"name": "stage-broadcaster", "thread": startThread("stage-broadcaster") })
             self.threads.append({"name": "service", "thread": startThread("service") })
             self.threads.append({"name": "imu", "thread": startThread("imu") })
             self.threads.append({"name": "zed", "thread": startThread("zed") })
         else:
-            self.encoder_publisher = DDS_Publisher(xml_path, ENCODER_PARTICIPANT_NAME, ENCODER_WRITER_NAME)
+            # self.encoder_publisher = DDS_Publisher(xml_path, ENCODER_PARTICIPANT_NAME, ENCODER_WRITER_NAME)
             self.stage_publisher = DDS_Publisher(xml_path, STAGE_PARTICIPANT_NAME, STAGE_WRITER_NAME)
             self.service_publisher = DDS_Publisher(xml_path, SERVICE_PARTICIPANT_NAME, SERVICE_WRITER_NAME)
             self.imu_subscriber = DDS_Subscriber(xml_path, IMU_PARTICIPANT_NAME, IMU_READER_NAME)
@@ -289,8 +291,7 @@ class Robot(wpilib.TimedRobot):
         self.drive_train.set_navx_offset(0)
         # self.auton_selector.run()
         global object_pos
-        self.cone_move = ConeMoveCommand(self.auton_selector.drive_subsystem, self.auton_selector.arm_subsystem, object_pos[0], object_pos[1], object_pos[2])
-        self.cone_move.schedule()
+        self.cone_move = ConeMoveAuton(self.auton_selector.drive_subsystem, object_pos)
         logging.info("Entering Auton")
         global frc_stage
         frc_stage = "AUTON"
@@ -298,10 +299,12 @@ class Robot(wpilib.TimedRobot):
     def autonomousPeriodic(self):
         self.drive_train.set_navx_offset(180)
         CommandScheduler.getInstance().run()
-        global object_pos
-        print(object_pos)
-        self.cone_move = ConeMoveCommand(self.auton_selector.drive_subsystem, self.auton_selector.arm_subsystem, object_pos[0], object_pos[1], object_pos[2])
+        global object_pos       
         global fms_attached
+        
+        self.cone_move.execute()
+        self.cone_move.object_pos = object_pos
+        
         fms_attached = wpilib.DriverStation.isFMSAttached()
         if self.use_threading:
             self.manageThreads()
@@ -355,7 +358,7 @@ class Robot(wpilib.TimedRobot):
                 thread["thread"] = startThread(thread["name"])
                 
     def doActions(self):
-        encoderAction(self.encoder_publisher)
+        # encoderAction(self.encoder_publisher)
         stageBroadcasterAction(self.stage_publisher)
         serviceAction(self.service_publisher)
         imuAction(self.imu_subscriber)
