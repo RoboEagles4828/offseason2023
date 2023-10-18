@@ -11,13 +11,15 @@ This code contains trade secrets of Real-Time Innovations, Inc.
 
     <!-- Qos Library -->
     <qos_library name="ROS2_QOS">
-      <qos_profile name="Default" base_name="BuiltinQosSnippetLib::QosPolicy.Reliability.Reliable" is_default_qos="true">
+      <qos_profile name="Default" base_name="BuiltinQosSnippetLib::QosPolicy.Reliability.BestEffort" is_default_qos="true">
       </qos_profile>
     </qos_library>
 
     <!-- types -->
     <types>
       <include file="Header.xml"/>
+      <include file="Object.xml"/>
+
       <module name="std_msgs">
         <module name="msg">
           <module name="dds_">
@@ -59,6 +61,14 @@ This code contains trade secrets of Real-Time Innovations, Inc.
           </module>
         </module>
       </module>
+      <module name="zed_interfaces">
+        <module name="msg">
+          <struct name= "ObjectsStamped">
+            <member name="header" type="nonBasic"  nonBasicTypeName= "std_msgs::msg::Header"/>
+            <member name="objects" type="nonBasic" nonBasicTypeName="zed_interfaces::msg::Object" sequenceMaxLength="100"/>
+          </struct>
+        </module>
+      </module>
     </types>
 
     <!-- Domain Library -->
@@ -97,6 +107,10 @@ This code contains trade secrets of Real-Time Innovations, Inc.
             <register_type name="std_msgs::msg::dds_::String_" type_ref="std_msgs::msg::dds_::String_" />
             <topic name="rt/saranga/real_imu" register_type_ref="std_msgs::msg::dds_::String_"/>
         </domain>
+        <domain name="ROS2_DOMAIN_ZED" domain_id="0">
+            <register_type name="zed_interfaces::msg::ObjectsStamped" type_ref="zed_interfaces::msg::ObjectsStamped" />
+            <topic name="rt/real/zed/obj_det/objects" register_type_ref="zed_interfaces::msg::ObjectsStamped"/>
+        </domain>
     </domain_library>
 
     <!-- Participant library -->
@@ -132,6 +146,12 @@ This code contains trade secrets of Real-Time Innovations, Inc.
           <publisher name="encoder_info_publisher">
             <data_writer name="encoder_info_writer" topic_ref="rt/real/real_joint_states" />
           </publisher>
+      </domain_participant>
+
+      <domain_participant name="zed_objects" domain_ref="ROS2_DOMAIN_LIB::ROS2_DOMAIN_ZED">
+          <subscriber name="zed_objects_subscriber">
+            <data_reader name="zed_objects_reader" topic_ref="rt/real/zed/obj_det/objects"/>
+          </subscriber>
       </domain_participant>
 
       <domain_participant name="stage_broadcaster" domain_ref="ROS2_DOMAIN_LIB::ROS2_DOMAIN_FRC_STAGE">
