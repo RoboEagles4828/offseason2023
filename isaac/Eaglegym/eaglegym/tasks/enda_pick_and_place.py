@@ -32,16 +32,19 @@ from eaglegym.robots.articulations.views.edna_view import EdnaView
 from eaglegym.tasks.utils.usd_utils import set_drive
 from eaglegym.inverse_kinematics.inverse_kinematics import InverseKinematics
 from omni.isaac.core.utils.stage import add_reference_to_stage
+from squaternion import Quaternion
 from omni.isaac.core.objects import DynamicSphere
 
 
 from omni.isaac.core.utils.prims import get_prim_at_path
 from omni.isaac.core.utils.torch.rotations import *
-from omni.isaac.core.prims import RigidPrimView
+from omni.isaac.core.prims import RigidPrim, RigidPrimView
+from omni.isaac.core.utils.rotations import euler_angles_to_quat
 
 
 import numpy as np
 import torch
+import torchgeometry as tgm
 import math
 import os
 from random import randint, choice
@@ -76,20 +79,48 @@ class Edna_Pick_And_Place_Task(RLTask):
         self._num_envs = self._task_cfg["env"]["numEnvs"]
         self._edna_translation = torch.tensor([0.0, 0.0, 0.0])
         self._env_spacing = self._task_cfg["env"]["envSpacing"]
+
         # Number of data points the policy is recieving
-        self._num_observations = 13
+        self._num_observations = 22
+
         # Number of data points the policy is producing
         self._num_actions = 10
+
         # starting position of the edna module
         self.edna_position = torch.tensor([0, 0, 0])
-        # starting position of the target
-        self._ball_position = torch.tensor([1, 1, 0])
+
+        # starting position of substaton
+        self.substation_initial_pos = torch.tensor([0.0 , 3.0, 0.0])
+        self.substation_initial_pos = self.substation_initial_pos.repeat(self._num_envs, 1)
+
+        # starting orintation of substation
+        self.substation_initial_rot = torch.tensor(euler_angles_to_quat([0.0 , 0.0 , 90.0]))
+        self.substation_initial_rot = self.substation_initial_rot.repeat(self._num_envs, 1)
+        print(self.substation_initial_rot)
+
+
+        # starting position of scoring station
+        self.scoring_station_initial_pos = torch.tensor([-3.0 , 3.0, 0.0])
+        self.scoring_station_initial_pos = self.scoring_station_initial_pos.repeat(self._num_envs, 1)
+
         self.edna_initia_pos = []
+        self.gamepieces = []
+
         RLTask.__init__(self, name, env)
 
-        self.target_positions = torch.zeros(
+        self.cone_positions = torch.zeros(
             (self._num_envs, 3), device=self._device, dtype=torch.float32)  # xyx of target position
-        self.target_positions[:, 1] = 1
+        self.cube_positions = torch.zeros(
+            (self._num_envs, 3), device=self._device, dtype=torch.float32)
+        self.cube_scoring_location = torch.zeros(
+            (self._num_envs, 3), device=self._device, dtype=torch.float32)
+        self.cone_scoring_location = torch.zeros(
+            (self._num_envs, 3), device=self._device, dtype=torch.float32)
+        self.substation_positions = torch.zeros(
+            (self._num_envs, 3), device=self._device, dtype=torch.float32)
+        self.scoring_station_positions = torch.zeros(
+            (self._num_envs, 3), device=self._device, dtype=torch.float32)
+        # self.cone_positions[:, 1] = 1
         
         self.inverse_kinematics = InverseKinematics()
 
@@ -98,18 +129,31 @@ class Edna_Pick_And_Place_Task(RLTask):
     # Adds all of the items to the stage
     def set_up_scene(self, scene) -> None:
         file_path = os.path.abspath(__file__)
-        self.project_root_path = os.path.abspath(os.path.join(file_path, "../../../../../../"))
+        self.project_root_path = os.path.abspath(os.path.join(file_path, "../../../../../"))
+        print(self.project_root_path)
         # Adds USD of edna to stage
         self.get_edna()
-        # Adds ball to stage
+        self.get_field_objects()
+        # Adds cone to stage
         self.get_target()
         super().set_up_scene(scene)
         # Sets up articluation controller for edna
         self._edna = EdnaView(
             prim_paths_expr="/World/envs/.*/edna", name="ednaview")
+        # self.gamepieces = RigidPrimView(prim_paths_expr="/World/envs/.*/Cube_0", name="target_view") #+ RigidPrim(prim_paths_expr="/World/envs/.*/Cone_0", name="ChargeStation_1_view")
+        # self.gamepieces = RigidPrimView(
+        #     prim_paths_expr="/World/envs/.*/gamepieces/*", name="targets_view", reset_xform_properties=True) 
+        # print(self.gamepieces)
+        # print("works")
+        self.cones = RigidPrimView(
+            prim_paths_expr="/World/envs/.*/Cone*", name="targets_view", reset_xform_properties=True) 
+        self.cubes = RigidPrimView(prim_paths_expr="/World/envs/.*/Cube*", name="targets2_view", reset_xform_properties=True)
+        self.substation = RigidPrimView(positions = self.substation_initial_pos,orientations = self.substation_initial_rot,prim_paths_expr="/World/envs/.*/substation", name="substation_view", reset_xform_properties=True)
+        self.scoring_station = RigidPrimView(positions = self.scoring_station_initial_pos, prim_paths_expr="/World/envs/.*/scoring_station", name="scoring_station_view", reset_xform_properties=True)    
+        # print(self.cones)
+        # print("works")
         # Allows for position tracking of targets
-        self.gamepieces = []
-        # self._balls = RigidPrimView(
+        # self.cones = RigidPrimView(
         #     prim_paths_expr="/World/envs/.*/cube", name="targets_view", reset_xform_properties=False)
         # Adds everything to the scene
         scene.add(self._edna)
@@ -118,7 +162,10 @@ class Edna_Pick_And_Place_Task(RLTask):
         for wheel in self._edna._wheel:
             scene.add(wheel)
         scene.add(self._edna._base)
-        scene.add(self._balls)
+        scene.add(self.cones)
+        scene.add(self.cubes)
+        scene.add(self.substation)
+        scene.add(self.scoring_station)
         # print("scene set up")
 
         return
@@ -148,18 +195,22 @@ class Edna_Pick_And_Place_Task(RLTask):
         cone = os.path.join(self.project_root_path, "isaac/assets/game_pieces/GE-23700_JFH.usd")
         cube = os.path.join(self.project_root_path, "isaac/assets/game_pieces/GE-23701_JFL.usd")
         next_piece = len(self.gamepieces)
-        if choice([True, False]):
-            name = "/World/Cube_"+str(next_piece)
-            view = "cube_"+str(next_piece)+"_view"
-            add_reference_to_stage(cube, "/World/Cube_"+str(next_piece))
-            self.gamepieces.append(RigidPrim(name, view, position=position))
-        else:
-            name = "/World/Cone_"+str(next_piece)
-            view = "cone_"+str(next_piece)+"_view" 
-            add_reference_to_stage(cone, name)
-            self.gamepieces.append(RigidPrim(name, view, position=position))
+        # if choice([True, False]):
+        # name = "/World/Cube_"+str(next_piece)
+        view = "cube_"+str(next_piece)+"_view"
+        add_reference_to_stage(cube, self.default_zero_env_path+"/Cube_"+str(next_piece))
+        # self.gamepieces.append(RigidPrim(name, view, position=position))
+        # else:
+        # name = "/World/Cone_"+str(next_piece)
+        view = "cone_"+str(next_piece)+"_view" 
+        add_reference_to_stage(cone, self.default_zero_env_path+"/Cone_"+str(next_piece))
+        # self.gamepieces.append(RigidPrim(name, view, position=position))
+    
     def get_field_objects(self):
-        substation = os.path.join(self.project_root_path, "assets/substation")
+        substation = os.path.join(self.project_root_path, "isaac/assets/field_objects/right_substation.usd")
+        scoring_station = os.path.join(self.project_root_path, "isaac/assets/field_objects/blue_scoring_station.usd")
+        add_reference_to_stage(substation, self.default_zero_env_path+"/substation")
+        add_reference_to_stage(scoring_station, self.default_zero_env_path+"/scoring_station")
 
         
 
@@ -177,10 +228,23 @@ class Edna_Pick_And_Place_Task(RLTask):
         root_quats = self.root_rot
         root_linvels = self.root_velocities[:, :3]
         root_angvels = self.root_velocities[:, 3:]
-        self.obs_buf[..., 0:3] = (self.target_positions - root_positions) / 3
-        self.obs_buf[..., 3:7] = root_quats
-        self.obs_buf[..., 7:10] = root_linvels / 2
-        self.obs_buf[..., 10:13] = root_angvels / math.pi
+        vector_from_cone = (self.cone_positions - root_positions)[:,:3]
+        vector_from_cube = (self.cube_positions - root_positions)[:,:3]
+        vector_from_cone_scoring_location = (self.cone_scoring_location - root_positions)[:,:3]
+        vector_from_cube_scoring_location = (self.cube_scoring_location - root_positions)[:,:3]
+
+        print(self.cube_positions - root_positions)
+        print((self.cube_positions - root_positions)[:,0:3])
+        print(root_quats.size())
+        print(vector_from_cone.size())
+        self.obs_buf[..., 0:3] = root_linvels / 2
+        self.obs_buf[..., 3:6] = root_angvels / math.pi
+        self.obs_buf[..., 6:10] = root_quats
+        self.obs_buf[..., 10:13] = vector_from_cone
+        self.obs_buf[..., 13:16] = vector_from_cube
+        self.obs_buf[..., 16:19] = vector_from_cone_scoring_location
+        self.obs_buf[..., 19:22] = vector_from_cube_scoring_location
+
         # Should not exceed observation ssize declared earlier
         # An observation is created for each edna in each environment
         observations = {
@@ -192,7 +256,6 @@ class Edna_Pick_And_Place_Task(RLTask):
 
     def pre_physics_step(self, actions) -> None:
         # This is what sets the action for edna
-
         reset_env_ids = self.reset_buf.nonzero(as_tuple=False).squeeze(-1)
         if len(reset_env_ids) > 0:
             self.reset_idx(reset_env_ids)
@@ -210,6 +273,7 @@ class Edna_Pick_And_Place_Task(RLTask):
             actions[:, 1:2] * self.velocity_limit, -self.velocity_limit, self.velocity_limit)
         angular_cmd = torch.clamp(
             actions[:, 2:3] * self.velocity_limit, -self.velocity_limit, self.velocity_limit)
+        
         x_offset = 0.7366
         radius = 0.1016
         actionlist = []
@@ -243,7 +307,11 @@ class Edna_Pick_And_Place_Task(RLTask):
             
             module_angles = [front_left_current_pos, front_right_current_pos, rear_left_current_pos, rear_right_current_pos]
             
-            velocity_cmds = self.inverse_kinematics.getDriveJointStates(linear_x_cmd[i], linear_y_cmd[i], angular_cmd[i], module_angles)
+            quat = self.root_rot[i]
+            imu_quat = Quaternion(quat[0], quat[1], quat[2], quat[3])
+            imu_euler = imu_quat.to_euler()
+            
+            velocity_cmds = self.inverse_kinematics.getDriveJointStates(linear_x_cmd[i], linear_y_cmd[i], angular_cmd[i], module_angles, imu_euler[2])
  
             front_left_velocity = velocity_cmds[0]
             front_right_velocity = velocity_cmds[1]
@@ -256,8 +324,41 @@ class Edna_Pick_And_Place_Task(RLTask):
             rear_right_position = velocity_cmds[7]
             
             ###DEBUGGING
-            if(i==0):
-                print(f"X:{linear_x_cmd[i]} Y:{linear_y_cmd[i]} Z:{angular_cmd[i]} flv:{front_left_velocity} frv:{front_right_velocity} rlv:{rear_left_velocity} rrv:{rear_right_velocity} flp:{front_left_position} frp:{front_right_position} rlp:{rear_left_position} rrp:{rear_right_position} flcp:{front_left_current_pos} frcp:{front_right_current_pos} rlcp:{rear_left_current_pos} rrcp:{rear_right_current_pos}")
+            # if(i==0):
+            #     #round all tensors
+            #     linear_x_cmd_rounded = torch.round(linear_x_cmd, decimals=1)
+            #     linear_y_cmd_rounded = torch.round(linear_y_cmd, decimals=1)
+            #     angular_cmd_rounded = torch.round(angular_cmd, decimals=1)
+            #     front_left_velocity_rounded = round(front_left_velocity, 1)
+            #     front_right_velocity_rounded = round(front_right_velocity, 1)
+            #     rear_left_velocity_rounded = round(rear_left_velocity, 1)
+            #     rear_right_velocity_rounded = round(rear_right_velocity, 1)
+            #     front_left_position_rounded = round(front_left_position, 1)
+            #     front_right_position_rounded = round(front_right_position, 1)
+            #     rear_left_position_rounded = round(rear_left_position, 1)
+            #     rear_right_position_rounded = round(rear_right_position, 1)
+            #     front_left_current_pos_rounded = torch.round(front_left_current_pos, decimals=1)
+            #     front_right_current_pos_rounded = torch.round(front_right_current_pos, decimals=1)
+            #     rear_left_current_pos_rounded = torch.round(rear_left_current_pos, decimals=1)
+            #     rear_right_current_pos_rounded = torch.round(rear_right_current_pos, decimals=1)
+            #     #print all tensors
+            #     print("X: ", linear_x_cmd_rounded)
+            #     print("Y: ", linear_y_cmd_rounded)
+            #     print("Z: ", angular_cmd_rounded)
+            #     print("FLV: ", front_left_velocity_rounded)
+            #     print("FRV: ", front_right_velocity_rounded)
+            #     print("RLV: ", rear_left_velocity_rounded)
+            #     print("RRV: ", rear_right_velocity_rounded)
+            #     print("FLP: ", front_left_position_rounded)
+            #     print("FRP: ", front_right_position_rounded)
+            #     print("RLP: ", rear_left_position_rounded)
+            #     print("RRP: ", rear_right_position_rounded)
+            #     print("FLCP: ", front_left_current_pos_rounded)
+            #     print("FRCP: ", front_right_current_pos_rounded)
+            #     print("RLCP: ", rear_left_current_pos_rounded)
+            #     print("RRCP: ", rear_right_current_pos_rounded)
+            #     print("IMU: ", round(imu_euler[2], 2))
+                
 
 
 
@@ -357,9 +458,9 @@ class Edna_Pick_And_Place_Task(RLTask):
         self.dof_vel[env_ids, :] = 0
 
         root_pos = self.initial_root_pos.clone()
-        root_pos[env_ids, 0] += torch_rand_float(-0.5, 0.5,
+        root_pos[env_ids, 0] += torch_rand_float(-3.0, 3.0,
                                                  (num_resets, 1), device=self._device).view(-1)
-        root_pos[env_ids, 1] += torch_rand_float(-0.5, 0.5,
+        root_pos[env_ids, 1] += torch_rand_float(-3.0, 3.0,
                                                  (num_resets, 1), device=self._device).view(-1)
         root_pos[env_ids, 2] += torch_rand_float(
             0, 0, (num_resets, 1), device=self._device).view(-1)
@@ -389,7 +490,7 @@ class Edna_Pick_And_Place_Task(RLTask):
         self.dof_pos = self._edna.get_joint_positions()
         self.dof_vel = self._edna.get_joint_velocities()
 
-        self.initial_ball_pos, self.initial_ball_rot = self._balls.get_world_poses()
+        self.initial_cone_pos, self.initial_cone_rot = self.cubes.get_world_poses()
         self.initial_root_pos, self.initial_root_rot = self.root_pos.clone(), self.root_rot.clone()
 
         # initialize some data used later on
@@ -412,16 +513,26 @@ class Edna_Pick_And_Place_Task(RLTask):
     def set_targets(self, env_ids):
         num_sets = len(env_ids)
         envs_long = env_ids.long()
-        # set target position randomly with x, y in (-20, 20)
-        self.target_positions[envs_long, 0:2] = torch.rand(
+        
+        # set cone position on top of substation
+        self.cone_positions[envs_long, 0:2] = torch.rand(
             (num_sets, 2), device=self._device) * 20 - 1
-        self.target_positions[envs_long, 2] = 0.1
+        self.cone_positions[envs_long, 2] = 0.1
+        
+        # set cube position on top of substation
+        self.cube_positions[envs_long, 0:2] = torch.rand(
+            (num_sets, 2), device=self._device) * 20 - 1
+        self.cube_positions[envs_long, 2] = 0.1
         # print(self.target_positions)
 
+        #randomly set cone scoring location
+
+        #randomly set cube scoring location
+
         # shift the target up so it visually aligns better
-        ball_pos = self.target_positions[envs_long] + self._env_pos[envs_long]
-        self._balls.set_world_poses(
-            ball_pos[:, 0:3], self.initial_ball_rot[envs_long].clone(), indices=env_ids)
+        cone_pos = self.cone_positions[envs_long] + self._env_pos[envs_long]
+        self.cones.set_world_poses(
+            cone_pos[:, 0:3], self.initial_cone_rot[envs_long].clone(), indices=env_ids)
 
     def calculate_metrics(self) -> None:
 
@@ -429,26 +540,58 @@ class Edna_Pick_And_Place_Task(RLTask):
         # distance to target
         target_dist = torch.sqrt(torch.square(
             self.target_positions - root_positions).sum(-1))
+        
+        # create a new tensor called target point being target_positions X - 0.5 and target_positions Y
+        target_point = torch.stack(
+            [self.target_positions[..., 0] - 0.5, self.target_positions[..., 1]], dim=-1
+        )
+        
+        target_point_dist = torch.sqrt(torch.square(
+            target_point - root_positions[..., 0:2]).sum(-1)
+        )
 
-        pos_reward = 1.0 / (1.0 + (1/0.5)*(target_dist-0.5))
+        # pos_reward = 1.0 / (1.0 + (1/0.5)*(target_dist-0.5))
+        pos_reward = 1.0/(1.0+2.5*target_point_dist*target_point_dist)
         self.target_dist = target_dist
+        self.target_point_dist = target_point_dist
         self.root_positions = root_positions
         self.root_position_reward = self.rew_buf
         # rewards for moving away form starting point
         for i in range(len(self.root_position_reward)):
-            self.root_position_reward[i] = sum(root_positions[i][0:3])
-
-        self.rew_buf[:] = self.root_position_reward*pos_reward
+            self.root_position_reward[i] = sum(root_positions[i][0:2])
+            
+        # rewards for facing the target
+        target_angle = torch.atan2(
+            self.target_positions[..., 1] - root_positions[..., 1], 
+            self.target_positions[..., 0] - root_positions[..., 0],
+        )
+        
+        robot_orientation_tensor = tgm.quaternion_to_angle_axis(self.root_rot)
+        robot_orientation = robot_orientation_tensor[..., 2]
+        target_orientation = target_angle
+        orientation_diff = torch.abs(robot_orientation - target_orientation)
+        orientation_diff = torch.min(orientation_diff, 2*np.pi - orientation_diff)
+        
+        angle_reward = 1.0 - orientation_diff / (2*np.pi)
+        self.test = self.root_position_reward*pos_reward*angle_reward
+        
+        if torch.isnan(self.test).any():
+            self.rew_buf[:] = torch.nan_to_num(self.test)
+        else:
+            self.rew_buf[:] = self.root_position_reward*pos_reward*angle_reward
+        print(f"Best Reward: {torch.max(self.test).item()}")
 
     def is_done(self) -> None:
         # print("line 312")
         # These are the dying constaints. It dies if it is going in the wrong direction or starts flying
         ones = torch.ones_like(self.reset_buf)
         die = torch.zeros_like(self.reset_buf)
-        die = torch.where(self.target_dist > 20.0, ones, die)
-        # die = torch.where(self.target_dist < 0.5, ones, die)
+        die = torch.where(self.target_point_dist > 20.0, ones, die)
+        die = torch.where(self.target_point_dist <= 0.5, ones, die)
         die = torch.where(self.root_positions[..., 2] > 0.5, ones, die)
-        die = torch.where(torch.isnan(self.actions[...,0]), ones, die)
+        die = torch.where(torch.isnan(self.test).any(), ones, die)
+        
+        # die = torch.where(torch.isnan(self.actions[...,0]), ones, die)
         # die = torch.where(torch.isnan(self.joint_velocities[...,0]), ones, die)
         # die = torch.where(torch.isnan(self.joint_velocities[...,1]), ones, die)
         # die = torch.where(torch.isnan(self.joint_velocities[...,2]), ones, die)

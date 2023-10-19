@@ -13,7 +13,7 @@ class InverseKinematics():
                 "axle_joint_name": "front_left_axle_joint",
                 "axle_motor_port": 1, #7
                 "axle_encoder_port": 2, #8
-                "encoder_offset": 18.721, # 248.203,
+                "encoder_offset": 0.0,#18.721, # 248.203,
                 "location" : Translation2d(-0.52085486, 0.52085486) # Translation2d(0.52085486, 0.52085486)
             },
             "front_right": {
@@ -22,7 +22,7 @@ class InverseKinematics():
                 "axle_joint_name": "front_right_axle_joint",
                 "axle_motor_port": 4, #10
                 "axle_encoder_port": 5, #11
-                "encoder_offset": 45.439 + 180.0, #15.908, TODO: REDO ENCODER OFFSET
+                "encoder_offset": 0.0, #45.439 + 180.0, #15.908, TODO: REDO ENCODER OFFSET
                 "location" : Translation2d(-0.52085486, -0.52085486)# Translation2d(-0.52085486, 0.52085486)
             },
             "rear_left": {
@@ -31,7 +31,7 @@ class InverseKinematics():
                 "axle_joint_name": "rear_left_axle_joint",
                 "axle_motor_port": 10, #4
                 "axle_encoder_port": 11, #5
-                "encoder_offset": 16.084 + 180.0, #327.393, TODO: REDO ENCODER OFFSET
+                "encoder_offset": 0.0, #16.084 + 180.0, #327.393, TODO: REDO ENCODER OFFSET
                 "location" : Translation2d(0.52085486, 0.52085486) #Translation2d(0.52085486, -0.52085486)
             },
             "rear_right": {
@@ -40,7 +40,7 @@ class InverseKinematics():
                 "axle_joint_name": "rear_right_axle_joint",
                 "axle_motor_port": 7, #1
                 "axle_encoder_port": 8, #2
-                "encoder_offset": -9.141, #201.094,
+                "encoder_offset": 0.0, #-9.141, #201.094,
                 "location" : Translation2d(0.52085486, -0.52085486) # Translation2d(-0.52085486, -0.52085486)
             }
         }

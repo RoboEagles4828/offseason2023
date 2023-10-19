@@ -2,7 +2,7 @@ task:
   name: EdnaK
   physics_engine: ${..physics_engine}
   env:
-    numEnvs: 36
+    numEnvs: 1440
     envSpacing: 20.0
     resetDist: 3.0
     clipObservations: 5.0
@@ -164,9 +164,9 @@ rl_device: cuda:0
 multi_gpu: false
 num_threads: 4
 solver_type: 1
-test: true
-checkpoint: /isaac-sim/runs/EdnaK/nn/last_EdnaK_ep_775_rew_157.18164.pth
-headless: false
+test: false
+checkpoint: ''
+headless: true
 enable_livestream: false
 mt_timeout: 30
 wandb_activate: false

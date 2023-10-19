@@ -42,7 +42,7 @@ def initialize_task(config, env, init_sim=True):
     task_map = {
         "Swerve": Swerve_Task,
         "EdnaK": Edna_Kinematics_Task,
-        "EdnaPAP": Edna_Pick_And_Place_Task,
+        "EdnaPNP": Edna_Pick_And_Place_Task,
         "SwerveF": Swerve_Field_Task,
         "SwerveMAA": Swerve_Multi_Action_Task,
         "SwerveCS": Swerve_Charge_Station_Task,

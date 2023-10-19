@@ -222,8 +222,7 @@ class Edna_Kinematics_Task(RLTask):
             
             module_angles = [front_left_current_pos, front_right_current_pos, rear_left_current_pos, rear_right_current_pos]
             
-            pos, rot = self._edna.get_world_poses()
-            quat = rot[i]
+            quat = self.root_rot[i]
             imu_quat = Quaternion(quat[0], quat[1], quat[2], quat[3])
             imu_euler = imu_quat.to_euler()
             

@@ -5,7 +5,7 @@ from omni.isaac.edna.base_sample import BaseSample
 from omni.isaac.urdf import _urdf
 from omni.isaac.core.robots import Robot
 from omni.isaac.core.utils import prims
-from omni.isaac.core.prims import GeometryPrim, RigidPrim
+from omni.isaac.core.prims import RigidPrim, RigidPrim
 
 from omni.isaac.core_nodes.scripts.utils import set_target_prims
 # from omni.kit.viewport_legacy import get_default_viewport_window
@@ -122,13 +122,13 @@ class ImportBot(BaseSample):
                     name = "/World/Cube_"+str(next_cube)
                     view = "cube_"+str(next_cube)+"_view"
                     add_reference_to_stage(cube, "/World/Cube_"+str(next_cube))
-                    self.cube_list.append(GeometryPrim(name, view, position=position))
+                    self.cube_list.append(RigidPrim(name, view, position=position))
                 else:
                     print("yesss")
                     name = "/World/Cone_"+str(next_cone)
                     view = "cone_"+str(next_cone)+"_view" 
                     add_reference_to_stage(cone, name)
-                    self.cone_list.append(GeometryPrim(name, view, position=position))
+                    self.cone_list.append(RigidPrim(name, view, position=position))
 
 
 
@@ -157,11 +157,11 @@ class ImportBot(BaseSample):
         # add_reference_to_stage(cone,  "/World/Cone_8")
         field_1 = RigidPrim("/World/FE_2023","field_1_view",position=np.array([0.0,0.0,0.0]),scale=np.array([1, 1, 1]))
         # cone_1 = RigidPrim("/World/Cone_1","cone_1_view",position=np.array([1.20298,-0.56861,-0.4]))
-        # cone_2 = GeometryPrim("/World/Cone_2","cone_2_view",position=np.array([1.20298,3.08899,0.0]))
-        # cone_3 = GeometryPrim("/World/Cone_3","cone_3_view",position=np.array([-1.20298,-0.56861,0.0]))
-        # cone_4 = GeometryPrim("/World/Cone_4","cone_4_view",position=np.array([-1.20298,3.08899,0.0]))
-        chargestation_1 = GeometryPrim("/World/ChargeStation_1","cone_3_view",position=np.array([-4.53419,1.26454,0.025]),scale=np.array([0.0486220472,0.0486220472,0.0486220472]), orientation=np.array([ 1,1,0,0 ]))
-        chargestation_2 = GeometryPrim("/World/ChargeStation_2","cone_4_view",position=np.array([4.53419,1.26454,0.025]),scale=np.array([0.0486220472,0.0486220472,0.0486220472]), orientation=np.array([ 1,1,0,0 ]))
+        # cone_2 = RigidPrim("/World/Cone_2","cone_2_view",position=np.array([1.20298,3.08899,0.0]))
+        # cone_3 = RigidPrim("/World/Cone_3","cone_3_view",position=np.array([-1.20298,-0.56861,0.0]))
+        # cone_4 = RigidPrim("/World/Cone_4","cone_4_view",position=np.array([-1.20298,3.08899,0.0]))
+        chargestation_1 = RigidPrim("/World/ChargeStation_1","cone_3_view",position=np.array([-4.53419,1.26454,0.025]),scale=np.array([0.0486220472,0.0486220472,0.0486220472]), orientation=np.array([ 1,1,0,0 ]))
+        chargestation_2 = RigidPrim("/World/ChargeStation_2","cone_4_view",position=np.array([4.53419,1.26454,0.025]),scale=np.array([0.0486220472,0.0486220472,0.0486220472]), orientation=np.array([ 1,1,0,0 ]))
         self.cone_list.append( RigidPrim("/World/Cone_1","cone_1_view",position=np.array([1.20298,-0.56861,0.0])))
         self.cone_list.append( RigidPrim("/World/Cone_2","cone_2_view",position=np.array([1.20298,3.08899,0.0])))
         self.cone_list.append( RigidPrim("/World/Cone_3","cone_3_view",position=np.array([-1.20298,-0.56861,0.0])))
@@ -178,10 +178,10 @@ class ImportBot(BaseSample):
         add_reference_to_stage(cube, "/World/Cube_6")
         # add_reference_to_stage(cube, "/World/Cube_7")
         # # add_reference_to_stage(cube, "/World/Cube_8")
-        # cube_1 = GeometryPrim("/World/Cube_1","cube_1_view",position=np.array([1.20298,0.65059,0.121]))
-        # cube_2 = GeometryPrim("/World/Cube_2","cube_2_view",position=np.array([1.20298,1.86979,0.121]))
-        # cube_3 = GeometryPrim("/World/Cube_3","cube_3_view",position=np.array([-1.20298,0.65059,0.121]))
-        # cube_4 = GeometryPrim("/World/Cube_4","cube_4_view",position=np.array([-1.20298,1.86979,0.121]))
+        # cube_1 = RigidPrim("/World/Cube_1","cube_1_view",position=np.array([1.20298,0.65059,0.121]))
+        # cube_2 = RigidPrim("/World/Cube_2","cube_2_view",position=np.array([1.20298,1.86979,0.121]))
+        # cube_3 = RigidPrim("/World/Cube_3","cube_3_view",position=np.array([-1.20298,0.65059,0.121]))
+        # cube_4 = RigidPrim("/World/Cube_4","cube_4_view",position=np.array([-1.20298,1.86979,0.121]))
         self.cube_list.append( RigidPrim("/World/Cube_1","cube_1_view",position=np.array([1.20298,0.65059,0.121])))
         self.cube_list.append( RigidPrim("/World/Cube_2","cube_2_view",position=np.array([1.20298,1.86979,0.121])))
         self.cube_list.append( RigidPrim("/World/Cube_3","cube_3_view",position=np.array([-1.20298,0.65059,0.121])))
