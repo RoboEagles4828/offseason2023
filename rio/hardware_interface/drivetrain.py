@@ -19,7 +19,7 @@ from hardware_interface.navxSim import NavxSim
 
 NAMESPACE = 'real'
 
-ENABLE_2ND_ORDER = True
+ENABLE_2ND_ORDER = False
 
 # Small Gear Should Face the back of the robot
 # All wheel drive motors should not be inverted
@@ -241,15 +241,15 @@ class SwerveModule():
         self.wheel_motor.setNeutralMode(ctre.NeutralMode.Brake)
 
         # Supply Current Limit
-        supply_current_limit = 20
+        supply_current_limit = 30
         supply_current_threshold = 40
         supply_current_threshold_time = 0.1
         supply_current_limit_configs = ctre.SupplyCurrentLimitConfiguration(True, supply_current_limit, supply_current_threshold, supply_current_threshold_time)
         self.wheel_motor.configSupplyCurrentLimit(supply_current_limit_configs, timeout_ms)
         
         # Stator Current Limit
-        stator_current_limit = 20
-        stator_current_threshold = 40
+        stator_current_limit = 40 # TerrorBytes/Yeti: 80
+        stator_current_threshold = 80 # TerrorBytes/Yeti: 120
         stator_current_threshold_time = 0.1
         stator_current_limit_configs = ctre.StatorCurrentLimitConfiguration(True, stator_current_limit, stator_current_threshold, stator_current_threshold_time)
         self.wheel_motor.configStatorCurrentLimit(stator_current_limit_configs, timeout_ms)
@@ -301,14 +301,14 @@ class SwerveModule():
         supply_current_limit = 20
         supply_current_threshold = 40
         supply_current_threshold_time = 0.1
-        supply_current_limit_configs = ctre.SupplyCurrentLimitConfiguration(True, supply_current_limit, supply_current_threshold, supply_current_threshold_time)
+        supply_current_limit_configs = ctre.SupplyCurrentLimitConfiguration(False, supply_current_limit, supply_current_threshold, supply_current_threshold_time)
         self.axle_motor.configSupplyCurrentLimit(supply_current_limit_configs, timeout_ms)
 
         # Stator Current Limit
-        stator_current_limit = 20
-        stator_current_threshold = 40
+        stator_current_limit = 40
+        stator_current_threshold = 80
         stator_current_threshold_time = 0.1
-        stator_current_limit_configs = ctre.StatorCurrentLimitConfiguration(True, stator_current_limit, stator_current_threshold, stator_current_threshold_time)
+        stator_current_limit_configs = ctre.StatorCurrentLimitConfiguration(False, stator_current_limit, stator_current_threshold, stator_current_threshold_time)
         self.axle_motor.configStatorCurrentLimit(stator_current_limit_configs, timeout_ms)
 
     def neutralize_module(self):
@@ -442,10 +442,10 @@ class DriveTrain():
         self.speeds = ChassisSpeeds(0, 0, 0)
         self.wheel_radius = 0.0508
 
-        self.ROBOT_MAX_TRANSLATIONAL = 5.0 #16.4041995 # 5.0 # m/s
-        self.ROBOT_MAX_ROTATIONAL = 5.0 #16.4041995 * math.pi #rad/s
+        self.ROBOT_MAX_TRANSLATIONAL = 10.0 #16.4041995 # 5.0 # m/s
+        self.ROBOT_MAX_ROTATIONAL = 2.5 #16.4041995 * math.pi #rad/s
 
-        self.MODULE_MAX_SPEED = 5.0 #16.4041995 # m/s
+        self.MODULE_MAX_SPEED = 10.0 #16.4041995 # m/s
 
         self.move_scale_x = self.ROBOT_MAX_TRANSLATIONAL
         self.move_scale_y = self.ROBOT_MAX_TRANSLATIONAL
@@ -479,6 +479,8 @@ class DriveTrain():
         self.angle_source_selector.addOption("Yaw", "yaw")
         self.angle_source_selector.setDefaultOption("Normal", "normal")
         
+        self.module_state = [SwerveModuleState(0, Rotation2d(0))]*4
+        
 
         self.slow = False
 
@@ -498,6 +500,8 @@ class DriveTrain():
         self.linX = 0
         self.linY = 0
         self.angZ = 0
+        
+        self.navx_offset = 0
         
         self.motor_vels = []
         self.motor_pos = []
@@ -583,9 +587,9 @@ class DriveTrain():
     def swerveDrive(self, joystick: Joystick):
         print(f"SECOND_ORDER: {ENABLE_2ND_ORDER}")
         angle_source = self.angle_source_selector.getSelected()
-        self.ROBOT_MAX_TRANSLATIONAL = self.profile_selector.getSelected()[0]
-        self.ROBOT_MAX_ROTATIONAL = self.profile_selector.getSelected()[1]
-        self.MODULE_MAX_SPEED = self.profile_selector.getSelected()[0]
+        # self.ROBOT_MAX_TRANSLATIONAL = self.profile_selector.getSelected()[0]
+        # self.ROBOT_MAX_ROTATIONAL = self.profile_selector.getSelected()[1]
+        # self.MODULE_MAX_SPEED = self.profile_selector.getSelected()[0]
 
         # slew 
         # gives joystick ramping
@@ -607,7 +611,8 @@ class DriveTrain():
             self.field_oriented_value = not self.field_oriented_button.toggle(joystick.getData()["buttons"])
 
         if joystick.getData()["buttons"][6] == 1.0:
-            self.navx.zeroYaw()
+            self.navx.reset()
+            self.navx_offset = 0
             if self.is_sim:
                 self.navx_sim.zeroYaw()
 
@@ -637,7 +642,7 @@ class DriveTrain():
             elif angle_source == "yaw":
                 navx_value = Rotation2d.fromDegrees(self.navx.getYaw()).__mul__(-1)
             elif angle_source == "normal":
-                navx_value = self.navx.getRotation2d().__mul__(-1)
+                navx_value = Rotation2d.fromDegrees(self.navx.getRotation2d().__mul__(-1).degrees() + self.navx_offset)
                 
             if ENABLE_2ND_ORDER:
                 self.speeds = self.correctForDynamics(ChassisSpeeds.fromFieldRelativeSpeeds(linearX, linearY, angularZ, navx_value))
@@ -694,10 +699,11 @@ class DriveTrain():
         self.last_state = self.speeds
         
         if self.field_oriented_value:
-            self.print = f"Navx: {self.navx.getRotation2d().__mul__(-1)} "
+            self.print = f"Navx: {Rotation2d.fromDegrees(self.navx.getRotation2d().__mul__(-1).degrees() + self.navx_offset)} "
         else:
             self.print = ""
 
+        logging.info(f"Navx {angle_source}: {Rotation2d.fromDegrees(self.navx.getRotation2d().__mul__(-1).degrees() + self.navx_offset)}")
         #logging.info(f"FR: {self.front_left_state.speed}, {self.front_left_state.angle.radians()} | Current Angle: {self.front_left.getEncoderPosition()}")
         # logging.info(f"{self.print}linX: {round(self.speeds.vx, 2)} linY: {round(self.speeds.vy, 2)} angZ: {round(self.speeds.omega, 2)} FL: {round(radiansToMeters(getWheelRadians(self.front_left.wheel_motor.getSelectedSensorVelocity(), 'velocity')), 2)}")
         
@@ -706,9 +712,9 @@ class DriveTrain():
 
         if self.is_sim:
             if ENABLE_2ND_ORDER:
-                self.speeds = self.correctForDynamics(ChassisSpeeds.fromFieldRelativeSpeeds(self.linX, self.linY, self.angZ, self.navx_sim.getRotation2d().__mul__(-1)))
+                self.speeds = self.correctForDynamics(ChassisSpeeds.fromFieldRelativeSpeeds(self.linX, self.linY, self.angZ, Rotation2d.fromDegrees(self.navx_sim.getRotation2d().__mul__(-1).degrees() + self.navx_offset)))
             else:
-                self.speeds = ChassisSpeeds.fromFieldRelativeSpeeds(self.linX, self.linY, self.angZ, self.navx_sim.getRotation2d().__mul__(-1))
+                self.speeds = ChassisSpeeds.fromFieldRelativeSpeeds(self.linX, self.linY, self.angZ, Rotation2d.fromDegrees(self.navx_sim.getRotation2d().__mul__(-1).degrees() + self.navx_offset))
             #print(self.navx_sim.getRotation2d())
             
             self.module_state = self.kinematics.toSwerveModuleStates(self.speeds)
@@ -753,19 +759,19 @@ class DriveTrain():
         return data
 
     def swerveDriveAuton(self, linearX, linearY, angularZ):
-        self.ROBOT_MAX_TRANSLATIONAL = self.profile_selector.getSelected()[0]
-        self.ROBOT_MAX_ROTATIONAL = self.profile_selector.getSelected()[1]
-        self.MODULE_MAX_SPEED = self.profile_selector.getSelected()[0]
+        ROBOT_MAX_TRANSLATIONAL = 5.0
+        ROBOT_MAX_ROTATIONAL = 5.0
+        MODULE_MAX_SPEED = 5.0
         if ENABLE_2ND_ORDER:
-            self.speeds = self.correctForDynamics(ChassisSpeeds(linearX*self.ROBOT_MAX_TRANSLATIONAL, -linearY*self.ROBOT_MAX_TRANSLATIONAL, angularZ*self.ROBOT_MAX_ROTATIONAL))
+            self.speeds = self.correctForDynamics(ChassisSpeeds(linearX*ROBOT_MAX_TRANSLATIONAL, -linearY*ROBOT_MAX_TRANSLATIONAL, angularZ*ROBOT_MAX_ROTATIONAL))
         else:
-            self.speeds = ChassisSpeeds(linearX*self.ROBOT_MAX_TRANSLATIONAL, -linearY*self.ROBOT_MAX_TRANSLATIONAL, angularZ*self.ROBOT_MAX_ROTATIONAL)
-        self.linX = linearX*self.ROBOT_MAX_TRANSLATIONAL
-        self.linY = linearY*self.ROBOT_MAX_TRANSLATIONAL
-        self.angZ = angularZ*self.ROBOT_MAX_ROTATIONAL
+            self.speeds = ChassisSpeeds(linearX*ROBOT_MAX_TRANSLATIONAL, -linearY*ROBOT_MAX_TRANSLATIONAL, angularZ*ROBOT_MAX_ROTATIONAL)
+        self.linX = linearX*ROBOT_MAX_TRANSLATIONAL
+        self.linY = linearY*ROBOT_MAX_TRANSLATIONAL
+        self.angZ = angularZ*ROBOT_MAX_ROTATIONAL
 
         self.module_state = self.kinematics.toSwerveModuleStates(self.speeds)
-        self.kinematics.desaturateWheelSpeeds(self.module_state, self.speeds, self.MODULE_MAX_SPEED, self.ROBOT_MAX_TRANSLATIONAL, self.ROBOT_MAX_ROTATIONAL)
+        self.kinematics.desaturateWheelSpeeds(self.module_state, self.speeds, MODULE_MAX_SPEED, ROBOT_MAX_TRANSLATIONAL, ROBOT_MAX_ROTATIONAL)
 
         self.front_left_state: SwerveModuleState = self.module_state[0]
         self.front_right_state: SwerveModuleState = self.module_state[1]
@@ -790,19 +796,19 @@ class DriveTrain():
         self.rear_right.set(self.rear_right_state)
         
     def swerveDriveAutonFieldOriented(self, linearX, linearY, angularZ):
-        self.ROBOT_MAX_TRANSLATIONAL = self.profile_selector.getSelected()[0]
-        self.ROBOT_MAX_ROTATIONAL = self.profile_selector.getSelected()[1]
-        self.MODULE_MAX_SPEED = self.profile_selector.getSelected()[0]
+        ROBOT_MAX_TRANSLATIONAL = 5.0
+        ROBOT_MAX_ROTATIONAL = 5.0
+        MODULE_MAX_SPEED = 5.0
         if ENABLE_2ND_ORDER:
-            self.speeds = self.correctForDynamics(ChassisSpeeds.fromFieldRelativeSpeeds(linearX*self.ROBOT_MAX_TRANSLATIONAL, -linearY*self.ROBOT_MAX_TRANSLATIONAL, angularZ*self.ROBOT_MAX_ROTATIONAL, self.navx.getRotation2d().__mul__(-1)))
+            self.speeds = self.correctForDynamics(ChassisSpeeds.fromFieldRelativeSpeeds(linearX*ROBOT_MAX_TRANSLATIONAL, -linearY*ROBOT_MAX_TRANSLATIONAL, angularZ*ROBOT_MAX_ROTATIONAL, Rotation2d.fromDegrees(self.navx.getRotation2d().__mul__(-1).degrees() + self.navx_offset)))
         else:
-            self.speeds = ChassisSpeeds.fromFieldRelativeSpeeds(linearX*self.ROBOT_MAX_TRANSLATIONAL, -linearY*self.ROBOT_MAX_TRANSLATIONAL, angularZ*self.ROBOT_MAX_ROTATIONAL, self.navx.getRotation2d().__mul__(-1))
-        self.linX = linearX*self.ROBOT_MAX_TRANSLATIONAL
-        self.linY = linearY*self.ROBOT_MAX_TRANSLATIONAL
-        self.angZ = angularZ*self.ROBOT_MAX_ROTATIONAL
+            self.speeds = ChassisSpeeds.fromFieldRelativeSpeeds(linearX*ROBOT_MAX_TRANSLATIONAL, -linearY*ROBOT_MAX_TRANSLATIONAL, angularZ*ROBOT_MAX_ROTATIONAL, Rotation2d.fromDegrees(self.navx.getRotation2d().__mul__(-1).degrees() + self.navx_offset))
+        self.linX = linearX*ROBOT_MAX_TRANSLATIONAL
+        self.linY = linearY*ROBOT_MAX_TRANSLATIONAL
+        self.angZ = angularZ*ROBOT_MAX_ROTATIONAL
 
         module_state = self.kinematics.toSwerveModuleStates(self.speeds)
-        self.kinematics.desaturateWheelSpeeds(self.module_state, self.speeds, self.MODULE_MAX_SPEED, self.ROBOT_MAX_TRANSLATIONAL, self.ROBOT_MAX_ROTATIONAL)
+        self.kinematics.desaturateWheelSpeeds(self.module_state, self.speeds, MODULE_MAX_SPEED, ROBOT_MAX_TRANSLATIONAL, ROBOT_MAX_ROTATIONAL)
 
         front_left_state: SwerveModuleState = module_state[0]
         front_right_state: SwerveModuleState = module_state[1]
@@ -828,17 +834,45 @@ class DriveTrain():
         
     def lockDrive(self):
         self.locked = True
-        self.front_left_state = SwerveModuleState(0, Rotation2d.fromDegrees(-45))
-        self.front_right_state = SwerveModuleState(0, Rotation2d.fromDegrees(45))
-        self.rear_left_state = SwerveModuleState(0, Rotation2d.fromDegrees(45))
-        self.rear_right_state = SwerveModuleState(0, Rotation2d.fromDegrees(-45))
+        front_left_state = SwerveModuleState(0, Rotation2d.fromDegrees(45))
+        front_right_state = SwerveModuleState(0, Rotation2d.fromDegrees(-45))
+        rear_left_state = SwerveModuleState(0, Rotation2d.fromDegrees(-45))
+        rear_right_state = SwerveModuleState(0, Rotation2d.fromDegrees(45))
+        
+        self.front_left.set(front_left_state)
+        self.front_right.set(front_right_state)
+        self.rear_left.set(rear_left_state)
+        self.rear_right.set(rear_right_state)
         
     def unlockDrive(self):
         self.locked = False
-        self.front_left_state = SwerveModuleState(0, Rotation2d.fromDegrees(0))
-        self.front_right_state = SwerveModuleState(0, Rotation2d.fromDegrees(0))
-        self.rear_left_state = SwerveModuleState(0, Rotation2d.fromDegrees(0))
-        self.rear_right_state = SwerveModuleState(0, Rotation2d.fromDegrees(0))
+        front_left_state = SwerveModuleState(0, Rotation2d.fromDegrees(0))
+        front_right_state = SwerveModuleState(0, Rotation2d.fromDegrees(0))
+        rear_left_state = SwerveModuleState(0, Rotation2d.fromDegrees(0))
+        rear_right_state = SwerveModuleState(0, Rotation2d.fromDegrees(0))
+        
+        self.front_left.set(front_left_state)
+        self.front_right.set(front_right_state)
+        self.rear_left.set(rear_left_state)
+        self.rear_right.set(rear_right_state)
+        
+    def metersToShaftTicks(self, meters):
+        wheel_circumference = 2 * math.pi * self.wheel_radius
+        rotations = meters / wheel_circumference
+        radians = rotations * 2 * math.pi
+        ticks = getWheelShaftTicks(radians, "position")
+        return ticks
+    
+    def shaftTicksToMeters(self, ticks):
+        radians = getWheelRadians(ticks, "position")
+        wheel_circumference = 2 * math.pi * self.wheel_radius
+        rotations = radians / (2 * math.pi)
+        meters = rotations * wheel_circumference
+        return meters
+    
+    def set_navx_offset(self, value):
+        self.navx_offset = value
+        
         
 
 
