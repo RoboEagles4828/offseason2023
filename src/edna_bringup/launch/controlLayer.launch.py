@@ -127,6 +127,15 @@ def generate_launch_description():
             on_exit=[forward_velocity_controller_spawner],
         )
     )
+    
+    zed_object_conversion_node = Node(
+        package='zed_object_hardware_interface',
+        executable='zed_conversion',
+        name='zed_object_conversion',
+        output='screen',
+        parameters=[{}]
+    )
+
 
 
     # Launch!
@@ -163,5 +172,6 @@ def generate_launch_description():
         swerve_drive_controller_delay,
         forward_position_controller_delay,
         forward_velocity_controller_delay,
-        control_node_require
+        control_node_require,
+        zed_object_conversion_node
     ])

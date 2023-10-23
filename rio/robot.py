@@ -213,7 +213,7 @@ def zedAction(subscriber):
         object_pos[1] = float(arr[1])
         object_pos[2] = float(arr[2])
     else:
-        object_pos = [0.0, 0.0, 0.0]
+        print("======================================")
 class Robot(wpilib.TimedRobot):
     def robotInit(self):
         self.use_threading = True
@@ -302,8 +302,14 @@ class Robot(wpilib.TimedRobot):
         global object_pos       
         global fms_attached
         
-        self.cone_move.execute()
-        self.cone_move.object_pos = object_pos
+        dist = math.sqrt(object_pos[0]**2 + object_pos[1]**2)
+        if dist > 0.5:
+            self.cone_move.execute()
+            self.cone_move.object_pos = object_pos
+        else:
+            print(f"GIVEN POS: {object_pos} ********************")
+            self.drive_train.swerveDriveAuton(0, 0, 0)
+            self.drive_train.stop()
         
         fms_attached = wpilib.DriverStation.isFMSAttached()
         if self.use_threading:

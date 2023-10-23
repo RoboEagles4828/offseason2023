@@ -20,12 +20,18 @@ class ZedConversion(Node):
         if objects == None:
             self.get_logger().warn("Objects message recieved was null")
         else:
-            x = objects.objects[0].position[0]
-            y = objects.objects[0].position[1]
-            z = objects.objects[0].position[2]
-            self.pose.data = f"{float(x)}|{float(y)}|{float(z)}"
-            print(self.pose)
-            self.pose_publisher.publish(self.pose)
+            if len(objects.objects) <= 0:
+                self.get_logger().warn("NO OBJECTS DETECTED")
+                empty = String()
+                empty.data = "0.0|0.0|0.0"
+                self.pose_publisher.publish(empty)
+            else:
+                x = objects.objects[0].position[0]
+                y = objects.objects[0].position[1]
+                z = objects.objects[0].position[2]
+                self.pose.data = f"{float(x)}|{float(y)}|{float(z)}"
+                print(self.pose)
+                self.pose_publisher.publish(self.pose)
             
 def main(args=None):
     rclpy.init(args=args)

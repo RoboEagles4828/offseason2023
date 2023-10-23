@@ -57,25 +57,13 @@ def generate_launch_description():
             }
         ]
     )
-    
-    zed_object_conversion_node = Node(
-        package='zed_object_hardware_interface',
-        namespace=str(NAMESPACE),
-        executable='zed_conversion',
-        name='zed_object_conversion',
-        output='screen',
-        parameters=[{}]
-    )
-
 
     delay_zed_wrapper = TimerAction(period=5.0, actions=[zed_wrapper_node])
-    delay_zed_conversion = TimerAction(period=3.0, actions=[zed_object_conversion_node])
     
     # Define LaunchDescription variable
     ld = LaunchDescription()
     
     # Add nodes to LaunchDescription
     ld.add_action(delay_zed_wrapper)
-    ld.add_action(delay_zed_conversion)
 
     return ld

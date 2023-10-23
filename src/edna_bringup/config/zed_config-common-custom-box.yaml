@@ -111,7 +111,7 @@
             qos_durability: 2 # '1': TRANSIENT_LOCAL - '2': VOLATILE
 
         object_detection:
-            od_enabled: false # True to enable Object Detection
+            od_enabled: true # True to enable Object Detection
             model: 'CUSTOM_BOX_OBJECTS' # 'MULTI_CLASS_BOX_FAST', 'MULTI_CLASS_BOX_MEDIUM', 'MULTI_CLASS_BOX_ACCURATE', 'PERSON_HEAD_BOX_FAST', 'PERSON_HEAD_BOX_ACCURATE', 'CUSTOM_BOX_OBJECTS'
             custom_model_path: '/root/ros2_ws/model.engine' # The path to your custom Yolo engine file (if using CUSTOM_BOX_OBJECTS)
             allow_reduced_precision_inference: true # Allow inference to run at a lower precision to improve runtime and memory usage

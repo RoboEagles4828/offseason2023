@@ -191,6 +191,8 @@ class SwerveModule():
         
         self.neutralize_count = 0
         
+        self.axle_motor.configFactoryDefault()
+        self.wheel_motor.configFactoryDefault()
         self.setupEncoder()
         self.setupWheelMotor()
         self.setupAxleMotor()
