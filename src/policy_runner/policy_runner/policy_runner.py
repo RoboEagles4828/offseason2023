@@ -6,18 +6,23 @@ from sensor_msgs.msg import JointState
 from geometry_msgs.msg import Twist
 import numpy as np
 import torch
+import torch.nn as nn
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 import math
-
+from rl_games.algos_torch.a2c_continuous import A2CAgent
+import yaml
 
 class Reader(Node):
     def __init__(self):
         super().__init__("reinforcement_learning_runner")
         # self.robot_ip = robot_ip
-        self.policy = torch.load("/workspaces/offseason2023/isaac/Eaglegym/eaglegym/runs/EdnaK/nn/EdnaK.pth")
+        # self.policy = torch.load("/workspaces/offseason2023/isaac/Eaglegym/eaglegym/runs/EdnaK/nn/EdnaK.pth")
+        
+        self.policy = self.load_checkpoint("/workspaces/offseason2023/isaac/Eaglegym/eaglegym/runs/EdnaK/nn/EdnaK.pth")
+        
         self.joint_action_pub = self.create_publisher(Twist, "cmd_vel", 10)
         # self.joint_trajectory_action_pub = self.create_publisher(Twist, "joint_trajectory_message", 10)
-        self.odom_sub = self.create_subscription(Float32, "odom", self.odom_callback, 10)
+        self.odom_sub = self.create_subscription(Odometry, "/saranga/zed/odom", self.odom_callback, 10)
         self.target_sub = self.create_subscription(String, '/real/obj_det_pose', self.target_callback, 10)
         # self.joint_state_sub = self.create_subscription(Float32, "joint_state", self.joint_state_callback, 10)
         self.odom_msg = Odometry()
@@ -27,6 +32,8 @@ class Reader(Node):
         # self.position_cmds = JointTrajectoryPoint()
         self.episode_reward = 0
         self.step = 0
+        
+        self.i = 0
         # self.joints = [
         #     'arm_roller_bar_joint',
         #     'elevator_center_joint',
@@ -41,6 +48,17 @@ class Reader(Node):
         self.target_pos = []
 
         self.get_logger().info("\033[92m" + "Policy Runner Started" + "\033[0m")
+        
+    def load_checkpoint(self, filepath):
+        config = yaml.load(open("/workspaces/offseason2023/isaac/Eaglegym/eaglegym/cfg/train/EdnaKPPO.yaml", "r"), Loader=yaml.FullLoader)
+        model = A2CAgent("run")
+        return model
+        # model = checkpoint['model']
+        # model.load_state_dict(checkpoint)
+        # for parameter in model.parameters():
+        #     parameter.requires_grad = False
+        # model.eval()
+        # return model
 
     def get_action(self, msg):
         '''
@@ -55,13 +73,22 @@ class Reader(Node):
         '''
                 
         # convert string to list
-        input_obs = msg.data.split(",")
+        # input_obs = msg.data.split(",")
         
-        obs = np.array(input_obs, dtype=np.float32)
-        action = self.policy(torch.tensor(obs).float())
-        self.twist_msg.linear.x = action[0].detach().numpy()
-        self.twist_msg.linear.y = action[1].detach().numpy()
-        self.twist_msg.angular.z = action[2].detach().numpy()
+        # obs = np.array(input_obs, dtype=np.float32)
+        real_obs = np.zeros()
+
+        print(self.policy)
+        
+        # if self.i == 0:
+        #     for k, v in self.policy.items():
+        #         print(f"Key: {k} Type: {type(v)}")
+        #     self.i = 1
+        # action = self.runner.get_action(torch.tensor(obs).float())
+        # print(action)
+        # self.twist_msg.linear.x = action[0].detach().numpy()
+        # self.twist_msg.linear.y = action[1].detach().numpy()
+        # self.twist_msg.angular.z = action[2].detach().numpy()
         # self.position_cmds.positions = [
         #     action[3].detach().numpy(),
         #     action[4].detach().numpy(),
@@ -78,13 +105,13 @@ class Reader(Node):
         # self.cmds.points = [self.position_cmds]
         
         # self.publisher_.publish(self.cmds)
-        self.get_logger().info("Action: " + "\033[93m" + str(self.twist_msg) + "\033[0m")
+        # self.get_logger().info("Action: " + "\033[93m" + str(self.twist_msg) + "\033[0m")
         
         self.joint_action_pub.publish(self.twist_msg)
         self.step += 1
 
     def odom_callback(self, msg: Odometry):
-        if(msg != None):
+        if(msg != None and len(self.target_pos) > 0):
             self.odom_msg = msg
             obs_string = String()
             robot_pos = [
@@ -117,17 +144,17 @@ class Reader(Node):
                 robot_rot_quat[1],
                 robot_rot_quat[2],
                 robot_rot_quat[3],
-                robot_linear_vel[0] / 2,
-                robot_linear_vel[1] / 2,
-                robot_linear_vel[2] / 2,
-                robot_angular_vel[0] / math.pi,
-                robot_angular_vel[1] / math.pi,
-                robot_angular_vel[2] / math.pi
+                robot_linear_vel[0],
+                robot_linear_vel[1],
+                robot_linear_vel[2],
+                robot_angular_vel[0],
+                robot_angular_vel[1],
+                robot_angular_vel[2]
             ]
             
             obs_string.data = ",".join([str(i) for i in obs_input])
             
-            self.get_logger().info(f"Observation: \033[92m {obs_string} \033[0m")
+            # self.get_logger().info(f"Observation: \033[92m {obs_string} \033[0m")
             
             self.get_action(obs_string)
         return
@@ -136,11 +163,13 @@ class Reader(Node):
         if(msg != None):
             self.target_pos = msg.data.split("|")
             self.target_pos = [float(i) for i in self.target_pos]
-            self.get_logger().info(f"Target Pos: {self.target_pos}")         
+            self.get_action(",")
+            # self.get_logger().info(f"Target Pos: {self.target_pos} {self.odom_sub.topic_name}")         
         return
 
     def get_reward():
         return
+
 def main(args=None):
     # env = gym.create_env("RealRobot", ip=self.robot_ip)
     rclpy.init(args=args)
