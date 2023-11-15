@@ -105,6 +105,9 @@ class Reader(Node):
     
         # ======================= convert action to twist message ===================================
         
+        self.twist_msg.linear.x = float(vel[0])
+        self.twist_msg.linear.y = float(vel[1])
+        self.twist_msg.linear.z = float(vel[2])
         
         # self.position_cmds.positions = [
         #     action[3].detach().numpy(),
@@ -123,7 +126,8 @@ class Reader(Node):
         
         # self.publisher_.publish(self.cmds)
         
-        self.get_logger().info("Action: " + "\033[93m" + str(vel) + "\033[0m")
+        
+        self.print_in_color(f"Action: {str(vel[0:3])}", "blue")
         
         self.joint_action_pub.publish(self.twist_msg)
         self.step += 1
@@ -172,7 +176,15 @@ class Reader(Node):
             
             obs_string.data = ",".join([str(i) for i in obs_input])
             
-            self.get_logger().info(f"Observation: \033[93m {obs_string.data} \033[0m")
+            obs_dict = {
+                "target position": self.target_pos,
+                "robot position": robot_pos,
+                "robot rotation quaternion": robot_rot_quat,
+                "robot linear velocity": robot_linear_vel,
+                "robot angular velocity": robot_angular_vel
+            }
+            
+            self.print_in_color(f"Observation: {obs_dict}", "blue")
             
             self.get_action(obs_string)
         return
@@ -180,11 +192,21 @@ class Reader(Node):
     def target_callback(self, msg):
         if(msg != None):
             self.target_pos = msg.data.split("|")
-            self.target_pos = [float(i) for i in self.target_pos]
-            # self.get_logger().info(f"Target Pos: {self.target_pos} {self.odom_sub.topic_name}")         
+            self.target_pos = [float(i) for i in self.target_pos]      
         return
 
     def get_reward():
+        return
+    
+    def print_in_color(self, msg, color):
+        if(color == "green"):
+            self.get_logger().info("\033[92m" + msg + "\033[0m")
+        elif(color == "blue"):
+            self.get_logger().info("\033[94m" + msg + "\033[0m")
+        elif(color == "red"):
+            self.get_logger().info("\033[91m" + msg + "\033[0m")
+        else:
+            self.get_logger().info(msg)
         return
 
 def main(args=None):
