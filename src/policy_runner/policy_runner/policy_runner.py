@@ -66,6 +66,7 @@ class Reader(Node):
         
         network.load_state_dict(state_dict)
         network.eval()
+        network.train(False)
 
         return network
         # model = checkpoint['model']
@@ -88,18 +89,20 @@ class Reader(Node):
         '''
                 
         # convert string to list
-        # input_obs = msg.data.split(",")
+        input_obs = msg.data.split(",")
         
-        # obs = np.array(input_obs, dtype=np.float32)
+        obs = np.array(input_obs, dtype=np.float32)
         
-        real_obs = np.zeros((1, 13))
-
-        print(self.policy)
+        obs = torch.tensor(obs).float()
         
-        # if self.i == 0:
-        #     for k, v in self.policy.items():
-        #         print(f"Key: {k} Type: {type(v)}")
-        #     self.i = 1
+        obs = obs.unsqueeze(0)
+        
+        observation = {"obs": obs}
+        
+        action = self.policy(observation)
+        
+        print(action)
+        
         # action = self.runner.get_action(torch.tensor(obs).float())
         # print(action)
         # self.twist_msg.linear.x = action[0].detach().numpy()
@@ -179,7 +182,10 @@ class Reader(Node):
         if(msg != None):
             self.target_pos = msg.data.split("|")
             self.target_pos = [float(i) for i in self.target_pos]
-            self.get_action(",")
+            input_data = String()
+            test_input = [0.0]*13
+            input_data.data = ",".join([str(i) for i in test_input])
+            self.get_action(input_data)
             # self.get_logger().info(f"Target Pos: {self.target_pos} {self.odom_sub.topic_name}")         
         return
 
