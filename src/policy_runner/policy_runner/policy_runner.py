@@ -100,14 +100,12 @@ class Reader(Node):
         observation = {"obs": obs}
         
         action = self.policy(observation)
+
+        vel = action[0].detach().numpy()[0]
+    
+        # ======================= convert action to twist message ===================================
         
-        print(action)
         
-        # action = self.runner.get_action(torch.tensor(obs).float())
-        # print(action)
-        # self.twist_msg.linear.x = action[0].detach().numpy()
-        # self.twist_msg.linear.y = action[1].detach().numpy()
-        # self.twist_msg.angular.z = action[2].detach().numpy()
         # self.position_cmds.positions = [
         #     action[3].detach().numpy(),
         #     action[4].detach().numpy(),
@@ -124,7 +122,8 @@ class Reader(Node):
         # self.cmds.points = [self.position_cmds]
         
         # self.publisher_.publish(self.cmds)
-        # self.get_logger().info("Action: " + "\033[93m" + str(self.twist_msg) + "\033[0m")
+        
+        self.get_logger().info("Action: " + "\033[93m" + str(vel) + "\033[0m")
         
         self.joint_action_pub.publish(self.twist_msg)
         self.step += 1
@@ -173,7 +172,7 @@ class Reader(Node):
             
             obs_string.data = ",".join([str(i) for i in obs_input])
             
-            # self.get_logger().info(f"Observation: \033[92m {obs_string} \033[0m")
+            self.get_logger().info(f"Observation: \033[93m {obs_string.data} \033[0m")
             
             self.get_action(obs_string)
         return
@@ -182,10 +181,6 @@ class Reader(Node):
         if(msg != None):
             self.target_pos = msg.data.split("|")
             self.target_pos = [float(i) for i in self.target_pos]
-            input_data = String()
-            test_input = [0.0]*13
-            input_data.data = ",".join([str(i) for i in test_input])
-            self.get_action(input_data)
             # self.get_logger().info(f"Target Pos: {self.target_pos} {self.odom_sub.topic_name}")         
         return
 
