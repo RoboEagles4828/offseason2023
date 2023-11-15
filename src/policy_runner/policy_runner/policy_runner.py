@@ -9,7 +9,10 @@ import torch
 import torch.nn as nn
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 import math
-from rl_games.algos_torch.a2c_continuous import A2CAgent
+from rl_games.algos_torch.models import ModelA2CContinuous
+from rl_games.algos_torch.torch_ext import load_checkpoint
+from rl_games.algos_torch.network_builder import A2CBuilder
+from rl_games.common.a2c_common import ContinuousA2CBase
 import yaml
 
 class Reader(Node):
@@ -51,8 +54,20 @@ class Reader(Node):
         
     def load_checkpoint(self, filepath):
         config = yaml.load(open("/workspaces/offseason2023/isaac/Eaglegym/eaglegym/cfg/train/EdnaKPPO.yaml", "r"), Loader=yaml.FullLoader)
-        model = A2CAgent("run")
-        return model
+        config = config["params"]
+        state = load_checkpoint(filepath)
+        state_dict = {k.replace('a2c_network.', ''): v for k, v in state['model'].items()}
+        builder = A2CBuilder()
+        builder.load(config["network"])
+        network = builder.build("network", actions_num=10, input_shape=(13,))
+        
+        model_state_dict = network.state_dict()
+        state_dict = {k: v for k, v in state_dict.items() if k in model_state_dict}
+        
+        network.load_state_dict(state_dict)
+        network.eval()
+
+        return network
         # model = checkpoint['model']
         # model.load_state_dict(checkpoint)
         # for parameter in model.parameters():
@@ -76,9 +91,10 @@ class Reader(Node):
         # input_obs = msg.data.split(",")
         
         # obs = np.array(input_obs, dtype=np.float32)
-        real_obs = np.zeros()
+        
+        real_obs = np.zeros((1, 13))
 
-        print(self.policy)
+        print(self.policy[real_obs])
         
         # if self.i == 0:
         #     for k, v in self.policy.items():
