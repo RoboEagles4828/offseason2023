@@ -94,7 +94,7 @@ class Reader(Node):
         
         real_obs = np.zeros((1, 13))
 
-        print(self.policy[real_obs])
+        print(self.policy)
         
         # if self.i == 0:
         #     for k, v in self.policy.items():
