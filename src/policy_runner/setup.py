@@ -11,7 +11,7 @@ setup(
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
     ],
-    install_requires=['setuptools', 'torch'],
+    install_requires=['setuptools', 'rl-games'],
     zip_safe=True,
     maintainer='admin',
     maintainer_email='sarnga.raj@gmail.com',

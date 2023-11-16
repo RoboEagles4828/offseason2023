@@ -120,7 +120,7 @@ This code contains trade secrets of Real-Time Innovations, Inc.
         </domain>
         <domain name="ROS2_DOMAIN_ZED" domain_id="0">
             <register_type name="std_msgs::msg::dds_::String_" type_ref="std_msgs::msg::dds_::String_" />
-            <topic name="rt/real/obj_det_pose" register_type_ref="std_msgs::msg::dds_::String_"/>
+            <topic name="rt/real/cmd_vel" register_type_ref="std_msgs::msg::dds_::String_"/>
         </domain>
     </domain_library>
 
@@ -161,7 +161,7 @@ This code contains trade secrets of Real-Time Innovations, Inc.
 
       <domain_participant name="zed_objects" domain_ref="ROS2_DOMAIN_LIB::ROS2_DOMAIN_ZED">
           <subscriber name="zed_objects_subscriber">
-            <data_reader name="zed_objects_reader" topic_ref="rt/real/obj_det_pose"/>
+            <data_reader name="zed_objects_reader" topic_ref="rt/real/cmd_vel"/>
           </subscriber>
       </domain_participant>
 

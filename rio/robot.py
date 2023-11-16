@@ -302,14 +302,16 @@ class Robot(wpilib.TimedRobot):
         global object_pos       
         global fms_attached
         
-        dist = math.sqrt(object_pos[0]**2 + object_pos[1]**2)
-        if dist > 0.5:
-            self.cone_move.execute()
-            self.cone_move.object_pos = object_pos
-        else:
-            print(f"GIVEN POS: {object_pos} ********************")
-            self.drive_train.swerveDriveAuton(0, 0, 0)
-            self.drive_train.stop()
+        # dist = math.sqrt(object_pos[0]**2 + object_pos[1]**2)
+        # if dist > 0.5:
+        #     self.cone_move.execute()
+        #     self.cone_move.object_pos = object_pos
+        # else:
+        #     print(f"GIVEN POS: {object_pos} ********************")
+        #     self.drive_train.swerveDriveAuton(0, 0, 0)
+        #     self.drive_train.stop()(
+        
+        self.drive_train.swerveDriveAuton(object_pos[0], object_pos[1], object_pos[2])
         
         fms_attached = wpilib.DriverStation.isFMSAttached()
         if self.use_threading:

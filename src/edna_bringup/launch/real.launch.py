@@ -29,9 +29,16 @@ def generate_launch_description():
                 PythonLaunchDescriptionSource([os.path.join(
                     bringup_path,'launch','teleopLayer.launch.py'
                 )]), launch_arguments=teleoplaunch_args.items())
+    
+    gym_launch = IncludeLaunchDescription(
+                PythonLaunchDescriptionSource([os.path.join(
+                    bringup_path,'launch','gym.launch.py'
+                )]), launch_arguments={'use_sim_time': 'false'}.items()
+    )
 
     # Launch!
     return LaunchDescription([
         control_layer,
         teleop_layer,
+        gym_launch
     ])

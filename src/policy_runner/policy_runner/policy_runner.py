@@ -21,11 +21,11 @@ class Reader(Node):
         # self.robot_ip = robot_ip
         # self.policy = torch.load("/workspaces/offseason2023/isaac/Eaglegym/eaglegym/runs/EdnaK/nn/EdnaK.pth")
         
-        self.policy = self.load_checkpoint("/workspaces/offseason2023/isaac/Eaglegym/eaglegym/runs/EdnaK/nn/EdnaK.pth")
+        self.policy = self.load_checkpoint("/workspaces/offseason2023/isaac/Eaglegym/eaglegym/runs/EdnaK/nn/EdnaK_1050.pth")
         
-        self.joint_action_pub = self.create_publisher(Twist, "cmd_vel", 10)
+        self.joint_action_pub = self.create_publisher(String, "/real/cmd_vel", 10)
         # self.joint_trajectory_action_pub = self.create_publisher(Twist, "joint_trajectory_message", 10)
-        self.odom_sub = self.create_subscription(Odometry, "/saranga/zed/odom", self.odom_callback, 10)
+        self.odom_sub = self.create_subscription(Odometry, "/real/odom", self.odom_callback, 10)
         self.target_sub = self.create_subscription(String, '/real/obj_det_pose', self.target_callback, 10)
         # self.joint_state_sub = self.create_subscription(Float32, "joint_state", self.joint_state_callback, 10)
         self.odom_msg = Odometry()
@@ -102,6 +102,8 @@ class Reader(Node):
         action = self.policy(observation)
 
         vel = action[0].detach().numpy()[0]
+        
+        vel = [self.limit(i) for i in vel]
     
         # ======================= convert action to twist message ===================================
         
@@ -127,10 +129,28 @@ class Reader(Node):
         # self.publisher_.publish(self.cmds)
         
         
+        output = String()
+        output.data = f"{-vel[1]}|{-vel[0]}|{vel[2]}"
+        
+        if self.target_pos == [0, 0, 0]:
+            output.data = f"0.0|0.0|0.0"
+            vel = [0.0, 0.0, 0.0]
+        
         self.print_in_color(f"Action: {str(vel[0:3])}", "blue")
         
-        self.joint_action_pub.publish(self.twist_msg)
+        self.joint_action_pub.publish(output)
         self.step += 1
+        
+    def limit(self, value):
+        speed = 0
+        if value > 1:
+            speed = 1
+        elif value < -1:
+            speed = -1
+        else:
+            speed = value
+            
+        return speed / 10
 
     def odom_callback(self, msg: Odometry):
         if(msg != None and len(self.target_pos) > 0):
@@ -159,9 +179,9 @@ class Reader(Node):
             ]
             
             obs_input = [
-                (self.target_pos[0] - robot_pos[0]) / 3,
-                (self.target_pos[1] - robot_pos[1]) / 3,
-                (self.target_pos[2] - robot_pos[2]) / 3,
+                (self.target_pos[0] - robot_pos[0]),
+                (self.target_pos[1] - robot_pos[1]),
+                (self.target_pos[2] - robot_pos[2]),
                 robot_rot_quat[0],
                 robot_rot_quat[1],
                 robot_rot_quat[2],
