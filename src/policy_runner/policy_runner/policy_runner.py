@@ -25,8 +25,15 @@ class Reader(Node):
         
         self.joint_action_pub = self.create_publisher(String, "/real/cmd_vel", 10)
         # self.joint_trajectory_action_pub = self.create_publisher(Twist, "joint_trajectory_message", 10)
-        self.odom_sub = self.create_subscription(Odometry, "/real/odom", self.odom_callback, 10)
-        self.target_sub = self.create_subscription(String, '/real/obj_det_pose', self.target_callback, 10)
+        
+        self.declare_parameter("odom_topic", "/real/odom")
+        self.declare_parameter("target_topic", "/real/obj_det_pose")
+        
+        self.odom_topic = self.get_parameter("odom_topic").get_parameter_value().string_value
+        self.target_topic = self.get_parameter("target_topic").get_parameter_value().string_value
+        
+        self.odom_sub = self.create_subscription(Odometry, self.odom_topic, self.odom_callback, 10)
+        self.target_sub = self.create_subscription(String, self.target_topic, self.target_callback, 10)
         # self.joint_state_sub = self.create_subscription(Float32, "joint_state", self.joint_state_callback, 10)
         self.odom_msg = Odometry()
         # self.joint_state_msg = JointState()
@@ -103,7 +110,9 @@ class Reader(Node):
 
         vel = action[0].detach().numpy()[0]
         
-        vel = [self.limit(i) for i in vel]
+        self.get_logger().info("Full Action: " + np.array_str(vel, precision=2))
+        
+        # vel = [self.limit(i) for i in vel]
     
         # ======================= convert action to twist message ===================================
         
@@ -132,9 +141,9 @@ class Reader(Node):
         output = String()
         output.data = f"{-vel[1]}|{-vel[0]}|{vel[2]}"
         
-        if self.target_pos == [0, 0, 0]:
-            output.data = f"0.0|0.0|0.0"
-            vel = [0.0, 0.0, 0.0]
+        # if self.target_pos == [0, 0, 0]:
+        #     output.data = f"0.0|0.0|0.0"
+        #     vel = [0.0, 0.0, 0.0]
         
         self.print_in_color(f"Action: {str(vel[0:3])}", "blue")
         

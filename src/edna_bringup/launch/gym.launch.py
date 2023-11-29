@@ -16,7 +16,11 @@ def generate_launch_description():
         package='policy_runner',
         executable='runner',
         name='policy_runner_node',
-        parameters=[{'use_sim_time': use_sim_time}]
+        parameters=[{
+            'use_sim_time': use_sim_time,
+            'odom_topic': '/saranga/zed/odom',
+            'target_topic': '/real/obj_det_pose',
+        }]
     )
     
     # Launch!

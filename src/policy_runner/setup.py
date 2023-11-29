@@ -21,6 +21,7 @@ setup(
     entry_points={
         'console_scripts': [
             'runner = policy_runner.policy_runner:main',
+            'odom = policy_runner.odom_test:main'
         ],
     },
 )

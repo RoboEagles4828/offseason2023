@@ -52,6 +52,7 @@ class IsaacDriveHardware(Node):
     def real_callback(self, joint_state: JointState):
         self.joint_names = list(joint_state.name)
         self.joint_state = joint_state
+        self.get_logger().info(self.OKGREEN + "Recieved Real Joint State" + self.ENDC)
         self.write()
         
     def isaac_callback(self, joint_state: JointState):
