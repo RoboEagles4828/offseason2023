@@ -250,8 +250,8 @@ class SwerveModule():
         self.wheel_motor.configSupplyCurrentLimit(supply_current_limit_configs, timeout_ms)
         
         # Stator Current Limit
-        stator_current_limit = 40 # TerrorBytes/Yeti: 80
-        stator_current_threshold = 80 # TerrorBytes/Yeti: 120
+        stator_current_limit = 60 # TerrorBytes/Yeti: 80 US: 40
+        stator_current_threshold = 100 # TerrorBytes/Yeti: 120 US: 80
         stator_current_threshold_time = 0.1
         stator_current_limit_configs = ctre.StatorCurrentLimitConfiguration(True, stator_current_limit, stator_current_threshold, stator_current_threshold_time)
         self.wheel_motor.configStatorCurrentLimit(stator_current_limit_configs, timeout_ms)
@@ -444,10 +444,10 @@ class DriveTrain():
         self.speeds = ChassisSpeeds(0, 0, 0)
         self.wheel_radius = 0.0508
 
-        self.ROBOT_MAX_TRANSLATIONAL = 10.0 #16.4041995 # 5.0 # m/s
+        self.ROBOT_MAX_TRANSLATIONAL = 7.0 #16.4041995 # 5.0 # m/s
         self.ROBOT_MAX_ROTATIONAL = 2.5 #16.4041995 * math.pi #rad/s
 
-        self.MODULE_MAX_SPEED = 10.0 #16.4041995 # m/s
+        self.MODULE_MAX_SPEED = 7.0 #16.4041995 # m/s
 
         self.move_scale_x = self.ROBOT_MAX_TRANSLATIONAL
         self.move_scale_y = self.ROBOT_MAX_TRANSLATIONAL
