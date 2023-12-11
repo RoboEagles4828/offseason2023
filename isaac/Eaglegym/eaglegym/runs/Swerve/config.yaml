@@ -30,7 +30,7 @@ task:
       stiffness: 85.0
       damping: 2.0
       actionScale: 13.5
-    episodeLength_s: 50
+    episodeLength_s: 15
   sim:
     dt: 0.0083
     use_gpu_pipeline: ${eq:${...pipeline},"gpu"}
@@ -127,7 +127,7 @@ train:
       normalize_value: true
       num_actors: ${....task.env.numEnvs}
       reward_shaper:
-        scale_value: 0.1
+        scale_value: 1.0
       normalize_advantage: true
       gamma: 0.99
       tau: 0.95
@@ -135,9 +135,9 @@ train:
       lr_schedule: adaptive
       kl_threshold: 0.008
       score_to_win: 20000
-      max_epochs: 10000
-      save_best_after: 50
-      save_frequency: 25
+      max_epochs: 500
+      save_best_after: 25
+      save_frequency: 50
       grad_norm: 1.0
       entropy_coef: 0.0
       truncate_grads: true
@@ -160,13 +160,16 @@ pipeline: gpu
 sim_device: gpu
 device_id: 0
 rl_device: cuda:0
+multi_gpu: false
 num_threads: 4
 solver_type: 1
 test: false
 checkpoint: ''
-headless: false
+headless: true
+enable_livestream: false
+mt_timeout: 30
 wandb_activate: false
 wandb_group: ''
 wandb_name: ${train.params.config.name}
 wandb_entity: ''
-wandb_project: omniisaacgymenv
+wandb_project: eaglegym

@@ -4,7 +4,7 @@ from eaglegym.inverse_kinematics.motion_magic_control import MotionMagic
 import math
 
 class InverseKinematics():
-    def __init__(self):
+    def __init__(self, max_vel):
         self.speeds = ChassisSpeeds()
         self.module_config = {
             "front_left": {
@@ -48,9 +48,9 @@ class InverseKinematics():
         self.front_right_location = self.module_config["front_right"]["location"]
         self.rear_left_location = self.module_config["rear_left"]["location"]
         self.rear_right_location = self.module_config["rear_right"]["location"]
-        self.ROBOT_MAX_TRANSLATIONAL = 5.0
-        self.ROBOT_MAX_ROTATIONAL = 5.0
-        self.MODULE_MAX_SPEED = 5.0
+        self.ROBOT_MAX_TRANSLATIONAL = max_vel
+        self.ROBOT_MAX_ROTATIONAL = max_vel
+        self.MODULE_MAX_SPEED = max_vel
         self.kinematics = SwerveDrive4Kinematics(self.front_left_location, self.front_right_location, self.rear_left_location, self.rear_right_location)
         
         self.positionCoefficient = 2.0 * math.pi / 2048.0

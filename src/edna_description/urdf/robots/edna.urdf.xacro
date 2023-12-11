@@ -33,7 +33,14 @@
   <!-- Z IS UP -->
 
   <!-- Chassis -->
-  <link name="base_link"></link>
+  <link name="base_link">
+  <!-- Set mass to 0 and give a valid inertia tensor of 0 -->
+    <inertial>
+      <mass value="0.0"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+  </link>
   <xacro:square_chassis prefix="swerve" parent="base_link">
     <origin xyz="0 0 0" rpy="0 0 0" />
   </xacro:square_chassis>

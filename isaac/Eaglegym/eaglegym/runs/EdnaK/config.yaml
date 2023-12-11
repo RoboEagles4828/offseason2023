@@ -2,7 +2,7 @@ task:
   name: EdnaK
   physics_engine: ${..physics_engine}
   env:
-    numEnvs: 2880
+    numEnvs: 1440
     envSpacing: 20.0
     resetDist: 3.0
     clipObservations: 5.0
@@ -30,7 +30,7 @@ task:
       stiffness: 85.0
       damping: 2.0
       actionScale: 13.5
-    episodeLength_s: 50
+    episodeLength_s: 15
   sim:
     dt: 0.0083
     use_gpu_pipeline: ${eq:${...pipeline},"gpu"}
@@ -136,9 +136,9 @@ train:
       lr_schedule: adaptive
       kl_threshold: 0.008
       score_to_win: 20000
-      max_epochs: 1000
-      save_best_after: 50
-      save_frequency: 25
+      max_epochs: 200
+      save_best_after: 25
+      save_frequency: 50
       grad_norm: 1.0
       entropy_coef: 0.0
       truncate_grads: true

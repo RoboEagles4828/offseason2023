@@ -236,9 +236,9 @@ class Swerve_Task(RLTask):
 
         #   Set Wheel Positions
         #   Has a 1 degree tolerance. Turns clockwise if less than, counter clockwise if greater than
-            if (i == 1):
-                print(f"front_left_position:{front_left_position}")
-                print(f"rear_left_position:{rear_left_position}")
+            # if (i == 1):
+            #     print(f"front_left_position:{front_left_position}")
+            #     print(f"rear_left_position:{rear_left_position}")
             action.append(calculate_turn_velocity(front_left_current_pos, front_left_position))
             action.append(calculate_turn_velocity(front_right_current_pos, front_right_position))
             action.append(calculate_turn_velocity(rear_left_current_pos, rear_left_position))
@@ -346,15 +346,18 @@ class Swerve_Task(RLTask):
         target_dist = torch.sqrt(torch.square(
             self.target_positions - root_positions).sum(-1))
 
+        # equation for distance reward should go negative if the distance increases and positive if it decreases
         pos_reward = 1.0 / (1.0 + 2.5 * target_dist * target_dist)
         self.target_dist = target_dist
         self.root_positions = root_positions
         self.root_position_reward = self.rew_buf
         # rewards for moving away form starting point
         for i in range(len(self.root_position_reward)):
-            self.root_position_reward[i] = sum(root_positions[i][0:3])
+            self.root_position_reward[i] = sum(root_positions[i][0:2])
 
         self.rew_buf[:] = self.root_position_reward*pos_reward
+        
+        print(f"Distance: {round(target_dist[0].item(), 2)}m, Pos_Reward: {round(pos_reward[0].item(), 2)}, Sum_Reward: {self.root_position_reward[0].item()}, Reward: {self.rew_buf[0].item()}")
 
     def is_done(self) -> None:
         # print("line 312")

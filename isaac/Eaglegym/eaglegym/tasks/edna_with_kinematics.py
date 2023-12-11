@@ -27,6 +27,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from eaglegym.tasks.base.rl_task import RLTask
+
 from eaglegym.robots.articulations.edna import Edna
 from eaglegym.robots.articulations.views.edna_view import EdnaView
 from eaglegym.tasks.utils.usd_utils import set_drive
@@ -60,7 +61,7 @@ class Edna_Kinematics_Task(RLTask):
         self._task_cfg = sim_config.task_config
 
         # limits max velocity of wheels and axles
-        self.velocity_limit = 0.5
+        self.velocity_limit = 3.0
 
         self.dt = 1 / 60
         self.max_episode_length_s = self._task_cfg["env"]["episodeLength_s"]
@@ -76,9 +77,9 @@ class Edna_Kinematics_Task(RLTask):
         self._edna_translation = torch.tensor([0.0, 0.0, 0.0])
         self._env_spacing = self._task_cfg["env"]["envSpacing"]
         # Number of data points the policy is recieving
-        self._num_observations = 13
+        self._num_observations = 16
         # Number of data points the policy is producing
-        self._num_actions = 10
+        self._num_actions = 3
         # starting position of the edna module
         self.edna_position = torch.tensor([0, 0, 0])
         # starting position of the target
@@ -90,7 +91,18 @@ class Edna_Kinematics_Task(RLTask):
             (self._num_envs, 3), device=self._device, dtype=torch.float32)  # xyx of target position
         self.target_positions[:, 1] = 1
         
-        self.inverse_kinematics = InverseKinematics()
+        self.inverse_kinematics = InverseKinematics(self.velocity_limit)
+        
+        self.dis_prev = torch.zeros((self._num_envs,), device=self._device, dtype=torch.float32)
+        
+        self.collision = torch.zeros((self._num_envs,), device=self._device, dtype=torch.float32)
+        
+        self.max_distance = 10.0
+        
+        self.smallest_dist = torch.full((self._num_envs,), self.max_distance, device=self._device, dtype=torch.float32)
+        
+        self.dist = torch.zeros((self._num_envs,), device=self._device, dtype=torch.float32)
+
 
         return
 
@@ -104,6 +116,7 @@ class Edna_Kinematics_Task(RLTask):
         # Sets up articluation controller for edna
         self._edna = EdnaView(
             prim_paths_expr="/World/envs/.*/edna", name="ednaview")
+        
         # Allows for position tracking of targets
         self._balls = RigidPrimView(
             prim_paths_expr="/World/envs/.*/cube", name="targets_view", reset_xform_properties=False)
@@ -129,7 +142,7 @@ class Edna_Kinematics_Task(RLTask):
     def get_target(self):
         # Adds a red ball as target
         radius = 0.1  # meters
-        color = torch.tensor([0, 0, 1])
+        color = torch.tensor([1, 0, 1])
         ball = DynamicSphere(
             prim_path=self.default_zero_env_path + "/cube",
             translation=self._ball_position,
@@ -139,26 +152,28 @@ class Edna_Kinematics_Task(RLTask):
         )
         self._sim_config.apply_articulation_settings("cube", get_prim_at_path(
             ball.prim_path), self._sim_config.parse_actor_config("cube"))
-        ball.set_collision_enabled(True)
+        ball.set_collision_enabled(False)
 
     def get_observations(self) -> dict:
         # Gets various positions and velocties to observations
         
-        self.root_pos, self.root_rot = self._edna.get_world_poses(
-            clone=False)
+        self.root_pos, self.root_rot = self._edna.get_world_poses()
+        
         self.joint_velocities = self._edna.get_joint_velocities()
         # print(self.joint_velocities)
         self.joint_positions = self._edna.get_joint_positions()
         # print(self.joint_positions)
-        self.root_velocities = self._edna.get_velocities(clone=False)
+        self.root_velocities = self._edna.get_velocities()
         root_positions = self.root_pos - self._env_pos
         root_quats = self.root_rot
         root_linvels = self.root_velocities[:, :3]
         root_angvels = self.root_velocities[:, 3:]
-        self.obs_buf[..., 0:3] = (self.target_positions - root_positions) / 3
-        self.obs_buf[..., 3:7] = root_quats
-        self.obs_buf[..., 7:10] = root_linvels / 2
-        self.obs_buf[..., 10:13] = root_angvels / math.pi
+        self.obs_buf[..., 0:3] = self.target_positions
+        self.obs_buf[..., 3:6] = root_positions
+        self.obs_buf[..., 6:10] = root_quats
+        self.obs_buf[..., 10:13] = root_linvels
+        self.obs_buf[..., 13:16] = root_angvels / math.pi
+        
         # Should not exceed observation ssize declared earlier
         # An observation is created for each edna in each environment
         observations = {
@@ -168,7 +183,20 @@ class Edna_Kinematics_Task(RLTask):
         }
         return observations
 
-    def pre_physics_step(self, actions) -> None:
+    def pre_physics_step(self, actions) -> None:            # root_positions = self.root_pos - self._env_pos
+            # # distance to target
+            # target_dist = torch.sqrt(torch.square(
+            #     self.target_positions - root_positions).sum(-1))
+
+            # pos_reward = 1.0 / (1.0 + 2.5 * target_dist * target_dist)
+            # self.target_dist = target_dist
+            # self.root_positions = root_positions
+            # self.root_position_reward = self.rew_buf
+            # # rewards for moving away form starting point
+            # # for i in range(len(self.root_position_reward)):
+            # #     self.root_position_reward[i] = sum(root_positions[i][0:2])
+
+            # self.rew_buf[:] = pos_reward
         # This is what sets the action for edna
 
         reset_env_ids = self.reset_buf.nonzero(as_tuple=False).squeeze(-1)
@@ -195,22 +223,6 @@ class Edna_Kinematics_Task(RLTask):
         for i in range(self.num_envs):
             action = []
 
-        #    Compute Wheel Velocities and Positions
-            # a = linear_x_cmd[i] - angular_cmd[i] * x_offset / 2
-
-            # b = linear_x_cmd[i] + angular_cmd[i] * x_offset / 2
-
-            # c = linear_y_cmd[i] - angular_cmd[i] * x_offset / 2
-
-            # d = linear_y_cmd[i] + angular_cmd[i] * x_offset / 2
-
-        #   get current wheel positions
-            ### DOF ORDER
-            ###['elevator_outer_1_joint',
-            ### 'front_left_axle_joint',
-            ### 'front_right_axle_joint',
-            ### 'rear_left_axle_joint',
-            ### 'rear_right_axle_joint',
             front_left_current_pos = (
                 (self._edna.get_joint_positions()[i][1]))
             front_right_current_pos = (
@@ -239,121 +251,23 @@ class Edna_Kinematics_Task(RLTask):
             rear_left_position = velocity_cmds[6]
             rear_right_position = velocity_cmds[7]
             
-            ###DEBUGGING
-            # if(i==0):
-            #     #round all tensors
-            #     linear_x_cmd_rounded = torch.round(linear_x_cmd, decimals=1)
-            #     linear_y_cmd_rounded = torch.round(linear_y_cmd, decimals=1)
-            #     angular_cmd_rounded = torch.round(angular_cmd, decimals=1)
-            #     front_left_velocity_rounded = round(front_left_velocity, 1)
-            #     front_right_velocity_rounded = round(front_right_velocity, 1)
-            #     rear_left_velocity_rounded = round(rear_left_velocity, 1)
-            #     rear_right_velocity_rounded = round(rear_right_velocity, 1)
-            #     front_left_position_rounded = round(front_left_position, 1)
-            #     front_right_position_rounded = round(front_right_position, 1)
-            #     rear_left_position_rounded = round(rear_left_position, 1)
-            #     rear_right_position_rounded = round(rear_right_position, 1)
-            #     front_left_current_pos_rounded = torch.round(front_left_current_pos, decimals=1)
-            #     front_right_current_pos_rounded = torch.round(front_right_current_pos, decimals=1)
-            #     rear_left_current_pos_rounded = torch.round(rear_left_current_pos, decimals=1)
-            #     rear_right_current_pos_rounded = torch.round(rear_right_current_pos, decimals=1)
-            #     #print all tensors
-            #     print("X: ", linear_x_cmd_rounded)
-            #     print("Y: ", linear_y_cmd_rounded)
-            #     print("Z: ", angular_cmd_rounded)
-            #     print("FLV: ", front_left_velocity_rounded)
-            #     print("FRV: ", front_right_velocity_rounded)
-            #     print("RLV: ", rear_left_velocity_rounded)
-            #     print("RRV: ", rear_right_velocity_rounded)
-            #     print("FLP: ", front_left_position_rounded)
-            #     print("FRP: ", front_right_position_rounded)
-            #     print("RLP: ", rear_left_position_rounded)
-            #     print("RRP: ", rear_right_position_rounded)
-            #     print("FLCP: ", front_left_current_pos_rounded)
-            #     print("FRCP: ", front_right_current_pos_rounded)
-            #     print("RLCP: ", rear_left_current_pos_rounded)
-            #     print("RRCP: ", rear_right_current_pos_rounded)
-            #     print("IMU: ", round(imu_euler[2], 2))
-                
-
-
-
-        #   optimization
-            
-            # front_left_position, front_left_velocity = simplifiy_angle(
-            #     front_left_current_pos, front_left_position, front_left_velocity)
-            # front_right_position, front_right_velocity = simplifiy_angle(
-            #     front_right_current_pos, front_right_position, front_right_velocity)
-            # rear_left_position, rear_left_velocity = simplifiy_angle(
-            #     rear_left_current_pos, rear_left_position, rear_left_velocity)
-            # rear_right_position, rear_right_velocity = simplifiy_angle(
-            #     rear_right_current_pos, rear_right_position, rear_right_velocity)
-
-        #   Set Wheel Positions
-        #   Has a 1 degree tolerance. Turns clockwise if less than, counter clockwise if greater than
-            # if (i == 1):
-            #     print(f"front_left_position:{front_left_position}")
-            #     print(f"rear_left_position:{rear_left_position}")
-            # action.append(calculate_turn_velocity(front_left_current_pos, front_left_position))
-            # action.append(calculate_turn_velocity(front_right_current_pos, front_right_position))
-            # action.append(calculate_turn_velocity(rear_left_current_pos, rear_left_position))
-            # action.append(calculate_turn_velocity(rear_right_current_pos, rear_right_position))
-             # sortlist=[front_left_velocity, front_right_velocity, rear_left_velocity, rear_right_velocity]
-            # maxs = abs(max(sortlist, key=abs))
-            # if (maxs < 0.5):
-            #     for num in sortlist:
-            #         action.append(0.0)
-            # else:
-            #     for num in sortlist:
-            #         if (maxs != 0 and abs(maxs) > 10):
-            #             # scales down velocty to max of 10 radians
-            #             num = (num/abs(maxs))*10
-            #             # print(num)
-            #         action.append(num)
-            ### DOF ORDER
-            ###['elevator_outer_1_joint', 
-
-            ### 'front_left_axle_joint', 
-            ### 'front_right_axle_joint', 
-            ### 'rear_left_axle_joint', 
-            ### 'rear_right_axle_joint',
-             
-            ### 'elevator_center_joint', 
-            ### 'arm_roller_bar_joint', 
-
-            ### 'front_left_wheel_joint', 
-            ### 'front_right_wheel_joint', 
-            ### 'rear_left_wheel_joint', 
-            ### 'rear_right_wheel_joint', 
-
-            ### 'elevator_outer_2_joint', 
-            ### 'top_slider_joint', 
-            ### 'top_gripper_left_arm_joint',
-            ###  'top_gripper_right_arm_joint']
-            action.append(0.0)
-            action.append(front_left_position)
-            action.append(front_right_position)
-            action.append(rear_left_position)
-            action.append(rear_right_position)
-            # action.append(0.0)
-            # action.append(0.0)
-            # action.append(0.0)
-            # action.append(0.0)
-            action.append(0.0)
-            action.append(0.0)
-            # print(front_left_velocity)
-            action.append(front_left_velocity)
-            action.append(front_right_velocity)
-            action.append(rear_left_velocity)
-            action.append(rear_right_velocity)
-            # action.append(0.0)
-            # action.append(0.0)
-            # action.append(0.0)
-            # action.append(0.0)
-            action.append(0.0)
-            action.append(0.0)
-            action.append(0.0)
-            action.append(0.0)
+            action = [
+                # 0.0,
+                front_left_position,
+                front_right_position,
+                rear_left_position,
+                rear_right_position,
+                # 0.0,
+                # 0.0,
+                front_left_velocity,
+                front_right_velocity,
+                rear_left_velocity,
+                rear_right_velocity,
+                # 0.0,
+                # 0.0,
+                # 0.0,
+                # 0.0,
+            ]
 
             # print(len(action))
             actionlist.append(action)
@@ -421,6 +335,9 @@ class Edna_Kinematics_Task(RLTask):
 
         self.time_out_buf = torch.zeros_like(self.reset_buf)
 
+        self.dist = tensor_distance(self.root_pos - self._env_pos, self.target_positions)
+        self.smallest_dist = self.dist.clone()
+
         # randomize all envs
         indices = torch.arange(
             self._edna.count, dtype=torch.int64, device=self._device)
@@ -431,95 +348,95 @@ class Edna_Kinematics_Task(RLTask):
         envs_long = env_ids.long()
         # set target position randomly with x, y in (-20, 20)
         self.target_positions[envs_long, 0:2] = torch.rand(
-            (num_sets, 2), device=self._device) * 20 - 1
+            (num_sets, 2), device=self._device) * self.max_distance - 1
         self.target_positions[envs_long, 2] = 0.1
+    
         # print(self.target_positions)
 
         # shift the target up so it visually aligns better
         ball_pos = self.target_positions[envs_long] + self._env_pos[envs_long]
         self._balls.set_world_poses(
             ball_pos[:, 0:3], self.initial_ball_rot[envs_long].clone(), indices=env_ids)
+        
+    def calc_rg(self, current_position, target_position):
+        current_distance = tensor_distance(current_position, target_position)
+        reward = torch.zeros_like(current_distance)
+            
+        ang_vels = self.root_velocities[:, 3:]
+        ang_z = ang_vels[..., 2]
+        
+        for i in range(self._num_envs):
+            if current_distance[i] < self.smallest_dist[i]:
+                self.smallest_dist[i] = current_distance[i]
+                reward[i] = 50
+            elif current_distance[i] > self.smallest_dist[i]:
+                reward[i] = -50
+                
+            reward[i] -= abs(ang_z[i]) * 10
+
+            
+        return reward, current_distance
+            
+        
+        # current_distance = tensor_distance(current_position, target_position)
+        # decreasing_distance_reward = previous_distance - current_distance
+        # distance_reward = 20.0 / (5.0 + 2.5 * current_distance * current_distance)
+        
+        # negative_reward = -current_distance
+        
+        # rew = distance_reward + decreasing_distance_reward * 0.1
+        
+        # reward = torch.where(current_distance > 15.0, negative_reward, rew)
+        # return reward, current_distance
+        
+        
+    def calc_rc(self, current_position, target_position):
+        current_distance = tensor_distance(current_position, target_position)
+        collision_true = torch.ones_like(current_distance)
+        collision_false = torch.zeros_like(current_distance)
+        collision = torch.where(current_distance < 0.2, collision_true, collision_false)
+        
+        return collision
+            
+
+    def quaternion_to_euler(self, quat):
+        w, x, y, z = quat[0], quat[1], quat[2], quat[3]
+
+        roll = math.atan2(2*(w*x + y*z), 1 - 2*(x**2 + y**2))
+        pitch = math.asin(2*(w*y - z*x))
+        yaw = math.atan2(2*(w*z + x*y), 1 - 2*(y**2 + z**2))
+        
+        return roll, pitch, yaw
 
     def calculate_metrics(self) -> None:
-
-        root_positions = self.root_pos - self._env_pos
-        # distance to target
-        target_dist = torch.sqrt(torch.square(
-            self.target_positions - root_positions).sum(-1))
+        self.current_position = self.root_pos - self._env_pos
+        target_position = self.target_positions
+        reward, distance = self.calc_rg(self.current_position, target_position)
+        self.collision = self.calc_rc(self.current_position, target_position)
+        self.dis_prev = distance
+        self.rew_buf[:] = reward
         
-        # create a new tensor called target point being target_positions X - 0.5 and target_positions Y
-        target_point = torch.stack(
-            [self.target_positions[..., 0] - 0.5, self.target_positions[..., 1]], dim=-1
-        )
+        ang_vels = self.root_velocities[:, 3:]
+        ang_z = ang_vels[..., 2]
         
-        target_point_dist = torch.sqrt(torch.square(
-            target_point - root_positions[..., 0:2]).sum(-1)
-        )
-
-        # pos_reward = 1.0 / (1.0 + (1/0.5)*(target_dist-0.5))
-        pos_reward = 1.0/(1.0+2.5*target_point_dist*target_point_dist)
-        self.target_dist = target_dist
-        self.target_point_dist = target_point_dist
-        self.root_positions = root_positions
-        self.root_position_reward = self.rew_buf
-        # rewards for moving away form starting point
-        for i in range(len(self.root_position_reward)):
-            self.root_position_reward[i] = sum(root_positions[i][0:2])
-            
-        # rewards for facing the target
-        target_angle = torch.atan2(
-            self.target_positions[..., 1] - root_positions[..., 1], 
-            self.target_positions[..., 0] - root_positions[..., 0],
-        )
-        
-        robot_orientation_tensor = tgm.quaternion_to_angle_axis(self.root_rot)
-        robot_orientation = robot_orientation_tensor[..., 2]
-        target_orientation = target_angle
-        orientation_diff = torch.abs(robot_orientation - target_orientation)
-        orientation_diff = torch.min(orientation_diff, 2*np.pi - orientation_diff)
-        
-        angle_reward = 1.0 - orientation_diff / (2*np.pi)
-        self.test = self.root_position_reward*pos_reward*angle_reward
-        
-        if torch.isnan(self.test).any():
-            self.rew_buf[:] = torch.nan_to_num(self.test)
-        else:
-            self.rew_buf[:] = self.root_position_reward*pos_reward*angle_reward
-        print(f"Best Reward: {torch.max(self.test).item()}")
+        print("Reward: ", round(reward[0].item(), 2), end=" ")
+        print("Distance: ", round(distance[0].item(), 2), end=" ")
+        print("Angular Z: ", round(ang_z[0].item(), 2), end=" ")
+        print("Smallest Distance: ", round(self.smallest_dist[0].item(), 2), end=" ")
+        print("Collision: ", self.collision.bool()[0].item())
+        # print("Orientation : ", self.quaternion_to_euler(self.obs_buf[0, 6:10]))
 
     def is_done(self) -> None:
         # print("line 312")
         # These are the dying constaints. It dies if it is going in the wrong direction or starts flying
         ones = torch.ones_like(self.reset_buf)
         die = torch.zeros_like(self.reset_buf)
-        die = torch.where(self.target_point_dist > 20.0, ones, die)
-        die = torch.where(self.target_point_dist <= 0.5, ones, die)
-        die = torch.where(self.root_positions[..., 2] > 0.5, ones, die)
-        die = torch.where(torch.isnan(self.test).any(), ones, die)
+        die = torch.where(self.dis_prev > 20.0, ones, die)
+        die = torch.where(self.collision.bool(), ones, die)
+        die = torch.where(self.current_position[..., 2] > 0.5, ones, die)
         
-        # die = torch.where(torch.isnan(self.actions[...,0]), ones, die)
-        # die = torch.where(torch.isnan(self.joint_velocities[...,0]), ones, die)
-        # die = torch.where(torch.isnan(self.joint_velocities[...,1]), ones, die)
-        # die = torch.where(torch.isnan(self.joint_velocities[...,2]), ones, die)
-        # die = torch.where(torch.isnan(self.joint_velocities[...,3]), ones, die)
-        # die = torch.where(torch.isnan(self.joint_velocities[...,4]), ones, die)
-        # die = torch.where(torch.isnan(self.joint_velocities[...,5]), ones, die)
-        # die = torch.where(torch.isnan(self.joint_velocities[...,6]), ones, die)
-        # die = torch.where(torch.isnan(self.joint_velocities[...,7]), ones, die)
-
-        # die = torch.where(torch.isnan(self.joint_positions[...,0]), ones, die)
-        # die = torch.where(torch.isnan(self.joint_positions[...,1]), ones, die)
-        # die = torch.where(torch.isnan(self.joint_positions[...,2]), ones, die)
-        # die = torch.where(torch.isnan(self.joint_positions[...,3]), ones, die)
-        # die = torch.where(torch.isnan(self.joint_positions[...,4]), ones, die)
-        # die = torch.where(torch.isnan(self.joint_positions[...,5]), ones, die)
-        # die = torch.where(torch.isnan(self.joint_positions[...,6]), ones, die)
-        # die = torch.where(torch.isnan(self.joint_positions[...,7]), ones, die)
-
-        
-        # die = torch.where(self.joint_positions[...,0] == 'NaN', ones, die)
-        # die = torch.where(((i == 'NaN') for i in self.joint_velocities[...,0:8]), ones, die)
-        # die = torch.where(((i == 'NaN') for i in self.joint_positions[...,0:8]), ones, die)
+        self.extras["is_success"] = torch.where(torch.logical_and(self.dis_prev < 0.5, torch.logical_not(self.collision)), ones, die)
+        self.extras["time_outs"] = self.progress_buf >= self._max_episode_length - 1
 
         # resets due to episode length
         self.reset_buf[:] = torch.where(
@@ -547,3 +464,9 @@ def calculate_turn_velocity(current_pos, turn_position):
         if (turn_position < current_pos):
             setspeed *= -1
     return setspeed
+
+def tensor_distance(tensor1, tensor2):
+    return torch.sqrt(torch.square(tensor2[..., 0] - tensor1[..., 0]) + torch.square(tensor2[..., 1] - tensor1[..., 1]))
+
+def norm_distance(start, end):
+    return torch.linalg.matrix_norm(start-end)

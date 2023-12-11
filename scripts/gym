@@ -37,7 +37,12 @@ train-help() {
 
 train() {
     echo "Training..."
-    isaac $python_path $scripts_path ${@:2}
+    isaac $python_path $scripts_path ${@:2} headless=True
+}
+
+test() {
+    echo "Testing..."
+    isaac $python_path $scripts_path ${@:2} test=True num_envs=36
 }
 
 help() {
@@ -83,6 +88,27 @@ case $1 in
             
             *)
                 train $@
+            ;;
+        esac
+    ;;
+
+    "test")
+        case $2 in
+            "--help")
+                train-help
+            ;;
+
+            "-h")
+                train-help
+            ;;
+
+            "")
+                echo "No arguments specified, task is required!!!"
+                exit 1
+            ;;
+            
+            *)
+                test $@
             ;;
         esac
     ;;
